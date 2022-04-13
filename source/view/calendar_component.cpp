@@ -2,23 +2,24 @@
 
 namespace clog::view {
 
-CalendarComponent::CalendarComponent(const model::Date& today,
-                                     const model::YearMap<bool>* datesWithLogEntries,
-                                     std::function<void(const model::Date&)> onEnterCallback) :
+Calendar::Calendar(const model::Date& today, CalendarOption option) :
     m_today(today),
-    m_root(createYear(m_today.year)), m_logAvailabilityMap(datesWithLogEntries),
-    m_onEnterCallback(onEnterCallback) {}
+    m_root(createYear(m_today.year)),
+    m_option(std::move(option)),
+    m_displayedYear(today.year) {
+    Add(m_root);
+}
 
-Component CalendarComponent::createYear(unsigned year) {
+Component Calendar::createYear(unsigned year) {
     Components month_components;
-
     for (unsigned month = 1; month <= 12; month++) {
         month_components.push_back(createMonth(month, year));
     }
-    auto container = ftxui_ext::AnyDir(month_components);
-    container->SetActiveChild(month_components.at(m_today.month - 1));
+    m_selectedMonth = m_today.month - 1;
+    auto container  = ftxui_ext::AnyDir(month_components, &m_selectedMonth);
+    container->SetActiveChild(month_components.at(m_selectedMonth));
 
-    return Renderer(container, [=]() {
+    return Renderer(container, [month_components, this]() {
         int available_month_columns = Terminal::Size().dimx / (4 * 7 + 6);
         available_month_columns     = std::min(6, available_month_columns);
         if (available_month_columns == 5) {
@@ -36,31 +37,30 @@ Component CalendarComponent::createYear(unsigned year) {
             }
             i++;
         }
-        return window(text("Calendar"), vbox(render_data) | vscroll_indicator | frame);
+        return window(text(std::to_string(m_displayedYear)), vbox(render_data) | vscroll_indicator | frame);
     });
 }
 
-Component CalendarComponent::createMonth(unsigned month, unsigned year) {
-    static ButtonOption o { false };
+Component Calendar::createMonth(unsigned month, unsigned year) {
     static const auto cell = [](const std::string& txt) {
         return center(text(txt)) | size(WIDTH, EQUAL, 3) | size(HEIGHT, EQUAL, 1);
     };
 
     const auto num_of_days = model::getNumberOfDaysForMonth(month, year);
-    Components buttons;
 
+    Components buttons;
     for (unsigned day = 1; day <= num_of_days; day++) {
         buttons.push_back(createDay(model::Date { day, month, year }));
     }
 
-    auto container = ftxui_ext::Grid(7, buttons);
+    const auto container = ftxui_ext::Grid(7, buttons, &m_selectedDay[month - 1]);
 
-    auto root_component = Renderer(container, [=]() {
+    auto root_component = Renderer(container, [=,this]() {
         const Elements header1 = Elements { cell("M"), cell("T"), cell("W"), cell("T"),
                                             cell("F"), cell("S"), cell("S") } |
                                  underlined;
         std::vector<Elements> render_data = { header1, {} };
-        auto starting_weekday   = clog::model::getStartingWeekdayForMonth(month, m_today.year);
+        auto starting_weekday   = clog::model::getStartingWeekdayForMonth(month, m_displayedYear);
         unsigned curren_weekday = starting_weekday - 1, calendar_day = 1;
         for (int i = 1; i < starting_weekday; i++) {
             render_data.back().push_back(filler());
@@ -82,23 +82,12 @@ Component CalendarComponent::createMonth(unsigned month, unsigned year) {
     return root_component;
 }
 
-Component CalendarComponent::createDay(const model::Date& date) {
-    static const ButtonOption noBorder { .border = false };
-
-    auto btn = Button(
-        std::to_string(date.day), [this, date]() { m_onEnterCallback(date); }, noBorder);
-    return Renderer(btn, [&, this, btn, date]() {
-        auto element = btn->Render() | ::ftxui::center;
-        if (m_today == date)
-            element = element | underlined;
-        if (m_selectedHighlightMap && m_selectedHighlightMap->get(date))
-            element = element | color(Color::Yellow);
-        if (m_logAvailabilityMap && not m_logAvailabilityMap->get(date))
-            element = element | dim;
-        return element;
-    });
+Component Calendar::createDay(const model::Date& date) {
+    return Button(
+        std::to_string(date.day), [this, date]() { m_option.enter(date); },
+        ButtonOption { .transform = [this, date](const auto& state) {
+            return m_option.transform(date, state);
+        } });
 }
-
-Component CalendarComponent::getFTXUIComponent() { return m_root; }
 
 }  // namespace clog::view

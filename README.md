@@ -29,9 +29,10 @@ After a successfull build. Run: `sudo make install`.
 [ ] rename everythin to camelCase
 [ ] add ability to remove logs
 [ ] add ability to add/remove tags/tasks
-[ ] preview window for sections
 
 *non-esential*
 [ ] shift + J/K skip whole month
 [ ] opening a date with non existant log should create a log with some basic sections as skeleton
 [ ] tests
+[ ] preview window focuses parts of the text that matches
+[ ] mouse wont focus unfocused menus

@@ -4,11 +4,24 @@
 
 namespace clog::view {
 
-class ControlerBase {
+struct UIEvent {
+    enum Type {
+        ROOT_EVENT,
+        FOCUSED_DATE_CHANGE,
+        FOCUSED_SECTION_CHANGE,
+        FOCUSED_TAG_CHANGE,
+        CALENDAR_BUTTON_CLICK
+    };
+    const Type type;
+    const int input;
+
+    UIEvent(Type t, int in = 0) : type { t }, input { in } {}
+};
+
+class InputHandlerBase {
 public:
-    virtual void openLogEntryInEditorForDade(const model::Date& d) = 0;
-    virtual void display_year(unsigned year) = 0;
-    virtual ~ControlerBase()                          = default;
+    virtual ~InputHandlerBase() {};
+    virtual bool handleInputEvent(const UIEvent& event) = 0;
 };
 
 }  // namespace clog::view

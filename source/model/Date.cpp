@@ -80,6 +80,8 @@ bool operator==(const Date& l, const Date& r) {
     return l.year == r.year && l.month == r.month && l.day == r.day;
 }
 
+bool operator!=(const Date& l, const Date& r) { return !(l == r); }
+
 bool operator<(const Date& l, const Date& r) {
     std::tm tl  = dateToTm(l);
     std::tm tr  = dateToTm(r);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Date.hpp"
-#include "LogRepository.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -10,36 +9,23 @@
 
 namespace clog::model {
 
-struct Task {
-    std::string title;
-    std::string time_info;
-    char completion_value = 0;
-};
-
-inline bool operator==(const Task& l, const Task& r) {
-    return l.title == r.title && l.time_info == r.time_info &&
-           r.completion_value == l.completion_value;
-}
-
-class LogEntryFile {
-    Date m_date;
-    std::shared_ptr<LogRepository> m_repo;
-
+class LogFile {
+    friend class LogRepository;
+    std::string m_content;
 public:
     static const std::string LOG_FILE_TITLE_DATE_FORMAT;
     static const std::string LOG_FILE_BASE_TEMPLATE;
 
-    LogEntryFile(std::shared_ptr<LogRepository> repo, const Date& date) :
-        m_date(date), m_repo(std::move(repo)) {}
+    bool hasMeaningfullContent();
+    LogFile(std::string content) :
+        m_content(content) {}
 
-    bool hasData();
-    void removeFile();
+    LogFile(const Date& date, std::string content) :
+        m_content(std::move(content)) {}
 
-    //std::string get_path() { return m_repo->getFilePath(m_date); }
+    std::string getContent() { return m_content; }
 
-    std::vector<std::string> get_non_empty_section_titles();
-    std::vector<Task> get_tasks();
-
+private:
 };
 
 }  // namespace clog::model

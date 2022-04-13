@@ -49,6 +49,13 @@ public:
         }
     }
 
+    void TakeFocus() {
+        ComponentBase::TakeFocus();
+        if (onTakeFocus_) { 
+            onTakeFocus_();
+        }
+    }
+
 protected:
     // Handlers
     virtual bool EventHandler(Event) { return false; }
@@ -59,6 +66,8 @@ protected:
 
     int selected_  = 0;
     int* selector_ = nullptr;
+
+    std::function<void()> onTakeFocus_;
 
     void MoveSelector(int dir) {
         for (int i = *selector_ + dir; i >= 0 && i < (int)children_.size();
@@ -151,7 +160,7 @@ public:
 
 // just a vertical container that takes all 4 directions of input
 // its supposed to hold
-class YearContainer : public ContainerBase {
+class AnyDirContainer : public ContainerBase {
 public:
     using ContainerBase::ContainerBase;
 
@@ -214,18 +223,18 @@ public:
     Box box_;
 };
 
-Component Grid(int width, Components children) {
-    return std::make_shared<GridContainer>(width, std::move(children), nullptr);
+Component Grid(int width, Components children, int* selected) {
+    return std::make_shared<GridContainer>(width, std::move(children), selected);
 }
 
-Component AnyDir(Components children) {
-    return std::make_shared<YearContainer>(std::move(children), nullptr);
+Component AnyDir(Components children, int* selected) {
+    return std::make_shared<AnyDirContainer>(std::move(children), selected);
 }
 
-class CustomC : public ContainerBase {
+class CustomInputContainer : public ContainerBase {
 public:
     using ContainerBase::ContainerBase;
-    CustomC(Components children, int* selector, Event s, Event sb) : ContainerBase(children, selector), switch_(s), switchBack_(sb) {}
+    CustomInputContainer(Components children, int* selector, Event s, Event sb) : ContainerBase(children, selector), switch_(s), switchBack_(sb) {}
 
     Element Render() override {
         Elements elements;
@@ -245,6 +254,28 @@ public:
         *selector_ =
             std::max(0, std::min(int(children_.size()) - 1, *selector_));
         return old_selected != *selector_;
+    }
+
+    bool OnMouseEvent(Event event) override {
+        if (ContainerBase::OnMouseEvent(event))
+            return true;
+
+        if (event.mouse().button != Mouse::WheelUp &&
+            event.mouse().button != Mouse::WheelDown) {
+            return false;
+        }
+
+        if (!box_.Contain(event.mouse().x, event.mouse().y))
+            return false;
+
+        if (event.mouse().button == Mouse::WheelUp)
+            MoveSelector(-1);
+        if (event.mouse().button == Mouse::WheelDown)
+            MoveSelector(+1);
+        *selector_ =
+            std::max(0, std::min(int(children_.size()) - 1, *selector_));
+
+        return true;
     }
 
     // Component override.
@@ -268,7 +299,7 @@ public:
 
 
 Component CustomContainer(Components children, Event switchEvent, Event switchBack) {
-    return std::make_shared<CustomC>(children, nullptr, switchEvent, switchBack);
+    return std::make_shared<CustomInputContainer>(children, nullptr, switchEvent, switchBack);
 }
 
 } // namespace clog::view::ftxui_ext

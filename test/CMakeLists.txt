@@ -1,28 +1,23 @@
 enable_testing()
 
 add_executable(
-    all_tests
-    ./model/date_test.cpp
-    ./model/log_file_test.cpp
-    ./model/log_model_test.cpp
-
-    # TODO: move to a library
-    ../source/model/date.cpp
-    ../source/model/log_file.cpp
-    ../source/model/log_model.cpp
+    tests
+    ./ui/calendar_component_test.cpp
 )
 
 target_link_libraries(
-    all_tests
+    tests
     gtest_main
-    stdc++fs
+    ftxui::screen
+    ftxui::dom
+    ftxui::component 
 )
 
 target_include_directories(
-    all_tests
+    tests
     PRIVATE
     ../source/
 )
 
 include(GoogleTest)
-gtest_discover_tests(all_tests)
+gtest_discover_tests(tests)
