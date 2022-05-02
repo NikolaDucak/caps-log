@@ -2,12 +2,16 @@ enable_testing()
 
 add_executable(
     tests
-    ./ui/calendar_component_test.cpp
+    ./controler_test.cpp
+    ./../source/model/Date.cpp
+    ./../source/model/LogFile.cpp
+    ./../source/model/DefaultLogRepository.cpp
 )
 
 target_link_libraries(
     tests
     gtest_main
+    gmock_main
     ftxui::screen
     ftxui::dom
     ftxui::component 

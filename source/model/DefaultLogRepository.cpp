@@ -34,12 +34,13 @@ const static auto TASK_REGEX          = std::regex {
 const static auto TASK_TITLE_MATCH { 5 };
 const static auto SECTION_TITLE_MATCH { 1 };
 
-DefaultLogRepository::DefaultLogRepository() {
-    std::filesystem::create_directories(DEFAULT_LOG_DIR_PATH);
+DefaultLogRepository::DefaultLogRepository( std::string logDirectory, std::string logFilenameFormat) 
+    : m_logDirectory(logDirectory), m_logFilenameFormat(logFilenameFormat) {
+    std::filesystem::create_directories(m_logDirectory);
 }
 
 std::filesystem::path DefaultLogRepository::dateToLogFilePath(const Date& d) const {
-    return { DEFAULT_LOG_DIR_PATH + "/" + d.formatToString(DEFAULT_LOG_FILENAME_FORMAT) };
+    return { m_logDirectory + "/" + d.formatToString(m_logFilenameFormat) };
 }
 
 void DefaultLogRepository::injectDataForDate(YearLogEntryData& data, const Date& date) {
@@ -129,11 +130,11 @@ std::string DefaultLogRepository::readFile(const Date& date) {
 }
 
 void DefaultLogRepository::removeLog(const Date& date) {
-    auto r = std::remove(dateToLogFilePath(date).c_str());
-
+    auto result = std::remove(dateToLogFilePath(date).c_str());
 }
+
 std::string DefaultLogRepository::path(const Date& date) {
-    return dateToLogFilePath(date).c_str();
+    return dateToLogFilePath(date).string();
 }
 
 }  // namespace clog::model

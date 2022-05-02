@@ -21,7 +21,7 @@ public:
     WindowedMenu(std::string title, std::vector<std::string>* items, Ref<MenuOption> option) {
         auto menu  = Menu(items, &m_selected, option);
         auto menuRenderer = Renderer(menu, [=]() {
-            return window(text(title), menu->Render()) | size(WIDTH, LESS_THAN, 25);
+            return window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
         });
         Add(menuRenderer);
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <string>
 #include <array>
 #include <map>
@@ -7,7 +8,19 @@
 #include <chrono>
 
 namespace clog::model {
+
+class Day {
+    unsigned m_day;
+public:
+    Day(unsigned day) : m_day{day} {
+        if (day > 31) {
+            throw std::invalid_argument{"Invlid Day constructor argument. Larger than 31"};
+        }
+    }
+};
+
 class Month {
+    unsigned m_month;
 public:
     enum {
         JANUARY   = 1,
@@ -23,11 +36,35 @@ public:
         NOVEMBER  = 11,
         DECEMBER  = 12,
     };
-    Month(unsigned month) {
-        if (month < JANUARY || month > DECEMBER) {
-            //throw std::
+
+    Month(unsigned month) : m_month{month} {
+        if (m_month > DECEMBER) {
+            throw std::invalid_argument{"Ivalid Month constuctor argument"};
         }
     }
+};
+
+class Year {
+    unsigned m_year;
+public:
+    Year(unsigned year) : m_year{year} {}
+};
+
+class Weekday {
+public:
+    enum {
+        MONDAY = 0, TUESDAY = 1, WEDNESSDAY = 2, THURSDAY = 3, FRIDAY = 4, SATURDAY = 5, SUNDAY = 6
+    };
+    Weekday(unsigned weekday) {
+    }
+};
+
+class DDate {
+public:
+    DDate(Day day, Month month, Year year);
+    Day day();
+    Day month();
+    Day year();
 };
 
 
@@ -58,6 +95,7 @@ struct Date {
     std::string formatToString(const std::string& format) const;
 
 private:
+    Date(Day day, Month month, Year year);
     bool isValid() const;
 };
 
@@ -102,6 +140,10 @@ public:
 };
 
 using StringYearMap = std::map<std::string, YearMap<bool>>;
+
+unsigned getNumberOfDaysForMonth(unsigned month, unsigned year);
+unsigned getStartingWeekdayForMonth(unsigned month, unsigned year);
+std::string getStringNameForMonth(unsigned month);
 
 unsigned getNumberOfDaysForMonth(unsigned month, unsigned year);
 unsigned getStartingWeekdayForMonth(unsigned month, unsigned year);

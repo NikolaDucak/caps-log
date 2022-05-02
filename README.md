@@ -22,12 +22,25 @@ make
 ```
 After a successfull build. Run: `sudo make install`.
 
+
+# Time & spending tracking
+```
+* [ ] study(1h): i've sudied this and that
+* [x] workout(1h): 
+* workout(1h)
+* spending(spendingk
+* tag1(1h): , tag2
+* tag1():
+```
+
 # todo
 *esential*
+[ ] date button for today in calendar is not automaticaly set as focused on startup 
 [ ] check if editor env var is available
 [ ] write a better README
 [ ] rename everythin to camelCase
 [ ] add ability to remove logs
+[ ] cant scroll the calendar
 [ ] add ability to add/remove tags/tasks
 
 *non-esential*

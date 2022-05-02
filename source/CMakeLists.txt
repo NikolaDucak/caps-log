@@ -1,13 +1,16 @@
 add_executable(
     clog
+
     main.cpp
+    ./view/calendar_component.cpp
+    ./view/calendar_component.hpp
+    ./view/input_handler.hpp
+    ./view/promptable.cpp
+    ./view/promptable.hpp
     ./view/yearly_view.cpp
     ./view/yearly_view.hpp
-    ./view/highlight_menu.hpp
-    ./view/calendar_component.hpp
-    ./view/calendar_component.cpp
-    ./view/ftxui_ext/extended_containers.hpp
     ./view/ftxui_ext/extended_containers.cpp
+    ./view/ftxui_ext/extended_containers.hpp
     ./model/Date.cpp
     ./model/Date.hpp
     ./model/DefaultLogRepository.cpp

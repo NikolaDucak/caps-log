@@ -4,6 +4,9 @@ namespace clog::view {
 
 Calendar::Calendar(const model::Date& today, CalendarOption option) :
     m_today(today),
+    //TODO: SetActiveChild does nothing, this is the only 
+    //way to focus a specific date on startup. Investigate.
+    m_selectedMonth(today.month -1),
     m_root(createYear(m_today.year)),
     m_option(std::move(option)),
     m_displayedYear(today.year) {
@@ -15,9 +18,8 @@ Component Calendar::createYear(unsigned year) {
     for (unsigned month = 1; month <= 12; month++) {
         month_components.push_back(createMonth(month, year));
     }
-    m_selectedMonth = m_today.month - 1;
     auto container  = ftxui_ext::AnyDir(month_components, &m_selectedMonth);
-    container->SetActiveChild(month_components.at(m_selectedMonth));
+    container->SetActiveChild(*(month_components.begin() + m_today.month - 1));
 
     return Renderer(container, [month_components, this]() {
         int available_month_columns = Terminal::Size().dimx / (4 * 7 + 6);
@@ -37,7 +39,8 @@ Component Calendar::createYear(unsigned year) {
             }
             i++;
         }
-        return window(text(std::to_string(m_displayedYear)), vbox(render_data) | vscroll_indicator | frame);
+        //return window(text(std::to_string(m_displayedYear)), vbox(render_data) | frame);
+        return vbox(render_data) | frame;
     });
 }
 
@@ -52,7 +55,7 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
     for (unsigned day = 1; day <= num_of_days; day++) {
         buttons.push_back(createDay(model::Date { day, month, year }));
     }
-
+    m_selectedDay[month - 1] = 0;
     const auto container = ftxui_ext::Grid(7, buttons, &m_selectedDay[month - 1]);
 
     auto root_component = Renderer(container, [=,this]() {
@@ -77,6 +80,7 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
     });
     if (m_today.month == month) {
         container->SetActiveChild(buttons.at(m_today.day - 1));
+        m_selectedDay[month - 1] = m_today.day-1;
     }
 
     return root_component;

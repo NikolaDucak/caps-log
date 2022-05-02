@@ -20,7 +20,6 @@ if(NOT ftxui_POPULATED)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-
 # ---------------------------------- gtest -------------------------------- #
 
 if(${BUILD_TESTS})
