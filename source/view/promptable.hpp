@@ -23,7 +23,7 @@ public:
     Promptable(Component main);
     void prompt(const std::string& message, std::function<void()> cb);
 
-    //Element Render() override;
+    Element Render() override;
 };
 
 }

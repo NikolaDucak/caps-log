@@ -11,83 +11,84 @@
 namespace clog::view::ftxui_ext {
 using namespace ftxui;
 
+
 class ContainerBase : public ComponentBase {
-public:
-    ContainerBase(Components children, int* selector) :
-        selector_(selector ? selector : &selected_) {
-        for (Component& child : children)
-            Add(std::move(child));
+ public:
+  ContainerBase(Components children, int* selector)
+      : selector_(selector ? selector : &selected_) {
+    for (Component& child : children) {
+      Add(std::move(child));
+    }
+  }
+
+  // Component override.
+  bool OnEvent(Event event) override {
+    if (event.is_mouse()) {
+      return OnMouseEvent(event);
     }
 
-    // Component override.
-    bool OnEvent(Event event) override {
-        if (event.is_mouse())
-            return OnMouseEvent(event);
-
-        if (!Focused())
-            return false;
-
-        if (ActiveChild() && ActiveChild()->OnEvent(event))
-            return true;
-
-        return EventHandler(event);
+    if (!Focused()) {
+      return false;
     }
 
-    Component ActiveChild() override {
-        if (children_.size() == 0)
-            return nullptr;
-
-        return children_[*selector_ % children_.size()];
+    if (ActiveChild() && ActiveChild()->OnEvent(event)) {
+      return true;
     }
 
-    void SetActiveChild(ComponentBase* child) override {
-        for (size_t i = 0; i < children_.size(); ++i) {
-            if (children_[i].get() == child) {
-                *selector_ = i;
-                return;
-            }
-        }
+    return EventHandler(event);
+  }
+
+  Component ActiveChild() override {
+    if (children_.empty()) {
+      return nullptr;
     }
 
-    void TakeFocus() {
-        ComponentBase::TakeFocus();
-        if (onTakeFocus_) { 
-            onTakeFocus_();
-        }
+    return children_[*selector_ % children_.size()];
+  }
+
+  void SetActiveChild(ComponentBase* child) override {
+    for (size_t i = 0; i < children_.size(); ++i) {
+      if (children_[i].get() == child) {
+        *selector_ = (int)i;
+        return;
+      }
     }
+  }
 
-protected:
-    // Handlers
-    virtual bool EventHandler(Event) { return false; }
+ protected:
+  // Handlers
+  virtual bool EventHandler(Event /*unused*/) { return false; }  // NOLINT
 
-    virtual bool OnMouseEvent(Event event) {
-        return ComponentBase::OnEvent(event);
+  virtual bool OnMouseEvent(Event event) {
+    return ComponentBase::OnEvent(std::move(event));
+  }
+
+  int selected_ = 0;
+  int* selector_ = nullptr;
+
+  void MoveSelector(int dir) {
+    for (int i = *selector_ + dir; i >= 0 && i < (int)children_.size();
+         i += dir) {
+      if (children_[i]->Focusable()) {
+        *selector_ = i;
+        return;
+      }
     }
+  }
 
-    int selected_  = 0;
-    int* selector_ = nullptr;
-
-    std::function<void()> onTakeFocus_;
-
-    void MoveSelector(int dir) {
-        for (int i = *selector_ + dir; i >= 0 && i < (int)children_.size();
-             i += dir) {
-            if (children_[i]->Focusable()) {
-                *selector_ = i;
-                return;
-            }
-        }
+  void MoveSelectorWrap(int dir) {
+    if (children_.empty()) {
+      return;
     }
-    void MoveSelectorWrap(int dir) {
-        for (size_t offset = 1; offset < children_.size(); ++offset) {
-            int i = (*selector_ + offset * dir + children_.size()) %
-                    children_.size();
-            if (children_[i]->Focusable()) {
-                *selector_ = i;
-                return;
-            }
-        }
+    for (size_t offset = 1; offset < children_.size(); ++offset) {
+      size_t i = ((size_t(*selector_ + offset * dir + children_.size())) %
+                  children_.size());
+      if (children_[i]->Focusable()) {
+        *selector_ = (int)i;
+        return;
+      }
     }
+  }
 };
 
 class GridContainer : public ContainerBase {

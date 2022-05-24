@@ -14,8 +14,8 @@ Promptable::Promptable(Component main) : m_main(std::move(main)) {
     m_prompt     = Renderer(buttons, [this, buttons]() {
         return vbox(text(m_message), separator(), buttons->Render()) | center;
     });
-    //auto tab     = Container::Tab({ m_main, m_prompt }, &m_depth);
-    Add(m_main);
+    auto tab     = Container::Tab({ m_main, m_prompt }, &m_depth);
+    Add(tab);
 }
 
 void Promptable::prompt(const std::string& message, std::function<void()> cb) {
@@ -24,10 +24,10 @@ void Promptable::prompt(const std::string& message, std::function<void()> cb) {
     m_depth   = 1;
 }
 
-/*
+
 Element Promptable::Render() {
     return (m_depth == 0) ? m_main->Render() : m_prompt->Render();
 }
-*/
+
 
 }

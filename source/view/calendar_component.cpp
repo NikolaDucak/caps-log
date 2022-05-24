@@ -1,4 +1,5 @@
 #include "calendar_component.hpp"
+#include "ftxui/dom/elements.hpp"
 
 namespace clog::view {
 
@@ -11,6 +12,8 @@ Calendar::Calendar(const model::Date& today, CalendarOption option) :
     m_option(std::move(option)),
     m_displayedYear(today.year) {
     Add(m_root);
+    // the rest will selfcorect
+    m_selectedDay[m_selectedMonth] = today.day -1;
 }
 
 Component Calendar::createYear(unsigned year) {
@@ -19,7 +22,6 @@ Component Calendar::createYear(unsigned year) {
         month_components.push_back(createMonth(month, year));
     }
     auto container  = ftxui_ext::AnyDir(month_components, &m_selectedMonth);
-    container->SetActiveChild(*(month_components.begin() + m_today.month - 1));
 
     return Renderer(container, [month_components, this]() {
         int available_month_columns = Terminal::Size().dimx / (4 * 7 + 6);
@@ -39,8 +41,7 @@ Component Calendar::createYear(unsigned year) {
             }
             i++;
         }
-        //return window(text(std::to_string(m_displayedYear)), vbox(render_data) | frame);
-        return vbox(render_data) | frame;
+        return window(text(std::to_string(m_displayedYear)), vbox(render_data) | frame ) | vscroll_indicator;
     });
 }
 
@@ -78,10 +79,6 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
         }
         return window(text(model::getStringNameForMonth(month)), gridbox(render_data));
     });
-    if (m_today.month == month) {
-        container->SetActiveChild(buttons.at(m_today.day - 1));
-        m_selectedDay[month - 1] = m_today.day-1;
-    }
 
     return root_component;
 }

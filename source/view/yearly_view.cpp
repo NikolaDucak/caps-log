@@ -46,6 +46,7 @@ void YearlyView::setPreviewString(const std::string& string) {
 }
 
 std::shared_ptr<Promptable> YearlyView::makeFullUIComponent() {
+    
     auto container = ftxui_ext::CustomContainer(
         {
             m_tagsMenu,
@@ -60,7 +61,8 @@ std::shared_ptr<Promptable> YearlyView::makeFullUIComponent() {
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep them 
         // centered while the preview window changes and stretches this vbox container than to keep the 
         // preview window size fixed
-        return vbox(text(date.str()) | center, container->Render() | center, m_logFileContentsPreview) | center;
+        return vbox(text(date.str()) | center, 
+                container->Render() | center, m_logFileContentsPreview) | center;
     });
 
     auto event_handler = CatchEvent(whole_ui_renderer, [&](Event e) {

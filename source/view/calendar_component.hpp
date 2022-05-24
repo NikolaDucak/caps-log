@@ -25,8 +25,10 @@ class Calendar : public ComponentBase {
     CalendarOption m_option;
     unsigned m_displayedYear;
 
+
 public:
     Calendar(const model::Date& today, CalendarOption option = {});
+    auto root() { return m_root; }
 
     void displayYear(unsigned year) {
         m_displayedYear = year;

@@ -35,17 +35,20 @@ After a successfull build. Run: `sudo make install`.
 
 # todo
 *esential*
-[ ] date button for today in calendar is not automaticaly set as focused on startup 
 [ ] check if editor env var is available
 [ ] write a better README
 [ ] rename everythin to camelCase
-[ ] add ability to remove logs
-[ ] cant scroll the calendar
 [ ] add ability to add/remove tags/tasks
+[ ] command line argument to pass in log directory
+[ ] dissplayin different years than current is not fully functional
 
 *non-esential*
 [ ] shift + J/K skip whole month
 [ ] opening a date with non existant log should create a log with some basic sections as skeleton
 [ ] tests
 [ ] preview window focuses parts of the text that matches
+[ ] scrollable preview window
 [ ] mouse wont focus unfocused menus
+
+# done
+[x] date button for today in calendar is not automaticaly set as focused on startup 

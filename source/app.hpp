@@ -23,20 +23,30 @@ class App : public InputHandlerBase {
     std::vector<const YearMap<bool>*> m_tagMaps;
     std::vector<const YearMap<bool>*> m_sectionMaps;
 
+    void updateViewSectionsAndTagsAfterLogChange(const Date& dateOfChangedLog) {
+        m_repo->injectDataForDate(m_data, dateOfChangedLog);
+        updatePointersForHighlightMaps(m_tagMaps, m_data.taskMap);
+        updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
+        m_view->setTagMenuItems(makeMenuTitles(m_data.taskMap));
+        m_view->setSectionMenuItems(makeMenuTitles(m_data.sectionMap));
+        if (dateOfChangedLog == m_view->getFocusedDate()) {
+            if (auto log = m_repo->readLogFile(m_view->getFocusedDate())){
+                m_view->setPreviewString(log->getContent());
+            } else {
+                m_view->setPreviewString("");
+            }
+        }
+    }
+
 public:
     App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m) :
         m_displayedYear(Date::getToday().year),
         m_view{std::move(y)}, m_repo{std::move(m)}, 
         m_data{m_repo->collectDataForYear(m_displayedYear)} {
 
-        updatePointersForHighlightMaps(m_tagMaps, m_data.taskMap);
-        updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
-
         m_view->setInputHandler(this);
-        m_view->setPreviewString("");
-        m_view->setTagMenuItems(getKeysAndDaysSet(m_data.taskMap));
-        m_view->setSectionMenuItems(getKeysAndDaysSet(m_data.sectionMap));
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
+        updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
 
     void run() { m_view->run(); }
@@ -95,6 +105,7 @@ private:
         if (m_data.logAvailabilityMap.get(date)) {
             m_view->prompt("Are you sure you want to delete a log file?", [date, this] { 
                 m_repo->removeLog(date); 
+                updateViewSectionsAndTagsAfterLogChange(date);
             });
         }
     }
@@ -103,6 +114,7 @@ private:
         m_displayedYear += diff;
         m_data = m_repo->collectDataForYear(m_displayedYear);
         m_view->showCalendarForYear(m_displayedYear);
+        updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
 
     void toggle() {
@@ -132,11 +144,7 @@ private:
             }
             // TODO: can sections and tasks vector be owned by controller and view only haveing
             // a refference to them? that way they can automaticaly be updated
-            m_repo->injectDataForDate(m_data, date);
-            updatePointersForHighlightMaps(m_tagMaps, m_data.taskMap);
-            updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
-            m_view->setTagMenuItems(getKeysAndDaysSet(m_data.taskMap));
-            m_view->setSectionMenuItems(getKeysAndDaysSet(m_data.sectionMap));
+            updateViewSectionsAndTagsAfterLogChange(date);
         });
     }
 
@@ -147,6 +155,12 @@ private:
         return &result->second;
     }
 
+    /**
+     * A trick to optimize looking up selected menu item. View gives us an index
+     * in the provided array of strings, we can use that index to lookup which availability
+     * map for said menu item is appropriate. Alternative would getting the string and looking up
+     * in the map.
+     */
     static void updatePointersForHighlightMaps(std::vector<const YearMap<bool>*>& vec, const StringYearMap& map) {
         vec.clear();
         vec.push_back(nullptr); // 0 index = no highlighted days
@@ -155,8 +169,12 @@ private:
         }
     }
 
-    // TODO: poor name
-    static std::vector<std::string> getKeysAndDaysSet(const StringYearMap& map) {
+    /**
+     * Generates a list of strings that will be displayed as menu items. Each item
+     * title will be made of a key in the @p map and the number of days it has been 
+     * mantioned (days set).
+     */
+    static std::vector<std::string> makeMenuTitles(const StringYearMap& map) {
         std::vector<std::string> strs;
         strs.push_back(" ----- ");
         for (auto const& imap: map)
