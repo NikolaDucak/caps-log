@@ -1,19 +1,35 @@
 #include "calendar_component.hpp"
+
 #include "ftxui/dom/elements.hpp"
+
 
 namespace clog::view {
 
+namespace {
+    Elements arrangeMonthsInCalendar(const Components& monthComponents, int columns) {
+        Elements render_data;
+        Elements curr_hbox;
+        int i = 1;
+        for (const auto& month : monthComponents) {
+            curr_hbox.push_back(month->Render());
+            if (i % columns == 0) {
+                render_data.push_back(hbox(curr_hbox));
+                curr_hbox.clear();
+            }
+            i++;
+        }
+    }
+}
+
 Calendar::Calendar(const model::Date& today, CalendarOption option) :
     m_today(today),
-    //TODO: SetActiveChild does nothing, this is the only 
-    //way to focus a specific date on startup. Investigate.
-    m_selectedMonth(today.month -1),
-    m_root(createYear(m_today.year)),
-    m_option(std::move(option)),
+    // TODO: SetActiveChild does nothing, this is the only
+    // way to focus a specific date on startup. Investigate.
+    m_selectedMonth(today.month - 1), m_root(createYear(m_today.year)), m_option(std::move(option)),
     m_displayedYear(today.year) {
     Add(m_root);
     // the rest will selfcorect
-    m_selectedDay[m_selectedMonth] = today.day -1;
+    m_selectedDay[m_selectedMonth] = today.day - 1;
 }
 
 Component Calendar::createYear(unsigned year) {
@@ -21,7 +37,7 @@ Component Calendar::createYear(unsigned year) {
     for (unsigned month = 1; month <= 12; month++) {
         month_components.push_back(createMonth(month, year));
     }
-    auto container  = ftxui_ext::AnyDir(month_components, &m_selectedMonth);
+    auto container = ftxui_ext::AnyDir(month_components, &m_selectedMonth);
 
     return Renderer(container, [month_components, this]() {
         int available_month_columns = Terminal::Size().dimx / (4 * 7 + 6);
@@ -29,19 +45,9 @@ Component Calendar::createYear(unsigned year) {
         if (available_month_columns == 5) {
             available_month_columns = 4;
         }
-
-        Elements render_data;
-        Elements curr_hbox;
-        int i = 1;
-        for (const auto& month : month_components) {
-            curr_hbox.push_back(month->Render());
-            if (i % available_month_columns == 0) {
-                render_data.push_back(hbox(curr_hbox));
-                curr_hbox.clear();
-            }
-            i++;
-        }
-        return window(text(std::to_string(m_displayedYear)), vbox(render_data) | frame ) | vscroll_indicator;
+        return window(text(std::to_string(m_displayedYear)), 
+            vbox(arrangeMonthsInCalendar(month_components, available_month_columns)) | frame) 
+            | vscroll_indicator;
     });
 }
 
@@ -57,9 +63,9 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
         buttons.push_back(createDay(model::Date { day, month, year }));
     }
     m_selectedDay[month - 1] = 0;
-    const auto container = ftxui_ext::Grid(7, buttons, &m_selectedDay[month - 1]);
+    const auto container     = ftxui_ext::Grid(7, buttons, &m_selectedDay[month - 1]);
 
-    auto root_component = Renderer(container, [=,this]() {
+    auto root_component = Renderer(container, [=] {
         const Elements header1 = Elements { cell("M"), cell("T"), cell("W"), cell("T"),
                                             cell("F"), cell("S"), cell("S") } |
                                  underlined;

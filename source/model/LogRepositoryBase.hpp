@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <optional>
 
 namespace clog::model {
 

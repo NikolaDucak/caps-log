@@ -12,19 +12,18 @@ using namespace ftxui;
 using model::Date;
 
 struct CalendarOption {
-    std::function<Element(const Date&, const EntryState&)> transform = nullptr;
-    std::function<void(const Date&)> focusChange = nullptr;
-    std::function<void(const Date&)> enter = nullptr;
+    std::function<Element(const Date&, const EntryState&)> transform;
+    std::function<void(const Date&)> focusChange;
+    std::function<void(const Date&)> enter;
 };
 
 class Calendar : public ComponentBase {
     model::Date m_today;
     Component m_root;
     int m_selectedMonth = 0;
-    int m_selectedDay[12] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::array<int,12> m_selectedDay { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     CalendarOption m_option;
     unsigned m_displayedYear;
-
 
 public:
     Calendar(const model::Date& today, CalendarOption option = {});
