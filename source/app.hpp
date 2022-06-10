@@ -2,11 +2,12 @@
 
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
-#include "model/LogRepositoryBase.hpp"
-#include "model/LogFile.hpp"
+#include "model/log_repository_base.hpp"
+#include "model/log_file.hpp"
 
 #include <iostream>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace clog {
@@ -14,10 +15,16 @@ namespace clog {
 using namespace view;
 using namespace model;
 
+class EditorBase {
+public:
+    virtual void openEditor(const std::string& path) = 0;
+};
+
 class App : public InputHandlerBase {
     unsigned m_displayedYear;
     std::shared_ptr<YearViewBase> m_view;
     std::shared_ptr<LogRepositoryBase> m_repo;
+    std::shared_ptr<EditorBase> m_editor;
     YearLogEntryData m_data;
 
     std::vector<const YearMap<bool>*> m_tagMaps;
@@ -39,11 +46,11 @@ class App : public InputHandlerBase {
     }
 
 public:
-    App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m) :
+    App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m, std::shared_ptr<EditorBase> editor) :
         m_displayedYear(Date::getToday().year),
         m_view{std::move(y)}, m_repo{std::move(m)}, 
+        m_editor{std::move(editor)},
         m_data{m_repo->collectDataForYear(m_displayedYear)} {
-
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -136,8 +143,11 @@ private:
     void handleCalendarButtonClick() {
         m_view->withRestoredIO([this]() {
             auto date = m_view->getFocusedDate();
-            //log.write(LogFile::LOG_FILE_BASE_TEMPLATE);
-            std::system(("$EDITOR " + m_repo->path(date)).c_str());
+            if (not m_data.logAvailabilityMap.get(date)) {
+                auto log = m_repo->readLogFile(date);
+                //if (log) log->write(LogFile::baseTemplate(date)
+            }
+            m_editor->openEditor(m_repo->path(date));
 
             auto log = m_repo->readLogFile(date);
             if (log && !log->hasMeaningfullContent()) {

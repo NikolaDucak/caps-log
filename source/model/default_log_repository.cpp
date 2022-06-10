@@ -1,4 +1,4 @@
-#include "DefaultLogRepository.hpp"
+#include "default_log_repository.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -16,6 +16,12 @@ std::string trim(const std::string& str, const std::string& whitespace = " \t\n"
     const auto strRange = strEnd - strBegin + 1;
 
     return str.substr(strBegin, strRange);
+}
+
+std::string lowercase(std::string data) {
+    std::transform(data.begin(), data.end(), data.begin(),
+    [](unsigned char c){ return std::tolower(c); });
+    return data;
 }
 
 auto sanitize(std::string& s) { return trim(s); }
@@ -81,11 +87,11 @@ void DefaultLogRepository::injectDataForDate(YearLogEntryData& data, const Date&
         std::smatch sm;
 
         if (std::regex_match(line, sm, TASK_REGEX)) {
-            data.taskMap[sm[TASK_TITLE_MATCH]].set(date, true);
+            data.taskMap[lowercase(sm[TASK_TITLE_MATCH])].set(date, true);
         }
 
         if (std::regex_match(line, sm, SECTION_TITLE_REGEX)) {
-            data.sectionMap[sm[SECTION_TITLE_MATCH]].set(date, true);
+            data.sectionMap[lowercase(sm[SECTION_TITLE_MATCH])].set(date, true);
         }
     }
 }

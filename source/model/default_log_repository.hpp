@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LogRepositoryBase.hpp"
+#include "log_repository_base.hpp"
 
 #include <filesystem>
 #include <map>

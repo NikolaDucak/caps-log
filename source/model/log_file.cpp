@@ -1,4 +1,4 @@
-#include "LogFile.hpp"
+#include "log_file.hpp"
 
 #include <filesystem>
 #include <fstream>

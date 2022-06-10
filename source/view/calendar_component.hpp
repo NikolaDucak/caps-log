@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../model/Date.hpp"
+#include "../model/date.hpp"
 #include "./ftxui_ext/extended_containers.hpp"
 
 #include <ftxui/component/component.hpp>

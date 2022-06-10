@@ -10,7 +10,7 @@
 #include <sstream>
 
 namespace clog::view {
-YearlyView::YearlyView(const model::Date& today) :
+YearView::YearView(const model::Date& today) :
     m_screen { ScreenInteractive::Fullscreen() },
     m_calendarButtons { Calendar::make(today, makeCalendarOptions(today)) },
     m_tagsMenu { WindowedMenu::make("Tags", &m_tags,
@@ -30,13 +30,13 @@ YearlyView::YearlyView(const model::Date& today) :
                          } }) },
     m_rootComponent { makeFullUIComponent() } {}
 
-void YearlyView::run() { m_screen.Loop(m_rootComponent); }
+void YearView::run() { m_screen.Loop(m_rootComponent); }
 
-void YearlyView::stop() { m_screen.ExitLoopClosure()(); }
+void YearView::stop() { m_screen.ExitLoopClosure()(); }
 
-void YearlyView::showCalendarForYear(unsigned year) { m_calendarButtons->displayYear(year); }
+void YearView::showCalendarForYear(unsigned year) { m_calendarButtons->displayYear(year); }
 
-void YearlyView::setPreviewString(const std::string& string) {
+void YearView::setPreviewString(const std::string& string) {
     Elements lines;
     std::istringstream input { string };
     for (std::string line; std::getline(input, line);) {
@@ -45,7 +45,7 @@ void YearlyView::setPreviewString(const std::string& string) {
     m_logFileContentsPreview = vbox(lines) | flex_shrink | border | size(HEIGHT, EQUAL, 10);
 }
 
-std::shared_ptr<Promptable> YearlyView::makeFullUIComponent() {
+std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
     
     auto container = ftxui_ext::CustomContainer(
         {
@@ -56,8 +56,7 @@ std::shared_ptr<Promptable> YearlyView::makeFullUIComponent() {
 
     auto whole_ui_renderer = Renderer(container, [this, container] {
         std::stringstream date;
-        //date << "Today: " << model::Date::getToday().formatToString("%d. %m. %Y.");
-        date << "Focused: " << m_calendarButtons->getFocusedDate().formatToString("%d. %m. %Y.");
+        date << "Today: " << model::Date::getToday().formatToString("%d. %m. %Y.");
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep them 
         // centered while the preview window changes and stretches this vbox container than to keep the 
         // preview window size fixed
@@ -77,7 +76,7 @@ std::shared_ptr<Promptable> YearlyView::makeFullUIComponent() {
     return std::make_shared<Promptable>(event_handler);
 }
 
-CalendarOption YearlyView::makeCalendarOptions(const Date& today) {
+CalendarOption YearView::makeCalendarOptions(const Date& today) {
     CalendarOption option;
     option.transform = [this, today] (const auto& date, const auto& state) {
         auto element = text(state.label);
@@ -94,7 +93,7 @@ CalendarOption YearlyView::makeCalendarOptions(const Date& today) {
     // TODO: Ignoring the provided new date only for the controller to ask 
     // for new date is ugly
     option.focusChange = [this](const auto& /* date */) {
-        m_handler->handleInputEvent({ UIEvent::FOCUSED_DATE_CHANGE});
+        m_handler->handleInputEvent({ UIEvent::FOCUSED_DATE_CHANGE });
     };
     option.enter = [this](const auto& /* date */) {
         m_handler->handleInputEvent({ UIEvent::CALENDAR_BUTTON_CLICK });

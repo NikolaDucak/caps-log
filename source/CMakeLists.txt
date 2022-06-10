@@ -11,13 +11,13 @@ add_executable(
     ./view/yearly_view.hpp
     ./view/ftxui_ext/extended_containers.cpp
     ./view/ftxui_ext/extended_containers.hpp
-    ./model/Date.cpp
-    ./model/Date.hpp
-    ./model/DefaultLogRepository.cpp
-    ./model/DefaultLogRepository.hpp
-    ./model/LogRepositoryBase.hpp
-    ./model/LogFile.cpp
-    ./model/LogFile.hpp
+    ./model/date.cpp
+    ./model/date.hpp
+    ./model/default_log_repository.cpp
+    ./model/default_log_repository.hpp
+    ./model/log_repository_base.hpp
+    ./model/log_file.cpp
+    ./model/log_file.hpp
 )
 
 target_link_libraries(clog

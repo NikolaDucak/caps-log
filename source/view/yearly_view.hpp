@@ -1,10 +1,12 @@
 #pragma once
 
-#include "../model/Date.hpp"
+#include "year_view_base.hpp"
+
+#include "../model/date.hpp"
 #include "calendar_component.hpp"
 #include "highlight_menu.hpp"
-#include "input_handler.hpp"
 #include "promptable.hpp"
+
 
 #include <array>
 #include <ftxui/component/captured_mouse.hpp>
@@ -12,39 +14,12 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <sstream>
+
 namespace clog::view {
 
 using namespace ftxui;
 
-
-class YearViewBase {
-public:
-    virtual void run() = 0;
-    virtual void stop() = 0;
-
-    virtual void setInputHandler(InputHandlerBase* handler) = 0;
-
-    virtual model::Date getFocusedDate() const = 0;
-
-    virtual void showCalendarForYear(unsigned year) = 0;
-    virtual void prompt(std::string message, std::function<void()> callback) = 0;
-
-    virtual void setAvailableLogsMap(const model::YearMap<bool>* map) = 0;
-    virtual void setHighlightedLogsMap(const model::YearMap<bool>* map) = 0;
-
-    virtual void setTagMenuItems(std::vector<std::string> items) = 0;
-    virtual void setSectionMenuItems(std::vector<std::string> items) = 0;
-
-    virtual void setPreviewString(const std::string& string)= 0;
-    
-    virtual void withRestoredIO(std::function<void()> func) = 0;
-
-    virtual int& selectedTag() = 0; 
-    virtual int& selectedSection()= 0;
-
-};
-
-class YearlyView : public YearViewBase {
+class YearView : public YearViewBase {
     InputHandlerBase* m_handler;
     ScreenInteractive m_screen;
     std::shared_ptr<Calendar> m_calendarButtons;
@@ -57,7 +32,7 @@ class YearlyView : public YearViewBase {
     std::vector<std::string> m_tags {}, m_sections {};
 
 public:
-    YearlyView(const model::Date& today);
+    YearView(const model::Date& today);
 
     void run() override;
     void stop() override;

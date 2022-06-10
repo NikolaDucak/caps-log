@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Date.hpp"
-#include "LogFile.hpp"
+#include "date.hpp"
+#include "log_file.hpp"
 
 #include <algorithm>
 #include <array>
