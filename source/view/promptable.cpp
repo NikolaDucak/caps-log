@@ -11,23 +11,19 @@ Promptable::Promptable(Component main) : m_main(std::move(main)) {
                }),
         Button("no", [this] { m_depth = 0; }),
     });
-    m_prompt     = Renderer(buttons, [this, buttons]() {
+    m_prompt = Renderer(buttons, [this, buttons]() {
         return vbox(text(m_message), separator(), buttons->Render()) | center;
     });
-    auto tab     = Container::Tab({ m_main, m_prompt }, &m_depth);
+    auto tab = Container::Tab({m_main, m_prompt}, &m_depth);
     Add(tab);
 }
 
-void Promptable::prompt(const std::string& message, std::function<void()> cb) {
+void Promptable::prompt(const std::string &message, std::function<void()> cb) {
     m_message = message;
-    m_cb      = cb;
-    m_depth   = 1;
+    m_cb = cb;
+    m_depth = 1;
 }
 
+Element Promptable::Render() { return (m_depth == 0) ? m_main->Render() : m_prompt->Render(); }
 
-Element Promptable::Render() {
-    return (m_depth == 0) ? m_main->Render() : m_prompt->Render();
-}
-
-
-}
+} // namespace clog::view

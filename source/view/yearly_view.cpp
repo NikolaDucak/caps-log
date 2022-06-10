@@ -11,12 +11,11 @@
 #include <sstream>
 
 namespace clog::view {
-YearView::YearView(const model::Date& today) :
-    m_screen { ScreenInteractive::Fullscreen() }, m_calendarButtons { Calendar::make(
-                                                      today, makeCalendarOptions(today)) },
-    m_tagsMenu { makeSectionsMenu() }, m_sectionsMenu { makeSectionsMenu() }, m_rootComponent {
-        makeFullUIComponent()
-    } {}
+YearView::YearView(const model::Date &today)
+    : m_screen{ScreenInteractive::Fullscreen()}, m_calendarButtons{Calendar::make(
+                                                     today, makeCalendarOptions(today))},
+      m_tagsMenu{makeSectionsMenu()}, m_sectionsMenu{makeSectionsMenu()},
+      m_rootComponent{makeFullUIComponent()} {}
 
 void YearView::run() { m_screen.Loop(m_rootComponent); }
 
@@ -24,9 +23,9 @@ void YearView::stop() { m_screen.ExitLoopClosure()(); }
 
 void YearView::showCalendarForYear(unsigned year) { m_calendarButtons->displayYear(year); }
 
-void YearView::setPreviewString(const std::string& string) {
+void YearView::setPreviewString(const std::string &string) {
     Elements lines;
-    std::istringstream input { string };
+    std::istringstream input{string};
     for (std::string line; std::getline(input, line);) {
         lines.push_back(text(line));
     }
@@ -57,7 +56,7 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
         // TODO: why is e.input() a string? Will i miss some data if i just take the first char?
         // TODO: gotta prevent tab reverse error
         if (not e.is_mouse() && e != Event::TabReverse) {
-            return m_handler->handleInputEvent({ UIEvent::ROOT_EVENT, e.input().front() });
+            return m_handler->handleInputEvent({UIEvent::ROOT_EVENT, e.input().front()});
         };
         return false;
     });
@@ -65,9 +64,9 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
     return std::make_shared<Promptable>(event_handler);
 }
 
-CalendarOption YearView::makeCalendarOptions(const Date& today) {
+CalendarOption YearView::makeCalendarOptions(const Date &today) {
     CalendarOption option;
-    option.transform = [this, today](const auto& date, const auto& state) {
+    option.transform = [this, today](const auto &date, const auto &state) {
         auto element = text(state.label);
         if (state.focused)
             element = element | inverted;
@@ -81,27 +80,26 @@ CalendarOption YearView::makeCalendarOptions(const Date& today) {
     };
     // TODO: Ignoring the provided new date only for the controller to ask
     // for new date is ugly
-    option.focusChange = [this](const auto& /* date */) {
-        m_handler->handleInputEvent({ UIEvent::FOCUSED_DATE_CHANGE });
+    option.focusChange = [this](const auto & /* date */) {
+        m_handler->handleInputEvent({UIEvent::FOCUSED_DATE_CHANGE});
     };
-    option.enter = [this](const auto& /* date */) {
-        m_handler->handleInputEvent({ UIEvent::CALENDAR_BUTTON_CLICK });
+    option.enter = [this](const auto & /* date */) {
+        m_handler->handleInputEvent({UIEvent::CALENDAR_BUTTON_CLICK});
     };
     return std::move(option);
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
-    MenuOption option { .on_change = [this] {
-        m_handler->handleInputEvent({ UIEvent::FOCUSED_TAG_CHANGE, m_tagsMenu->selected() });
-    } };
+    MenuOption option{.on_change = [this] {
+        m_handler->handleInputEvent({UIEvent::FOCUSED_TAG_CHANGE, m_tagsMenu->selected()});
+    }};
     return WindowedMenu::make("Tags", &m_tags, option);
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
-    MenuOption option = { .on_change = [this] {
-        m_handler->handleInputEvent(
-            { UIEvent::FOCUSED_SECTION_CHANGE, m_sectionsMenu->selected() });
-    } };
+    MenuOption option = {.on_change = [this] {
+        m_handler->handleInputEvent({UIEvent::FOCUSED_SECTION_CHANGE, m_sectionsMenu->selected()});
+    }};
     return WindowedMenu::make("Sections", &m_sections, option);
 }
-}  // namespace clog::view
+} // namespace clog::view

@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/component_base.hpp"
@@ -19,11 +19,11 @@ class Promptable : public ComponentBase {
     std::string m_message;
     std::function<void()> m_cb;
 
-public:
+  public:
     Promptable(Component main);
-    void prompt(const std::string& message, std::function<void()> cb);
+    void prompt(const std::string &message, std::function<void()> cb);
 
     Element Render() override;
 };
 
-}
+} // namespace clog::view
