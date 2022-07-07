@@ -49,6 +49,3 @@ After a successfull build. Run: `sudo make install`.
 [ ] preview window focuses parts of the text that matches
 [ ] scrollable preview window
 [ ] mouse wont focus unfocused menus
-
-# done
-[x] date button for today in calendar is not automaticaly set as focused on startup 

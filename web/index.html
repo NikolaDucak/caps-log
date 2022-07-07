@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="cross-origin-opener-policy" content="same-origin" />
+    <meta http-equiv="cross-origin-embedder-policy" content="require-corp" />
+    <title>Captains Log - web terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@4.18.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl@0.11.4/lib/xterm-addon-webgl.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.11.0/css/xterm.css"></link>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Captains log - web terminal</h1>
+      <div id="terminal"></div>
+    </div>
+  </body>
+  <script id="clog_script"></script>
+  <script>
+    let stdin_buffer = [];
+    const stdin = () => {
+      return stdin_buffer.shift() || 0;
+    }
+
+    let stdout_buffer = [];
+    const stdout = code => {
+      if (code == 0) {
+        term.write(new Uint8Array(stdout_buffer));
+        stdout_buffer = [];
+      } else {
+        stdout_buffer.push(code)
+      }
+    }
+    let stderrbuffer = [];
+    const stderr = code => {
+      if (code == 0 || code == 10) {
+        console.error(String.fromCodePoint(...stderrbuffer));
+        stderrbuffer = [];
+      } else {
+        stderrbuffer.push(code)
+      }
+    }
+    const term = new Terminal();
+    term.open(document.querySelector('#terminal'));
+    term.resize(140,43);
+    term.loadAddon(new (WebglAddon.WebglAddon)());
+    const onBinary = e => {
+      for(c of e)
+        stdin_buffer.push(c.charCodeAt(0));
+    }
+    term.onBinary(onBinary);
+    term.onData(onBinary)
+    window.Module = {
+      preRun: () => {
+        FS.init(stdin, stdout, stderr);
+      },
+      postRun: [],
+      onRuntimeInitialized: () => {},
+    };
+    document.querySelector("#clog_script").src = "source/clog.js"
+  </script>
+  <style>
+    body {
+      background-color:#EEE;
+      padding:20px;
+      font-family: Helvetica, sans-serif;
+      font-size: 130%;
+    }
+
+    .page {
+      max-width:1300px;
+      margin: auto;
+    }
+
+    h1 {
+      text-decoration: underline;
+    }
+
+    #terminal {
+      padding:10px;
+      border:none;
+      background-color:black;
+      padding:auto;
+    }
+  </style>
+</html>
+
