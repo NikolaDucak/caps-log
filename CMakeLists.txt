@@ -41,4 +41,25 @@ endif()
 # ---------------------------------- clog -------------------------------- #
 
 add_subdirectory(./source)
-install (TARGETS clog RUNTIME DESTINATION bin)
+
+# ---------------------------------- clog -------------------------------- #
+
+# target_compile_options (clog PUBLIC -fwasm-exceptions -sUSE_PTHREADS)
+# target_link_options (clog PUBLIC -fwasm-exceptions -sASYNCIFY -sUSE_PTHREADS -sPROXY_TO_PTHREAD)
+if (EMSCRIPTEN) 
+    # string(APPEND CMAKE_EXE_LINKER_FLAGS " -s PROXY_TO_PTHREAD") 
+    # target_link_options(component PUBLIC "SHELL: -s ASSERTIONS=1")
+    # -fwasm-exceptions breas asyncify
+    target_compile_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1)
+    target_link_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1 -sPROXY_TO_PTHREAD -sASYNCIFY)
+    
+
+    foreach(file "index.html" "run_webassembly.py")
+        configure_file("web/${file}" ${file})
+    endforeach(file)
+    # Idk
+    em_link_js_library(clog "web/lib.js")
+    set_target_properties(clog_1_lib_js PROPERTIES LINKER_LANGUAGE CXX)
+else()
+    install (TARGETS clog RUNTIME DESTINATION bin)
+endif()

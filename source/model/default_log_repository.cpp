@@ -1,6 +1,7 @@
 #include "default_log_repository.hpp"
 
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <regex>
 
@@ -33,12 +34,13 @@ const std::string DefaultLogRepository::DEFAULT_LOG_DIR_PATH =
 
 const std::string DefaultLogRepository::DEFAULT_LOG_FILENAME_FORMAT = "d%d_%m_%Y.md";
 
-const static auto SECTION_TITLE_REGEX = std::regex{"^# \\s*(.*?)\\s*$"};
-const static auto TASK_REGEX = std::regex{
-    R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))"}; // task title
-                                                                                      // group 3
-const static auto TASK_TITLE_MATCH{5};
-const static auto SECTION_TITLE_MATCH{1};
+const static auto SECTION_TITLE_REGEX = std::regex { "^# \\s*(.*?)\\s*$"};
+const static auto TASK_REGEX          = std::regex {
+    R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))",
+        std::regex_constants::extended
+};
+const static auto TASK_TITLE_MATCH { 5 };
+const static auto SECTION_TITLE_MATCH { 1 };
 
 DefaultLogRepository::DefaultLogRepository(std::string logDirectory, std::string logFilenameFormat)
     : m_logDirectory(logDirectory), m_logFilenameFormat(logFilenameFormat) {

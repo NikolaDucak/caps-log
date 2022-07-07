@@ -2,7 +2,8 @@
 
 #include "../model/date.hpp"
 #include "calendar_component.hpp"
-#include "highlight_menu.hpp"
+#include "windowed_menu.hpp"
+#include "input_handler.hpp"
 #include "promptable.hpp"
 #include "year_view_base.hpp"
 
@@ -18,7 +19,7 @@ namespace clog::view {
 using namespace ftxui;
 
 class YearView : public YearViewBase {
-    InputHandlerBase *m_handler;
+    InputHandlerBase* m_handler;
     ScreenInteractive m_screen;
     std::shared_ptr<Calendar> m_calendarButtons;
     std::shared_ptr<WindowedMenu> m_tagsMenu, m_sectionsMenu;
@@ -41,33 +42,31 @@ class YearView : public YearViewBase {
         m_rootComponent->prompt(message, onYesCallback);
     }
 
-    int &selectedTag() override { return m_tagsMenu->selected(); }
-    int &selectedSection() override { return m_sectionsMenu->selected(); }
+    int& selectedTag() override { return m_tagsMenu->selected(); }
+    int& selectedSection() override { return m_sectionsMenu->selected(); }
 
-    void setInputHandler(InputHandlerBase *handler) override { m_handler = handler; }
+    void setInputHandler(InputHandlerBase* handler) override { m_handler = handler; }
 
-    void setAvailableLogsMap(const model::YearMap<bool> *map) override { m_availabeLogsMap = map; }
-    void setHighlightedLogsMap(const model::YearMap<bool> *map) override {
-        m_highlightedLogsMap = map;
-    }
+    void setAvailableLogsMap(const model::YearMap<bool>* map) override { m_availabeLogsMap = map; }
+    void setHighlightedLogsMap(const model::YearMap<bool>* map) override { m_highlightedLogsMap = map; }
 
     void setTagMenuItems(std::vector<std::string> items) override { m_tags = std::move(items); }
 
-    void setSectionMenuItems(std::vector<std::string> items) override {
-        m_sections = std::move(items);
-    }
+    void setSectionMenuItems(std::vector<std::string> items) override { m_sections = std::move(items); }
 
-    void setPreviewString(const std::string &string) override;
+    void setPreviewString(const std::string& string) override;
 
-    // temporay restore terminal to its roriginal state
-    // to executa a function. used to start the editor
+    /**
+     * Temporay restore terminal to its roriginal state
+     * to executa a function. used to start the editor
+     */
     void withRestoredIO(std::function<void()> func) override { m_screen.WithRestoredIO(func)(); }
 
     model::Date getFocusedDate() const override { return m_calendarButtons->getFocusedDate(); }
 
-  private:
+private:
     std::shared_ptr<Promptable> makeFullUIComponent();
-    CalendarOption makeCalendarOptions(const Date &today);
+    CalendarOption makeCalendarOptions(const Date& today);
     std::shared_ptr<WindowedMenu> makeTagsMenu();
     std::shared_ptr<WindowedMenu> makeSectionsMenu();
 };

@@ -5,7 +5,6 @@
 #include "ftxui/dom/elements.hpp"
 #include "ftxui/dom/flexbox_config.hpp"
 #include "ftxui_ext/extended_containers.hpp"
-#include "highlight_menu.hpp"
 
 #include <ftxui/screen/terminal.hpp>
 #include <sstream>
@@ -80,8 +79,8 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
     };
     // TODO: Ignoring the provided new date only for the controller to ask
     // for new date is ugly
-    option.focusChange = [this](const auto & /* date */) {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_DATE_CHANGE});
+    option.focusChange = [this](const auto& /* date */) {
+        m_handler->handleInputEvent({ UIEvent::FOCUSED_DATE_CHANGE });
     };
     option.enter = [this](const auto & /* date */) {
         m_handler->handleInputEvent({UIEvent::CALENDAR_BUTTON_CLICK});

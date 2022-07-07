@@ -21,7 +21,7 @@ add_executable(
 )
 
 target_link_libraries(clog
-    PRIVATE ftxui::screen
-    PRIVATE ftxui::dom
-    PRIVATE ftxui::component 
+    ftxui::screen
+    ftxui::dom
+    ftxui::component 
 )

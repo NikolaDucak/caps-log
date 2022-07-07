@@ -21,12 +21,12 @@ class Calendar : public ComponentBase {
     model::Date m_today;
     Component m_root;
     int m_selectedMonth = 0;
-    int m_selectedDay[12]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::array<int,12> m_selectedDay { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     CalendarOption m_option;
     unsigned m_displayedYear;
 
-  public:
-    Calendar(const model::Date &today, CalendarOption option = {});
+public:
+    Calendar(const model::Date& today, CalendarOption option = {});
     auto root() { return m_root; }
 
     void displayYear(unsigned year) {
