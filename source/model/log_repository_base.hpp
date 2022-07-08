@@ -34,6 +34,7 @@ class LogRepositoryBase {
     virtual LogFile readOrMakeLogFile(const Date &date) = 0;
     virtual void removeLog(const Date &date) = 0;
     virtual std::string path(const Date &date) = 0;
+
 };
 
 } // namespace clog::model

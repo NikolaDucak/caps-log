@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
-# ------------------------------- Fetch FTXUI ----------------------------- #
+# ------------------------------ Fetch FTXUI ----------------------------- #
  
 set(FETCHCONTENT_UPDATES_DISCONNECTED TRUE)
 FetchContent_Declare(ftxui GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui)
@@ -20,7 +20,7 @@ if(NOT ftxui_POPULATED)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-# ---------------------------------- gtest -------------------------------- #
+# --------------------------------- gtest -------------------------------- #
 
 if(${BUILD_TESTS})
     message("Tests will be built")
@@ -42,24 +42,18 @@ endif()
 
 add_subdirectory(./source)
 
-# ---------------------------------- clog -------------------------------- #
+# -------------------------------- clog-web ------------------------------ #
 
-# target_compile_options (clog PUBLIC -fwasm-exceptions -sUSE_PTHREADS)
-# target_link_options (clog PUBLIC -fwasm-exceptions -sASYNCIFY -sUSE_PTHREADS -sPROXY_TO_PTHREAD)
 if (EMSCRIPTEN) 
-    # string(APPEND CMAKE_EXE_LINKER_FLAGS " -s PROXY_TO_PTHREAD") 
-    # target_link_options(component PUBLIC "SHELL: -s ASSERTIONS=1")
-    # -fwasm-exceptions breas asyncify
     target_compile_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1)
     target_link_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1 -sPROXY_TO_PTHREAD -sASYNCIFY)
-    
 
     foreach(file "index.html" "run_webassembly.py")
         configure_file("web/${file}" ${file})
     endforeach(file)
-    # Idk
+
     em_link_js_library(clog "web/lib.js")
-    set_target_properties(clog_1_lib_js PROPERTIES LINKER_LANGUAGE CXX)
+    set_target_properties(clog_1_lib_js PROPERTIES LINKER_LANGUAGE CXX) # ... cmake complains without this
 else()
     install (TARGETS clog RUNTIME DESTINATION bin)
 endif()

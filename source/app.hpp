@@ -1,5 +1,6 @@
 #pragma once
 
+#include "editor_base.hpp"
 #include "model/log_file.hpp"
 #include "model/log_repository_base.hpp"
 #include "view/input_handler.hpp"
@@ -14,11 +15,6 @@ namespace clog {
 
 using namespace view;
 using namespace model;
-
-class EditorBase {
-  public:
-    virtual void openEditor(const std::string &path) = 0;
-};
 
 class App : public InputHandlerBase {
     unsigned m_displayedYear;

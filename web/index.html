@@ -18,9 +18,7 @@
   <script id="clog_script"></script>
   <script>
     let stdin_buffer = [];
-    const stdin = () => {
-      return stdin_buffer.shift() || 0;
-    }
+    const stdin = () => { return stdin_buffer.shift() || 0; }
 
     let stdout_buffer = [];
     const stdout = code => {
@@ -40,7 +38,7 @@
         stderrbuffer.push(code)
       }
     }
-    const term = new Terminal();
+    const term = new Terminal( { theme: { background: '#282c34' } });
     term.open(document.querySelector('#terminal'));
     term.resize(140,43);
     term.loadAddon(new (WebglAddon.WebglAddon)());
@@ -61,10 +59,13 @@
   </script>
   <style>
     body {
-      background-color:#EEE;
-      padding:20px;
-      font-family: Helvetica, sans-serif;
-      font-size: 130%;
+      margin: 0;
+      background-color: #282c34;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .page {
@@ -79,9 +80,10 @@
     #terminal {
       padding:10px;
       border:none;
-      background-color:black;
+      background-color:inherit;
       padding:auto;
     }
+
   </style>
 </html>
 
