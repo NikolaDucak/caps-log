@@ -1,52 +1,17 @@
 #include "app.hpp"
-#include "model/DefaultLogRepository.hpp"
-#include "model/LogRepositoryBase.hpp"
-#include "view/input_handler.hpp"
-#include "view/yearly_view.hpp"
-#include <gmock/gmock-actions.h>
-#include <gmock/gmock-more-actions.h>
-#include <gmock/gmock-nice-strict.h>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-#include <iostream>
-#include <filesystem>
+#include "mocks.hpp"
+
+#include "model/default_log_repository.hpp"
 #include <fstream>
 
 using namespace clog;
 using namespace testing;
 
-class MockYearView : public view::YearViewBase {
-public:
-    MOCK_METHOD(void, run, (), (override));
-    MOCK_METHOD(void, stop, (), (override));
-    MOCK_METHOD(void, setInputHandler , (InputHandlerBase* handler), (override));
-    MOCK_METHOD(model::Date, getFocusedDate, (), (const override));
-    MOCK_METHOD(void, showCalendarForYear, (unsigned year), (override));
-    MOCK_METHOD(void, prompt, (std::string message, std::function<void()> callback), (override));
-    MOCK_METHOD(void, setAvailableLogsMap, (const model::YearMap<bool>* map), (override));
-    MOCK_METHOD(void, setHighlightedLogsMap, (const model::YearMap<bool>* map), (override));
-    MOCK_METHOD(void, setTagMenuItems, (std::vector<std::string> items), (override));
-    MOCK_METHOD(void, setSectionMenuItems, (std::vector<std::string> items), (override));
-    MOCK_METHOD(void, setPreviewString, (const std::string& string), (override));
-    MOCK_METHOD(void, withRestoredIO, (std::function<void()> func), (override));
-    MOCK_METHOD(int&, selectedTag, (), (override));
-    MOCK_METHOD(int&, selectedSection, (), (override));
-};
-
-class MockRepo : public model::LogRepositoryBase {
-public:
-    MOCK_METHOD(YearLogEntryData , collectDataForYear, (unsigned year), (override));
-    MOCK_METHOD(void, injectDataForDate, (YearLogEntryData&, const Date&), (override));
-    MOCK_METHOD(std::optional<LogFile>, readLogFile,(const Date& date), (override));
-    MOCK_METHOD(LogFile, readOrMakeLogFile, (const Date& date), (override));
-    MOCK_METHOD(void, removeLog, (const Date& date), (override));
-    MOCK_METHOD(std::string, path, (const Date& date), (override));
-};
-
 TEST(ContollerTest, EscQuits) {
-    const auto mock_view = std::make_shared<testing::NiceMock<MockYearView>>();
-    const auto mock_repo = std::make_shared<testing::NiceMock<MockRepo>>();
-    auto clog = clog::App{mock_view, mock_repo};
+    const auto mock_view   = std::make_shared<testing::NiceMock<MockYearView>>();
+    const auto mock_repo   = std::make_shared<testing::NiceMock<MockRepo>>();
+    const auto mock_editor = std::make_shared<MockEditor>();
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -58,8 +23,9 @@ TEST(ContollerTest, EscQuits) {
 }
 
 TEST(ContollerTest, RemoveLog) {
-    const auto mock_view = std::make_shared<testing::NiceMock<MockYearView>>();
-    const auto mock_repo = std::make_shared<testing::NiceMock<MockRepo>>();
+    const auto mock_view   = std::make_shared<testing::NiceMock<MockYearView>>();
+    const auto mock_repo   = std::make_shared<testing::NiceMock<MockRepo>>();
+    const auto mock_editor = std::make_shared<MockEditor>();
     const auto selectedDate = model::Date{25,5,2005};
     auto map = YearMap<bool>{};
     map.set(selectedDate, true);
@@ -67,7 +33,7 @@ TEST(ContollerTest, RemoveLog) {
 
     EXPECT_CALL(*mock_repo, collectDataForYear(model::Date::getToday().year))
         .WillOnce(Return(data));
-    auto clog = clog::App{mock_view, mock_repo};
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -88,7 +54,8 @@ TEST(ContollerTest, RemoveLog) {
 TEST(ContollerTest, AddLog) {
     const auto mock_view = std::make_shared<testing::NiceMock<MockYearView>>();
     const auto mock_repo = std::make_shared<testing::NiceMock<MockRepo>>();
-    auto clog = clog::App{mock_view, mock_repo};
+    const auto mock_editor = std::make_shared<MockEditor>();
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, '\x1B'});

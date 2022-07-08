@@ -7,7 +7,7 @@
  * with the provided file loaded. Clog so provides 2 implementations: "EDITOR" environment 
  * variable based and disabled editor that does nothing currently used for WASM clog version.
  */
-namespace clog {
+namespace clog::editor {
 
 class EditorBase {
 public:

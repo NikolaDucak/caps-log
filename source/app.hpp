@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor_base.hpp"
+#include "editor/editor_base.hpp"
 #include "model/log_file.hpp"
 #include "model/log_repository_base.hpp"
 #include "view/input_handler.hpp"
@@ -15,6 +15,7 @@ namespace clog {
 
 using namespace view;
 using namespace model;
+using namespace editor;
 
 class App : public InputHandlerBase {
     unsigned m_displayedYear;

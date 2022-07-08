@@ -2,9 +2,9 @@
 
 #include "editor_base.hpp"
 
-namespace clog {
+namespace clog::editor {
 
-class DisabledEditor : public clog::EditorBase {
+class DisabledEditor : public EditorBase {
 public:
     void openEditor(const std::string &path) { }
 };

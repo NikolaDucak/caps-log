@@ -1,6 +1,6 @@
 #pragma once
 
-#include "date.hpp"
+#include "date/date.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -8,6 +8,8 @@
 #include <vector>
 
 namespace clog::model {
+
+using namespace date;
 
 class LogFile {
     friend class LogRepository;
@@ -18,13 +20,11 @@ class LogFile {
     static const std::string LOG_FILE_BASE_TEMPLATE;
 
     bool hasMeaningfullContent();
-    LogFile(std::string content) : m_content(content) {}
+    LogFile(std::string content) : m_content(std::move(content)) {}
 
     LogFile(const Date &date, std::string content) : m_content(std::move(content)) {}
 
     std::string getContent() { return m_content; }
-
-  private:
 };
 
 } // namespace clog::model

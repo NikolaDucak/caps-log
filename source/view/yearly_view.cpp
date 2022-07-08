@@ -10,7 +10,7 @@
 #include <sstream>
 
 namespace clog::view {
-YearView::YearView(const model::Date &today)
+YearView::YearView(const date::Date &today)
     : m_screen{ScreenInteractive::Fullscreen()}, m_calendarButtons{Calendar::make(
                                                      today, makeCalendarOptions(today))},
       m_tagsMenu{makeSectionsMenu()}, m_sectionsMenu{makeSectionsMenu()},
@@ -79,8 +79,8 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
     };
     // TODO: Ignoring the provided new date only for the controller to ask
     // for new date is ugly
-    option.focusChange = [this](const auto& /* date */) {
-        m_handler->handleInputEvent({ UIEvent::FOCUSED_DATE_CHANGE });
+    option.focusChange = [this](const auto & /* date */) {
+        m_handler->handleInputEvent({UIEvent::FOCUSED_DATE_CHANGE});
     };
     option.enter = [this](const auto & /* date */) {
         m_handler->handleInputEvent({UIEvent::CALENDAR_BUTTON_CLICK});

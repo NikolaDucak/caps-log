@@ -20,21 +20,8 @@ if(NOT ftxui_POPULATED)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-# --------------------------------- gtest -------------------------------- #
-
 if(${BUILD_TESTS})
     message("Tests will be built")
-    set(INSTALL_GTEST OFF)
-
-    FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-    )
-
-    # For Windows: Prevent overriding the parent project's compiler/linker settings
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
-
     add_subdirectory(./test)
 endif()
 
@@ -57,5 +44,5 @@ if (EMSCRIPTEN)
     em_link_js_library(clog "web/lib.js")
     set_target_properties(clog_1_lib_js PROPERTIES LINKER_LANGUAGE CXX) # ... cmake complains without this
 else()
-    install (TARGETS clog RUNTIME DESTINATION bin)
+    install(TARGETS clog RUNTIME DESTINATION bin)
 endif()

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../model/date.hpp"
+#include "date/date.hpp"
 
 namespace clog::view {
 

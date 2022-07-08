@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../model/date.hpp"
+#include "date/date.hpp"
 #include "calendar_component.hpp"
 #include "windowed_menu.hpp"
 #include "input_handler.hpp"
@@ -18,6 +18,8 @@ namespace clog::view {
 
 using namespace ftxui;
 
+using namespace date;
+
 class YearView : public YearViewBase {
     InputHandlerBase* m_handler;
     ScreenInteractive m_screen;
@@ -26,12 +28,12 @@ class YearView : public YearViewBase {
     std::shared_ptr<Promptable> m_rootComponent;
     Element m_logFileContentsPreview;
 
-    const model::YearMap<bool> *m_highlightedLogsMap = nullptr;
-    const model::YearMap<bool> *m_availabeLogsMap = nullptr;
+    const YearMap<bool> *m_highlightedLogsMap = nullptr;
+    const YearMap<bool> *m_availabeLogsMap = nullptr;
     std::vector<std::string> m_tags{}, m_sections{};
 
   public:
-    YearView(const model::Date &today);
+    YearView(const Date &today);
 
     void run() override;
     void stop() override;
@@ -47,8 +49,8 @@ class YearView : public YearViewBase {
 
     void setInputHandler(InputHandlerBase* handler) override { m_handler = handler; }
 
-    void setAvailableLogsMap(const model::YearMap<bool>* map) override { m_availabeLogsMap = map; }
-    void setHighlightedLogsMap(const model::YearMap<bool>* map) override { m_highlightedLogsMap = map; }
+    void setAvailableLogsMap(const YearMap<bool>* map) override { m_availabeLogsMap = map; }
+    void setHighlightedLogsMap(const YearMap<bool>* map) override { m_highlightedLogsMap = map; }
 
     void setTagMenuItems(std::vector<std::string> items) override { m_tags = std::move(items); }
 
@@ -62,7 +64,7 @@ class YearView : public YearViewBase {
      */
     void withRestoredIO(std::function<void()> func) override { m_screen.WithRestoredIO(func)(); }
 
-    model::Date getFocusedDate() const override { return m_calendarButtons->getFocusedDate(); }
+    Date getFocusedDate() const override { return m_calendarButtons->getFocusedDate(); }
 
 private:
     std::shared_ptr<Promptable> makeFullUIComponent();

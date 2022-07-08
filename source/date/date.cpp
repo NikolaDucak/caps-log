@@ -1,14 +1,16 @@
 #include "date.hpp"
 
 #include <array>
+#include <cassert>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
-namespace clog::model {
+namespace clog::date {
 
 namespace {
+
 std::tm dateToTm(const Date &d) {
     std::tm t{};
     t.tm_mon = d.month - 1;
@@ -130,4 +132,4 @@ std::string getStringNameForMonth(unsigned month) {
     return month_names.at(month);
 }
 
-} // namespace clog::model
+} // namespace clog::date

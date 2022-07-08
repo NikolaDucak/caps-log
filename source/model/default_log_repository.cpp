@@ -1,31 +1,16 @@
 #include "default_log_repository.hpp"
 
+#include "utils/string.hpp"
 #include <fstream>
-#include <sstream>
 #include <iostream>
 #include <regex>
+#include <sstream>
 
 namespace clog::model {
 
 namespace {
-std::string trim(const std::string &str, const std::string &whitespace = " \t\n") {
-    const auto strBegin = str.find_first_not_of(whitespace);
-    if (strBegin == std::string::npos)
-        return ""; // no content
 
-    const auto strEnd = str.find_last_not_of(whitespace);
-    const auto strRange = strEnd - strBegin + 1;
-
-    return str.substr(strBegin, strRange);
-}
-
-std::string lowercase(std::string data) {
-    std::transform(data.begin(), data.end(), data.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-    return data;
-}
-
-auto sanitize(std::string &s) { return trim(s); }
+auto sanitize(std::string &s) { return utils::trim(s); }
 
 } // namespace
 
@@ -34,13 +19,12 @@ const std::string DefaultLogRepository::DEFAULT_LOG_DIR_PATH =
 
 const std::string DefaultLogRepository::DEFAULT_LOG_FILENAME_FORMAT = "d%d_%m_%Y.md";
 
-const static auto SECTION_TITLE_REGEX = std::regex { "^# \\s*(.*?)\\s*$"};
-const static auto TASK_REGEX          = std::regex {
-    R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))",
-        std::regex_constants::extended
-};
-const static auto TASK_TITLE_MATCH { 5 };
-const static auto SECTION_TITLE_MATCH { 1 };
+const static auto SECTION_TITLE_REGEX = std::regex{"^# \\s*(.*?)\\s*$"};
+const static auto TASK_REGEX =
+    std::regex{R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))",
+               std::regex_constants::extended};
+const static auto TASK_TITLE_MATCH{5};
+const static auto SECTION_TITLE_MATCH{1};
 
 DefaultLogRepository::DefaultLogRepository(std::string logDirectory, std::string logFilenameFormat)
     : m_logDirectory(logDirectory), m_logFilenameFormat(logFilenameFormat) {
@@ -89,18 +73,18 @@ void DefaultLogRepository::injectDataForDate(YearLogEntryData &data, const Date 
         std::smatch sm;
 
         if (std::regex_match(line, sm, TASK_REGEX)) {
-            data.taskMap[lowercase(sm[TASK_TITLE_MATCH])].set(date, true);
+            data.taskMap[utils::lowercase(sm[TASK_TITLE_MATCH])].set(date, true);
         }
 
         if (std::regex_match(line, sm, SECTION_TITLE_REGEX)) {
-            data.sectionMap[lowercase(sm[SECTION_TITLE_MATCH])].set(date, true);
+            data.sectionMap[utils::lowercase(sm[SECTION_TITLE_MATCH])].set(date, true);
         }
     }
 }
 
 YearLogEntryData DefaultLogRepository::collectDataForYear(unsigned year) {
     YearLogEntryData d;
-    for (unsigned month = Month::JANUARY; month <= Month::DECEMBER; month++) {
+    for (unsigned month = date::Month::JANUARY; month <= Month::DECEMBER; month++) {
         for (unsigned day = 1; day <= getNumberOfDaysForMonth(month, year); day++) {
             injectDataForDate(d, Date{day, month, year});
         }

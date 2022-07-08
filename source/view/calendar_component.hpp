@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../model/date.hpp"
-#include "./ftxui_ext/extended_containers.hpp"
+#include "date/date.hpp"
+#include "view/ftxui_ext/extended_containers.hpp"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -9,7 +9,7 @@
 namespace clog::view {
 
 using namespace ftxui;
-using model::Date;
+using date::Date;
 
 struct CalendarOption {
     std::function<Element(const Date &, const EntryState &)> transform = nullptr;
@@ -18,7 +18,7 @@ struct CalendarOption {
 };
 
 class Calendar : public ComponentBase {
-    model::Date m_today;
+    Date m_today;
     Component m_root;
     int m_selectedMonth = 0;
     std::array<int,12> m_selectedDay { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -26,7 +26,7 @@ class Calendar : public ComponentBase {
     unsigned m_displayedYear;
 
 public:
-    Calendar(const model::Date& today, CalendarOption option = {});
+    Calendar(const Date& today, CalendarOption option = {});
     auto root() { return m_root; }
 
     void displayYear(unsigned year) {
@@ -52,20 +52,20 @@ public:
 
     // TODO: perhaps it would be nicer to get a pointer to a Date where
     // this component stores the focused Date, it would be more like ftxui
-    model::Date getFocusedDate() {
+    Date getFocusedDate() {
         const auto activeMonth = m_selectedMonth;
         const auto activeDay = m_selectedDay[m_selectedMonth];
         return {(unsigned int)activeDay + 1, (unsigned int)activeMonth + 1, m_displayedYear};
     }
 
-    static inline auto make(const model::Date &today, CalendarOption option = {}) {
+    static inline auto make(const Date &today, CalendarOption option = {}) {
         return std::make_shared<Calendar>(today, option);
     }
 
   private:
     Component createYear(unsigned year);
     Component createMonth(unsigned month, unsigned year);
-    Component createDay(const model::Date &date);
+    Component createDay(const Date &date);
 };
 
 } // namespace clog::view

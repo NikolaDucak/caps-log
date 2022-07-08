@@ -5,9 +5,9 @@
 
 #include "editor_base.hpp"
 
-namespace clog {
+namespace clog::editor {
 
-class EnvBasedEditor : public clog::EditorBase {
+class EnvBasedEditor : public EditorBase {
   public:
     void openEditor(const std::string &path) {
         if (std::getenv("EDITOR")) {
