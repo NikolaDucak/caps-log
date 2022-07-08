@@ -45,6 +45,8 @@ add_subdirectory(./source)
 # -------------------------------- clog-web ------------------------------ #
 
 if (EMSCRIPTEN) 
+    message(STATUS "WASM build enabled")
+    target_compile_definitions(clog PUBLIC WASM_BUILD)
     target_compile_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1)
     target_link_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1 -sPROXY_TO_PTHREAD -sASYNCIFY)
 

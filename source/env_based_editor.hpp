@@ -11,7 +11,7 @@ class EnvBasedEditor : public clog::EditorBase {
   public:
     void openEditor(const std::string &path) {
         if (std::getenv("EDITOR")) {
-            std::system(("$EDITOR" + path).c_str());
+            std::system(("$EDITOR " + path).c_str());
         }
     }
 };

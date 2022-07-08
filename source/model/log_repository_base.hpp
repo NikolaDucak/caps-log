@@ -35,6 +35,15 @@ class LogRepositoryBase {
     virtual void removeLog(const Date &date) = 0;
     virtual std::string path(const Date &date) = 0;
 
+    // virtual exists(const Date&);
+    // virtual std::optional<LogEntry> read(const Date&);
+    // virtual void write(LogEntry&);
+    // virtaul void delete(const Date&);
+    //
+    // virtual YearOverviewData collectOverviewDataForYear();
+    // virtual injectOverviewDataForDate(YearOverviewData&);
+    //
+    // std::string path()
 };
 
 } // namespace clog::model

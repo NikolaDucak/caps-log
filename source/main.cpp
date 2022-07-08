@@ -23,10 +23,18 @@ auto makeTUIClog() {
     return clog::App {view, repo, editor};
 }
 
+auto makeClog() {
+#ifdef WASM_BUILD
+    return makeWASMClog();
+#else
+    return makeTUIClog();
+#endif
+}
+
 int main() try {
-    // TODO: switch based on compile flags
-    makeWASMClog().run();
+    makeClog().run();
+    return 0;
 } catch(std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
-    std::cout << '\0'<< std::endl;
+    std::cout << "Error: " << e.what() << '\0'<< std::endl;
+    return 1;
 }
