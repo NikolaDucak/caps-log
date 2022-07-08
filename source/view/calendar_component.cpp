@@ -21,7 +21,7 @@ Elements arrangeMonthsInCalendar(const Components &monthComponents, int columns)
 }
 } // namespace
 
-Calendar::Calendar(const model::Date &today, CalendarOption option)
+Calendar::Calendar(const Date &today, CalendarOption option)
     : m_today(today),
       // TODO: SetActiveChild does nothing, this is the only
       // way to focus a specific date on startup. Investigate.
@@ -57,11 +57,11 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
         return center(text(txt)) | size(WIDTH, EQUAL, 3) | size(HEIGHT, EQUAL, 1);
     };
 
-    const auto num_of_days = model::getNumberOfDaysForMonth(month, year);
+    const auto num_of_days = date::getNumberOfDaysForMonth(month, year);
 
     Components buttons;
     for (unsigned day = 1; day <= num_of_days; day++) {
-        buttons.push_back(createDay(model::Date{day, month, year}));
+        buttons.push_back(createDay(Date{day, month, year}));
     }
     m_selectedDay[month - 1] = 0;
     const auto container = ftxui_ext::Grid(7, buttons, &m_selectedDay[month - 1]);
@@ -71,7 +71,7 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
             Elements{cell("M"), cell("T"), cell("W"), cell("T"), cell("F"), cell("S"), cell("S")} |
             underlined;
         std::vector<Elements> render_data = {header1, {}};
-        auto starting_weekday = clog::model::getStartingWeekdayForMonth(month, m_displayedYear);
+        auto starting_weekday = date::getStartingWeekdayForMonth(month, m_displayedYear);
         unsigned curren_weekday = starting_weekday - 1, calendar_day = 1;
         for (int i = 1; i < starting_weekday; i++) {
             render_data.back().push_back(filler());
@@ -84,13 +84,13 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
             calendar_day++;
             curren_weekday++;
         }
-        return window(text(model::getStringNameForMonth(month)), gridbox(render_data));
+        return window(text(date::getStringNameForMonth(month)), gridbox(render_data));
     });
 
     return root_component;
 }
 
-Component Calendar::createDay(const model::Date &date) {
+Component Calendar::createDay(const date::Date &date) {
     return Button(
         std::to_string(date.day), [this, date]() { m_option.enter(date); },
         ButtonOption{.transform = [this, date](const auto &state) {

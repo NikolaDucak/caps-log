@@ -1,4 +1,4 @@
-#include "editor_base.hpp"
+#include "editor/editor_base.hpp"
 #include "model/log_repository_base.hpp"
 #include "view/input_handler.hpp"
 #include "view/year_view_base.hpp"
