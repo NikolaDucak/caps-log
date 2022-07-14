@@ -6,7 +6,7 @@ namespace clog::model {
 
 class DummyRepo: public clog::model::LogRepositoryBase {
 public:
-     YearLogEntryData collectDataForYear(unsigned year) override {
+     YearOverviewData collectYearOverviewData(unsigned year) const override {
          YearMap<bool> map;
          map.set(Date::getToday(), true);
          return {
@@ -17,19 +17,18 @@ public:
          };
     }
 
-     void injectDataForDate(YearLogEntryData& data, const Date& date) override {
+     void injectOverviewDataForDate(YearOverviewData& data, const Date& date) const override {
          data.logAvailabilityMap.set(date, true);
      }
 
-     std::optional<LogFile> readLogFile(const Date& date) override{
-         return LogFile{"Some dummy content"};
+     std::optional<LogFile> read(const Date& date) const override {
+         return LogFile{"Some dummy content..."};
      };
 
-     LogFile readOrMakeLogFile(const Date& date) override {
-         return LogFile{"newly created or read log file"};
-     }
+     void remove(const Date& date) override { }
 
-     void removeLog(const Date& date) override { }
+     void write(const LogFile& date) override { }
+
      std::string path(const Date& date) override { return "/dummy/path"; }
 };
 

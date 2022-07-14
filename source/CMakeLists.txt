@@ -16,6 +16,7 @@ add_executable(
     ./model/default_log_repository.cpp
     ./model/default_log_repository.hpp
     ./model/log_repository_base.hpp
+    ./model/online_repository.hpp
     ./model/log_file.cpp
     ./model/log_file.hpp
 
@@ -29,4 +30,5 @@ target_link_libraries(clog
     ftxui::screen
     ftxui::dom
     ftxui::component 
+    nlohmann_json::nlohmann_json
 )

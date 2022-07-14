@@ -35,7 +35,7 @@ std::filesystem::path DefaultLogRepository::dateToLogFilePath(const Date &d) con
     return {m_logDirectory + "/" + d.formatToString(m_logFilenameFormat)};
 }
 
-void DefaultLogRepository::injectDataForDate(YearLogEntryData &data, const Date &date) {
+void DefaultLogRepository::injectOverviewDataForDate(YearOverviewData &data, const Date &date) const {
     std::ifstream input(dateToLogFilePath(date));
 
     // see if the log is available for that date and update the map
@@ -82,17 +82,17 @@ void DefaultLogRepository::injectDataForDate(YearLogEntryData &data, const Date 
     }
 }
 
-YearLogEntryData DefaultLogRepository::collectDataForYear(unsigned year) {
-    YearLogEntryData d;
+YearOverviewData DefaultLogRepository::collectYearOverviewData(unsigned year) const {
+    YearOverviewData data;
     for (unsigned month = date::Month::JANUARY; month <= Month::DECEMBER; month++) {
         for (unsigned day = 1; day <= getNumberOfDaysForMonth(month, year); day++) {
-            injectDataForDate(d, Date{day, month, year});
+            injectOverviewDataForDate(data, Date{day, month, year});
         }
     }
-    return std::move(d);
+    return std::move(data);
 }
 
-std::optional<LogFile> DefaultLogRepository::readLogFile(const Date &date) {
+std::optional<LogFile> DefaultLogRepository::read(const Date &date) const {
     std::ifstream t(dateToLogFilePath(date));
     if (t.is_open()) {
         std::stringstream buffer;
@@ -103,25 +103,7 @@ std::optional<LogFile> DefaultLogRepository::readLogFile(const Date &date) {
     }
 }
 
-LogFile DefaultLogRepository::readOrMakeLogFile(const Date &date) {
-    std::ifstream t(dateToLogFilePath(date));
-    if (t.is_open()) {
-        std::stringstream buffer;
-        buffer << t.rdbuf();
-        return LogFile{buffer.str()};
-    } else {
-        return LogFile{""};
-    }
-}
-
-std::string DefaultLogRepository::readFile(const Date &date) {
-    std::ifstream t(dateToLogFilePath(date));
-    std::stringstream buffer;
-    buffer << t.rdbuf();
-    return buffer.str();
-}
-
-void DefaultLogRepository::removeLog(const Date &date) {
+void DefaultLogRepository::remove(const Date &date) {
     auto result = std::remove(dateToLogFilePath(date).c_str());
 }
 

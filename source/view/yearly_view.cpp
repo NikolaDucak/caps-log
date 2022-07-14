@@ -10,10 +10,12 @@
 #include <sstream>
 
 namespace clog::view {
+
 YearView::YearView(const date::Date &today)
-    : m_screen{ScreenInteractive::Fullscreen()}, m_calendarButtons{Calendar::make(
-                                                     today, makeCalendarOptions(today))},
-      m_tagsMenu{makeSectionsMenu()}, m_sectionsMenu{makeSectionsMenu()},
+    : m_screen{ScreenInteractive::Fullscreen()}, 
+      m_calendarButtons{Calendar::make(today, makeCalendarOptions(today))},
+      m_tagsMenu{makeSectionsMenu()},
+      m_sectionsMenu{makeSectionsMenu()},
       m_rootComponent{makeFullUIComponent()} {}
 
 void YearView::run() { m_screen.Loop(m_rootComponent); }

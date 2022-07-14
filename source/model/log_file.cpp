@@ -45,8 +45,8 @@ const std::string LogFile::LOG_FILE_BASE_TEMPLATE =
 )";
 
 bool LogFile::hasMeaningfullContent() {
-    // it is meaningless if it has all empty sections
-    return true;
+    // TODO: maybe check if its more than a base template
+    return not m_content.empty();
 }
 
 } // namespace clog::model

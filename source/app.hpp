@@ -22,19 +22,19 @@ class App : public InputHandlerBase {
     std::shared_ptr<YearViewBase> m_view;
     std::shared_ptr<LogRepositoryBase> m_repo;
     std::shared_ptr<EditorBase> m_editor;
-    YearLogEntryData m_data;
+    YearOverviewData m_data;
 
     std::vector<const YearMap<bool> *> m_tagMaps;
     std::vector<const YearMap<bool> *> m_sectionMaps;
 
     void updateViewSectionsAndTagsAfterLogChange(const Date &dateOfChangedLog) {
-        m_repo->injectDataForDate(m_data, dateOfChangedLog);
+        m_repo->injectOverviewDataForDate(m_data, dateOfChangedLog);
         updatePointersForHighlightMaps(m_tagMaps, m_data.taskMap);
         updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
         m_view->setTagMenuItems(makeMenuTitles(m_data.taskMap));
         m_view->setSectionMenuItems(makeMenuTitles(m_data.sectionMap));
         if (dateOfChangedLog == m_view->getFocusedDate()) {
-            if (auto log = m_repo->readLogFile(m_view->getFocusedDate())) {
+            if (auto log = m_repo->read(m_view->getFocusedDate())) {
                 m_view->setPreviewString(log->getContent());
             } else {
                 m_view->setPreviewString("");
@@ -46,7 +46,7 @@ class App : public InputHandlerBase {
     App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m,
         std::shared_ptr<EditorBase> editor)
         : m_displayedYear(Date::getToday().year), m_view{std::move(y)}, m_repo{std::move(m)},
-          m_editor{std::move(editor)}, m_data{m_repo->collectDataForYear(m_displayedYear)} {
+          m_editor{std::move(editor)}, m_data{m_repo->collectYearOverviewData(m_displayedYear)} {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -99,7 +99,7 @@ class App : public InputHandlerBase {
     }
 
     void handleFocusedDateChange(const int /* unused */) {
-        if (auto log = m_repo->readLogFile(m_view->getFocusedDate())) {
+        if (auto log = m_repo->read(m_view->getFocusedDate())) {
             m_view->setPreviewString(log->getContent());
         } else {
             m_view->setPreviewString("");
@@ -124,7 +124,7 @@ class App : public InputHandlerBase {
         auto date = m_view->getFocusedDate();
         if (m_data.logAvailabilityMap.get(date)) {
             m_view->prompt("Are you sure you want to delete a log file?", [date, this] {
-                m_repo->removeLog(date);
+                m_repo->remove(date);
                 updateViewSectionsAndTagsAfterLogChange(date);
             });
         }
@@ -132,7 +132,7 @@ class App : public InputHandlerBase {
 
     void displayYear(int diff) {
         m_displayedYear += diff;
-        m_data = m_repo->collectDataForYear(m_displayedYear);
+        m_data = m_repo->collectYearOverviewData(m_displayedYear);
         m_view->showCalendarForYear(m_displayedYear);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
@@ -156,15 +156,16 @@ class App : public InputHandlerBase {
     void handleCalendarButtonClick() {
         m_view->withRestoredIO([this]() {
             auto date = m_view->getFocusedDate();
-            if (not m_data.logAvailabilityMap.get(date)) {
-                auto log = m_repo->readLogFile(date);
-                // if (log) log->write(LogFile::baseTemplate(date)
-            }
+            //if (not m_data.logAvailabilityMap.get(date)) {
+            //    LogFile log {date, ""};
+            //    m_repo->write(date, "");
+            //}
             m_editor->openEditor(m_repo->path(date));
 
-            auto log = m_repo->readLogFile(date);
+            auto log = m_repo->read(date);
             if (log && !log->hasMeaningfullContent()) {
-            }
+                m_repo->remove(date);
+            } 
             // TODO: can sections and tasks vector be owned by controller and view only haveing
             // a refference to them? that way they can automaticaly be updated
             updateViewSectionsAndTagsAfterLogChange(date);

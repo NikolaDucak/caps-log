@@ -20,15 +20,14 @@ class DefaultLogRepository : public LogRepositoryBase {
     DefaultLogRepository(std::string logDirectory = DEFAULT_LOG_DIR_PATH,
                          std::string logFilenameFormat = DEFAULT_LOG_FILENAME_FORMAT);
 
-    YearLogEntryData collectDataForYear(unsigned year) override;
-    void injectDataForDate(YearLogEntryData &data, const Date &date) override;
-    std::optional<LogFile> readLogFile(const Date &date) override;
-    LogFile readOrMakeLogFile(const Date &date) override;
-    void removeLog(const Date &date) override;
+    YearOverviewData collectYearOverviewData(unsigned year) const override;
+    void injectOverviewDataForDate(YearOverviewData &data, const Date &date) const override;
+    std::optional<LogFile> read(const Date &date) const override;
+    void remove(const Date &date) override;
+    void write(const LogFile& log) override {}
     std::string path(const Date &date) override;
 
   private:
-    std::string readFile(const Date &date);
     std::filesystem::path dateToLogFilePath(const Date &d) const;
 
     std::string m_logDirectory;

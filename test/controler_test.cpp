@@ -29,9 +29,9 @@ TEST(ContollerTest, RemoveLog) {
     const auto selectedDate = model::Date{25,5,2005};
     auto map = YearMap<bool>{};
     map.set(selectedDate, true);
-    const auto data = YearLogEntryData { .logAvailabilityMap = map };
+    const auto data = YearOverviewData { .logAvailabilityMap = map };
 
-    EXPECT_CALL(*mock_repo, collectDataForYear(model::Date::getToday().year))
+    EXPECT_CALL(*mock_repo, collectYearOverviewData(model::Date::getToday().year))
         .WillOnce(Return(data));
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
@@ -39,7 +39,7 @@ TEST(ContollerTest, RemoveLog) {
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         EXPECT_CALL(*mock_view, getFocusedDate()).WillOnce(testing::Return(selectedDate));
         EXPECT_CALL(*mock_view, prompt(_, _)).WillOnce(InvokeArgument<1>());
-        EXPECT_CALL(*mock_repo, removeLog(selectedDate));
+        EXPECT_CALL(*mock_repo, remove(selectedDate));
         EXPECT_CALL(*mock_view, setPreviewString(""));
         // TODO: assert that it does set the updated values
         EXPECT_CALL(*mock_view, setSectionMenuItems(_));
@@ -77,16 +77,13 @@ static const std::string TEST_LOG_DIRECTORY
 TEST(DefaultLogRepositoryTest, RemoveLog) {
     const auto selectedDate = model::Date{25,5,2005};
     auto repo = DefaultLogRepository(TEST_LOG_DIRECTORY);
-
-    auto l = repo.readOrMakeLogFile(selectedDate);
     {
         std::ofstream of(repo.path(selectedDate));
         of << "aaa";
     }
-    ASSERT_TRUE(repo.collectDataForYear(2005).logAvailabilityMap.get(selectedDate));
-
-    repo.removeLog(selectedDate);
-    ASSERT_FALSE(repo.collectDataForYear(2005).logAvailabilityMap.get(selectedDate));
+    ASSERT_TRUE(repo.collectYearOverviewData(2005).logAvailabilityMap.get(selectedDate));
+    repo.remove(selectedDate);
+    ASSERT_FALSE(repo.collectYearOverviewData(2005).logAvailabilityMap.get(selectedDate));
 }
 
 
