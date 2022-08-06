@@ -18,7 +18,7 @@ jobs:
     
     - name: Prepare environment
       run: 
-        sudo apt-get update && sudo apt-get install libboost-all-dev
+        sudo apt-get update && sudo apt-get install libboost-system-dev
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
@@ -28,7 +28,7 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}}
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
     
   code-analysis:
     runs-on: ubuntu-latest
