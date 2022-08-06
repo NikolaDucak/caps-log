@@ -7,6 +7,7 @@
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
 
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string_view>
