@@ -2,8 +2,8 @@
 
 #include "editor/editor_base.hpp"
 #include "model/log_file.hpp"
-#include "model/year_overview_data.hpp"
 #include "model/log_repository_base.hpp"
+#include "model/year_overview_data.hpp"
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
 
@@ -18,7 +18,7 @@ using namespace view;
 using namespace model;
 using namespace editor;
 
-inline static std::string LOG_BASE_TEMPLATE {"# %d. %m. %y."};
+inline static std::string LOG_BASE_TEMPLATE{"# %d. %m. %y."};
 
 class App : public InputHandlerBase {
     unsigned m_displayedYear;
@@ -50,7 +50,8 @@ class App : public InputHandlerBase {
     App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m,
         std::shared_ptr<EditorBase> editor)
         : m_displayedYear(Date::getToday().year), m_view{std::move(y)}, m_repo{std::move(m)},
-          m_editor{std::move(editor)}, m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year)} {
+          m_editor{std::move(editor)}, m_data{YearOverviewData::collect(
+                                           m_repo, date::Date::getToday().year)} {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -79,22 +80,24 @@ class App : public InputHandlerBase {
     };
 
   private:
-    bool handleRootEvent(const std::string& input) {
-        if (input == "\x1B") quit();
-        else if (input ==  "d")
+    bool handleRootEvent(const std::string &input) {
+        if (input == "\x1B")
+            quit();
+        else if (input == "d")
             deleteFocusedLog();
         else if (input == "+")
             displayYear(+1);
-        else if (input ==  "-")
+        else if (input == "-")
             displayYear(-1);
-        else if (input ==  "m")
+        else if (input == "m")
             toggle();
-        else return false;
+        else
+            return false;
 
         return true;
     }
 
-    void handleFocusedDateChange(const std::string& /* unused */) {
+    void handleFocusedDateChange(const std::string & /* unused */) {
         if (auto log = m_repo->read(m_view->getFocusedDate())) {
             m_view->setPreviewString(log->getContent());
         } else {
@@ -102,13 +105,13 @@ class App : public InputHandlerBase {
         }
     }
 
-    void handleFocusedTagChange(const std::string& newTag) {
+    void handleFocusedTagChange(const std::string &newTag) {
         m_view->selectedSection() = 0;
         const auto highlighMap = m_tagMaps.at(std::stoi(newTag));
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
-    void handleFocusedSectionChange(const std::string& newSection) {
+    void handleFocusedSectionChange(const std::string &newSection) {
         m_view->selectedTag() = 0;
         const auto highlighMap = m_sectionMaps.at(std::stoi(newSection));
         m_view->setHighlightedLogsMap(highlighMap);
@@ -165,7 +168,7 @@ class App : public InputHandlerBase {
                 m_repo->write({date, date.formatToString("# %d. %m. %y.")});
                 // this looks a little awkward, it's easy to forget to reread after write
                 log = m_repo->read(date);
-            } 
+            }
 
             assert(log);
             m_editor->openEditor(*log);
@@ -174,7 +177,7 @@ class App : public InputHandlerBase {
             log = m_repo->read(date);
             if (log && !log->hasMeaningfullContent()) {
                 m_repo->remove(date);
-            } 
+            }
             updateViewSectionsAndTagsAfterLogChange(date);
         });
     }

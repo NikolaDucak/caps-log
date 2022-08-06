@@ -1,10 +1,10 @@
 #pragma once
 
-#include "date/date.hpp"
 #include "calendar_component.hpp"
-#include "windowed_menu.hpp"
+#include "date/date.hpp"
 #include "input_handler.hpp"
 #include "promptable.hpp"
+#include "windowed_menu.hpp"
 #include "year_view_base.hpp"
 
 #include <array>
@@ -21,7 +21,7 @@ using namespace ftxui;
 using namespace date;
 
 class YearView : public YearViewBase {
-    InputHandlerBase* m_handler;
+    InputHandlerBase *m_handler;
     ScreenInteractive m_screen;
     std::shared_ptr<Calendar> m_calendarButtons;
     std::shared_ptr<WindowedMenu> m_tagsMenu, m_sectionsMenu;
@@ -46,18 +46,22 @@ class YearView : public YearViewBase {
         m_rootComponent->prompt(message, onYesCallback);
     }
 
-    int& selectedTag() override { return m_tagsMenu->selected(); }
-    int& selectedSection() override { return m_sectionsMenu->selected(); }
+    int &selectedTag() override { return m_tagsMenu->selected(); }
+    int &selectedSection() override { return m_sectionsMenu->selected(); }
 
-    void setInputHandler(InputHandlerBase* handler) override { m_handler = handler; }
+    void setInputHandler(InputHandlerBase *handler) override { m_handler = handler; }
 
-    void setAvailableLogsMap(const YearMap<bool>* map) override { m_availabeLogsMap = map; }
-    void setHighlightedLogsMap(const YearMap<bool>* map) override { m_highlightedLogsMap = map; }
+    void setAvailableLogsMap(const YearMap<bool> *map) override { m_availabeLogsMap = map; }
+    void setHighlightedLogsMap(const YearMap<bool> *map) override { m_highlightedLogsMap = map; }
 
-    void setTagMenuItems(std::vector<std::string> items) override { m_tagMenuItems = std::move(items); }
-    void setSectionMenuItems(std::vector<std::string> items) override { m_sectionMenuItems = std::move(items); }
+    void setTagMenuItems(std::vector<std::string> items) override {
+        m_tagMenuItems = std::move(items);
+    }
+    void setSectionMenuItems(std::vector<std::string> items) override {
+        m_sectionMenuItems = std::move(items);
+    }
 
-    void setPreviewString(const std::string& string) override;
+    void setPreviewString(const std::string &string) override;
 
     /**
      * Temporay restore terminal to its roriginal state
@@ -67,11 +71,11 @@ class YearView : public YearViewBase {
 
     Date getFocusedDate() const override { return m_calendarButtons->getFocusedDate(); }
 
-private:
+  private:
     std::shared_ptr<Promptable> makeFullUIComponent();
     std::shared_ptr<WindowedMenu> makeTagsMenu();
     std::shared_ptr<WindowedMenu> makeSectionsMenu();
-    CalendarOption makeCalendarOptions(const Date& today);
+    CalendarOption makeCalendarOptions(const Date &today);
 };
 
 } // namespace clog::view

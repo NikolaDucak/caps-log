@@ -2,9 +2,10 @@
 #include "date/date.hpp"
 #include <regex>
 
-namespace clog::model { 
+namespace clog::model {
 
-YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase>& repo, unsigned year) {
+YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
+                                           unsigned year) {
     YearOverviewData data;
 
     for (unsigned month = date::Month::JANUARY; month <= date::Month::DECEMBER; month++) {
@@ -16,15 +17,16 @@ YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBa
     return std::move(data);
 }
 
-void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase>& repo, const date::Date& date) {
+void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
+                               const date::Date &date) {
     // first remove all set mentions
-    utils::mapRemoveIf(tagMap, [date] (auto& tag) { 
-        tag.second.set(date, false); 
-        return tag.second.hasAnyDaySet() == 0; 
+    utils::mapRemoveIf(tagMap, [date](auto &tag) {
+        tag.second.set(date, false);
+        return tag.second.hasAnyDaySet() == 0;
     });
-    clog::utils::mapRemoveIf(sectionMap, [date] (auto& section) { 
-        section.second.set(date, false); 
-        return section.second.hasAnyDaySet() == 0; 
+    clog::utils::mapRemoveIf(sectionMap, [date](auto &section) {
+        section.second.set(date, false);
+        return section.second.hasAnyDaySet() == 0;
     });
 
     auto input = repo->read(date);
@@ -36,13 +38,17 @@ void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase>& repo, c
     } else {
         logAvailabilityMap.set(date, true);
     }
-    
+
     // then parse and set mentions again
     auto parsedSections = input->readSectionTitles();
     auto parsedTags = input->readTagTitles();
 
-    for (auto tag : parsedTags) { tagMap[tag].set(date, true); }
-    for (auto section : parsedSections) { sectionMap[section].set(date, true); }
+    for (auto tag : parsedTags) {
+        tagMap[tag].set(date, true);
+    }
+    for (auto section : parsedSections) {
+        sectionMap[section].set(date, true);
+    }
 }
 
-}
+} // namespace clog::model

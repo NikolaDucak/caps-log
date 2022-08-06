@@ -14,28 +14,27 @@ class LogFile {
     std::string m_content;
     clog::date::Date m_date;
 
-public:
-    LogFile(const clog::date::Date &date, std::string content) 
+  public:
+    LogFile(const clog::date::Date &date, std::string content)
         : m_date{date}, m_content{std::move(content)} {}
 
     std::string getContent() const { return m_content; }
     clog::date::Date getDate() const { return m_date; }
 
-
     std::vector<std::string> readTagTitles() {
-        std::stringstream ss {m_content};
+        std::stringstream ss{m_content};
         return readTagTitles(ss);
     }
 
     std::vector<std::string> readSectionTitles() {
-        std::stringstream ss {m_content};
+        std::stringstream ss{m_content};
         return readSectionTitles(ss);
     }
-    
+
     bool hasMeaningfullContent();
 
-    static std::vector<std::string> readTagTitles(std::istream& input);
-    static std::vector<std::string> readSectionTitles(std::istream& input);
+    static std::vector<std::string> readTagTitles(std::istream &input);
+    static std::vector<std::string> readSectionTitles(std::istream &input);
 };
 
 } // namespace clog::model

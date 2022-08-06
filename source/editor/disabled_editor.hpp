@@ -5,9 +5,8 @@
 namespace clog::editor {
 
 class DisabledEditor : public EditorBase {
-public:
-    void openEditor(const clog::model::LogFile& log) {}
+  public:
+    void openEditor(const clog::model::LogFile &log) {}
 };
 
-}
-
+} // namespace clog::editor

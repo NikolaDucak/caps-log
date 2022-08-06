@@ -20,7 +20,8 @@ struct UIEvent {
 };
 
 // TODO: DisplayedYearChange -> DisplayedIntervalChange
-// std::variant<OpenLogEvent, FocusedDateChange, FocusedSectionChange, FocusedTagChange, FocusedTagChange, DisplayedYearChange, ToggleTag>
+// std::variant<OpenLogEvent, FocusedDateChange, FocusedSectionChange, FocusedTagChange,
+// FocusedTagChange, DisplayedYearChange, ToggleTag>
 
 class InputHandlerBase {
   public:

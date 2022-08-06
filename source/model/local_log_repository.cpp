@@ -15,7 +15,7 @@ const std::string LocalFSLogFilePathProvider::DEFAULT_LOG_DIR_PATH =
 
 const std::string LocalFSLogFilePathProvider::DEFAULT_LOG_FILENAME_FORMAT = "d%Y_%m_%d.md";
 
-LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider) 
+LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider)
     : m_pathProvider(std::move(pathProvider)) {
     std::filesystem::create_directories(m_pathProvider.getLogDirPath());
 }
@@ -30,8 +30,8 @@ std::optional<LogFile> LocalLogRepository::read(const Date &date) const {
     }
 }
 
-void LocalLogRepository::write(const LogFile& log) {
-    std::ofstream {m_pathProvider.path(log.getDate())} << log.getContent();
+void LocalLogRepository::write(const LogFile &log) {
+    std::ofstream{m_pathProvider.path(log.getDate())} << log.getContent();
 }
 
 void LocalLogRepository::remove(const Date &date) {

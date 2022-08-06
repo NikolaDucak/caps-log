@@ -14,11 +14,10 @@
 namespace clog::view {
 
 YearView::YearView(const date::Date &today)
-    : m_screen{ScreenInteractive::Fullscreen()}, 
-      m_calendarButtons{Calendar::make(today, makeCalendarOptions(today))},
-      m_tagsMenu{makeTagsMenu()},
-      m_sectionsMenu{makeSectionsMenu()},
-      m_rootComponent{makeFullUIComponent()} {}
+    : m_screen{ScreenInteractive::Fullscreen()}, m_calendarButtons{Calendar::make(
+                                                     today, makeCalendarOptions(today))},
+      m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()}, m_rootComponent{
+                                                                          makeFullUIComponent()} {}
 
 void YearView::run() { m_screen.Loop(m_rootComponent); }
 
@@ -93,16 +92,16 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
 
 std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
     MenuOption option{.on_change = [this] {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_TAG_CHANGE, 
-                boost::lexical_cast<std::string>(m_tagsMenu->selected())});
+        m_handler->handleInputEvent({UIEvent::FOCUSED_TAG_CHANGE,
+                                     boost::lexical_cast<std::string>(m_tagsMenu->selected())});
     }};
     return WindowedMenu::make("Tags", &m_tagMenuItems, option);
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
     MenuOption option = {.on_change = [this] {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_SECTION_CHANGE, 
-                boost::lexical_cast<std::string>(m_sectionsMenu->selected())});
+        m_handler->handleInputEvent({UIEvent::FOCUSED_SECTION_CHANGE,
+                                     boost::lexical_cast<std::string>(m_sectionsMenu->selected())});
     }};
     return WindowedMenu::make("Sections", &m_sectionMenuItems, option);
 }

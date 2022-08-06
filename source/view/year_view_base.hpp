@@ -15,7 +15,7 @@ using namespace date;
  * and a number of mentions. eg '(10) tag title'
  */
 inline std::string makeMenuItemTitle(std::string title, unsigned count) {
-      return std::string{"("} + std::to_string(count) + ") - " + title;
+    return std::string{"("} + std::to_string(count) + ") - " + title;
 }
 
 class YearViewBase {
@@ -30,8 +30,8 @@ class YearViewBase {
     virtual void showCalendarForYear(unsigned year) = 0;
     virtual void prompt(std::string message, std::function<void()> callback) = 0;
 
-    // passing only a pointer and having a view have no ownership of 
-    // the map allows for having precoputed maps and switching 
+    // passing only a pointer and having a view have no ownership of
+    // the map allows for having precoputed maps and switching
     virtual void setAvailableLogsMap(const YearMap<bool> *map) = 0;
     virtual void setHighlightedLogsMap(const YearMap<bool> *map) = 0;
     // can't use a pointer here because some FTXUI menu limitations

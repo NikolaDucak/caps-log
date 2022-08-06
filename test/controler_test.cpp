@@ -15,19 +15,19 @@ using namespace clog;
 using namespace testing;
 
 class ControllerTest : public testing::Test {
-protected:
-    clog::date::Date selectedDate{25,5,2005};
-    std::shared_ptr<NiceMock<DMockYearView>> mock_view = std::make_shared<NiceMock<DMockYearView>>();
+  protected:
+    clog::date::Date selectedDate{25, 5, 2005};
+    std::shared_ptr<NiceMock<DMockYearView>> mock_view =
+        std::make_shared<NiceMock<DMockYearView>>();
     std::shared_ptr<NiceMock<DMockRepo>> mock_repo = std::make_shared<NiceMock<DMockRepo>>();
     std::shared_ptr<MockEditor> mock_editor = std::make_shared<MockEditor>();
-public:
-    ControllerTest() {
-        selectedDate = mock_view->getDummyView().m_focusedDate;
-    }
+
+  public:
+    ControllerTest() { selectedDate = mock_view->getDummyView().m_focusedDate; }
 };
 
 TEST_F(ControllerTest, EscQuits) {
-    clog::App clog {mock_view, mock_repo, mock_editor};
+    clog::App clog{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -38,12 +38,13 @@ TEST_F(ControllerTest, EscQuits) {
 }
 
 TEST_F(ControllerTest, SpecialCharsDontQuit) {
-    clog::App clog {mock_view, mock_repo, mock_editor};
+    clog::App clog{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
-        ON_CALL(*mock_view, stop)
-            .WillByDefault([]{ ASSERT_FALSE(true) << "Expected to not quit."; });
+        ON_CALL(*mock_view, stop).WillByDefault([] {
+            ASSERT_FALSE(true) << "Expected to not quit.";
+        });
         clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowDown.input()});
         clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowUp.input()});
         clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowLeft.input()});
@@ -64,12 +65,14 @@ TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
     // ignoring first item '-----' that represents nothing
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
     ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
-    EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems[1], clog::view::makeMenuItemTitle("dummy section", 1));
-    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems[1], clog::view::makeMenuItemTitle("dummy tag", 1));
+    EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems[1],
+              clog::view::makeMenuItemTitle("dummy section", 1));
+    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems[1],
+              clog::view::makeMenuItemTitle("dummy tag", 1));
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_view, prompt(_,_));
+        EXPECT_CALL(*mock_view, prompt(_, _));
         ON_CALL(*mock_view, prompt).WillByDefault([&](auto, auto cb) {
             // trigger callback as if user clicked 'yes'
             cb();
@@ -105,15 +108,15 @@ TEST_F(ControllerTest, OnFocusedDateChange_UpdatePreviewString) {
 
 TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
     auto dummyLog1 = LogFile{selectedDate, "\n# dummy section 1\n* dummy tag 1"};
-    auto dummyLog2 = LogFile{{selectedDate.day+1, selectedDate.month, selectedDate.year}, "\n# dummy section 2\n* dummy tag 2"};
+    auto dummyLog2 = LogFile{{selectedDate.day + 1, selectedDate.month, selectedDate.year},
+                             "\n# dummy section 2\n* dummy tag 2"};
     mock_repo->write(dummyLog1);
     mock_repo->write(dummyLog2);
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&]() {
-
-        // tags and sections are passed from the view as an index in the section/tagMenuItem vector 
+        // tags and sections are passed from the view as an index in the section/tagMenuItem vector
         // 0 = '------' aka nothing selected
         clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_TAG_CHANGE, "1"});
         auto dummy_view = &mock_view->getDummyView();
@@ -156,7 +159,8 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         // expect editor to open
         EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](auto) {
-            auto log = LogFile { selectedDate, "\n# section title \nsome dummy content\n * tag title" };
+            auto log =
+                LogFile{selectedDate, "\n# section title \nsome dummy content\n * tag title"};
             mock_repo->getDummyRepo().write(log);
         });
 
@@ -174,9 +178,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     clog.run();
 }
 
-TEST_F(ControllerTest, AddLog_WhenLogHasNoMeaningfullContentItIsRemoved) {
-    ASSERT_FALSE(true);
-}
+TEST_F(ControllerTest, AddLog_WhenLogHasNoMeaningfullContentItIsRemoved) { ASSERT_FALSE(true); }
 
 TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
@@ -193,4 +195,3 @@ TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
 
     clog.run();
 }
-

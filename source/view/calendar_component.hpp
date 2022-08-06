@@ -6,11 +6,11 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 
-
 namespace clog::view {
 
 struct CalendarOption {
-    std::function<ftxui::Element(const date::Date&, const ftxui::EntryState&)> transform = nullptr;
+    std::function<ftxui::Element(const date::Date &, const ftxui::EntryState &)> transform =
+        nullptr;
     std::function<void(const date::Date &)> focusChange = nullptr;
     std::function<void(const date::Date &)> enter = nullptr;
 };
@@ -19,12 +19,12 @@ class Calendar : public ftxui::ComponentBase {
     date::Date m_today;
     ftxui::Component m_root;
     int m_selectedMonth = 0;
-    std::array<int,12> m_selectedDay { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    std::array<int, 12> m_selectedDay{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     CalendarOption m_option;
     unsigned m_displayedYear;
 
-public:
-    Calendar(const date::Date& today, CalendarOption option = {});
+  public:
+    Calendar(const date::Date &today, CalendarOption option = {});
     auto root() { return m_root; }
 
     void displayYear(unsigned year) {

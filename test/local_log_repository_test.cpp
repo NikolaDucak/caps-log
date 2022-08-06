@@ -1,11 +1,11 @@
-#include <filesystem>
-#include <fstream>
-#include "model/year_overview_data.hpp"
-#include "model/local_log_repository.hpp"
-#include "mocks.hpp"
 #include "date/date.hpp"
+#include "mocks.hpp"
+#include "model/local_log_repository.hpp"
 #include "model/log_file.hpp"
 #include "model/log_repository_base.hpp"
+#include "model/year_overview_data.hpp"
+#include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <memory>
 #include <optional>
@@ -15,24 +15,25 @@ using namespace clog::date;
 using namespace clog::model;
 
 namespace {
-const std::string TEST_LOG_DIRECTORY {std::filesystem::temp_directory_path().string() + "clog_test_dir"};
-} 
+const std::string TEST_LOG_DIRECTORY{std::filesystem::temp_directory_path().string() +
+                                     "clog_test_dir"};
+}
 
 class LocalLogRepositoryTest : public ::testing::Test {
-protected:
-    LocalFSLogFilePathProvider TMPDirPathProvider {TEST_LOG_DIRECTORY, LocalFSLogFilePathProvider::DEFAULT_LOG_FILENAME_FORMAT};
-public:
-    void SetUp() override {
-        std::filesystem::remove_all(TMPDirPathProvider.getLogDirPath());
-    }    
-    void writeDummyLog(const Date& date, const std::string& content) {
+  protected:
+    LocalFSLogFilePathProvider TMPDirPathProvider{
+        TEST_LOG_DIRECTORY, LocalFSLogFilePathProvider::DEFAULT_LOG_FILENAME_FORMAT};
+
+  public:
+    void SetUp() override { std::filesystem::remove_all(TMPDirPathProvider.getLogDirPath()); }
+    void writeDummyLog(const Date &date, const std::string &content) {
         std::ofstream of(TMPDirPathProvider.path(date));
         of << content;
     }
 };
 
 TEST_F(LocalLogRepositoryTest, Read) {
-    const auto selectedDate = Date{25,5,2005};
+    const auto selectedDate = Date{25, 5, 2005};
     auto repo = LocalLogRepository(TMPDirPathProvider);
     const std::string logContent = "Dummy string";
 
@@ -46,7 +47,7 @@ TEST_F(LocalLogRepositoryTest, Read) {
 }
 
 TEST_F(LocalLogRepositoryTest, Remove) {
-    const auto date = Date{25,5,2005};
+    const auto date = Date{25, 5, 2005};
     auto repo = LocalLogRepository(TMPDirPathProvider);
     const std::string logContent = "Dummy string";
 
@@ -57,11 +58,10 @@ TEST_F(LocalLogRepositoryTest, Remove) {
 }
 
 TEST_F(LocalLogRepositoryTest, Write) {
-    const auto date = Date{25,5,2005};
+    const auto date = Date{25, 5, 2005};
     auto repo = LocalLogRepository(TEST_LOG_DIRECTORY);
     const std::string logContent = "Dummy string";
 
     repo.write(LogFile{date, logContent});
     ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(date)));
 }
-

@@ -4,8 +4,8 @@
 #include "date/date.hpp"
 #include "editor/disabled_editor.hpp"
 #include "editor/env_based_editor.hpp"
-#include "model/local_log_repository.hpp"
 #include "model/dummy_repository.hpp"
+#include "model/local_log_repository.hpp"
 #include "nlohmann/json.hpp"
 
 /**
@@ -19,9 +19,11 @@ auto makeWASMClog() {
 }
 
 auto makeTUIClog() {
-    auto repo = std::make_shared<clog::model::LocalLogRepository>(clog::model::LocalFSLogFilePathProvider{});
+    auto repo = std::make_shared<clog::model::LocalLogRepository>(
+        clog::model::LocalFSLogFilePathProvider{});
     auto view = std::make_shared<clog::view::YearView>(clog::date::Date::getToday());
-    auto editor = std::make_shared<clog::editor::EnvBasedEditor>(clog::model::LocalFSLogFilePathProvider{});
+    auto editor =
+        std::make_shared<clog::editor::EnvBasedEditor>(clog::model::LocalFSLogFilePathProvider{});
     return clog::App{view, repo, editor};
 }
 

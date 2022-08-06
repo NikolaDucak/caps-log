@@ -1,10 +1,10 @@
+#include "date/date.hpp"
+#include "ftxui/component/component_options.hpp"
+#include "view/calendar_component.hpp"
+#include "view/yearly_view.hpp"
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/component/event.hpp>
 #include <gtest/gtest.h>
-#include "ftxui/component/component_options.hpp"
-#include "date/date.hpp"
-#include "view/calendar_component.hpp"
-#include "view/yearly_view.hpp"
 
 using namespace ftxui;
 using namespace clog::view;
@@ -21,9 +21,9 @@ TEST(YearViewTest, t) {
 */
 
 TEST(CalendarComponent, GetFocusedDate) {
-    Date today = {6,6,2022};
-    Date tomorrow = {7,6,2022};
-    CalendarOption options { };
+    Date today = {6, 6, 2022};
+    Date tomorrow = {7, 6, 2022};
+    CalendarOption options{};
     Calendar calendar{today, options};
 
     EXPECT_EQ(calendar.getFocusedDate(), today);
@@ -31,11 +31,8 @@ TEST(CalendarComponent, GetFocusedDate) {
     EXPECT_EQ(calendar.getFocusedDate(), tomorrow);
 }
 
-TEST(CalendarComponent, OnFocusedDateChange) {
-}
+TEST(CalendarComponent, OnFocusedDateChange) {}
 
-TEST(CalendarComponent, OnEnter) {
-}
+TEST(CalendarComponent, OnEnter) {}
 
-TEST(MenuComponent, OnFocusedItemChange) {
-}
+TEST(MenuComponent, OnFocusedItemChange) {}

@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <string>
 
@@ -21,4 +21,4 @@ inline std::string lowercase(std::string data) {
     return data;
 }
 
-}
+} // namespace clog::utils

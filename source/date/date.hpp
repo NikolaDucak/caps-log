@@ -1,8 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <stdexcept>
-#include <string>
 #include <array>
 #include <map>
 #include <stdexcept>
@@ -76,7 +74,7 @@ bool operator<(const Date &l, const Date &r);
  * A type of "map" container that maps dates in one year to T
  **/
 template <typename T> class YearMap {
-    std::array<std::array<T, 31>, 12> map {};
+    std::array<std::array<T, 31>, 12> map{};
 
   public:
     T &get(const Date &date) { return map[date.month - 1][date.day - 1]; }
@@ -111,4 +109,4 @@ unsigned getNumberOfDaysForMonth(unsigned month, unsigned year);
 unsigned getStartingWeekdayForMonth(unsigned month, unsigned year);
 std::string getStringNameForMonth(unsigned month);
 
-} // namespace clog::model
+} // namespace clog::date
