@@ -48,4 +48,4 @@ jobs:
       run: sudo apt-get update && sudo apt-get install clang-format
     
     - name: clang-tidy
-      run: run-clang-format ./source/
+      run: run-clang-tidy ./source/
