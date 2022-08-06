@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Prepare environment
-      run: sudo apt-get update && sudo apt-get install libboost-system-dev
+      run: sudo apt-get update && sudo apt-get install libboost-system-dev clang-tidy
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
