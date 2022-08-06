@@ -36,7 +36,7 @@ jobs:
 
     - name: Static Analysis
       if: always()
-      run: run-clang-tidy ./source/
+      run: ln -s ./build/compile_commands.json && run-clang-tidy ./source/
     
   code-formatting:
     runs-on: ubuntu-latest
