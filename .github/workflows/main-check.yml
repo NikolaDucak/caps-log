@@ -10,7 +10,7 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +25,10 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+  test:
+    runs-on: ubuntu-latest
+    needs: [build]
+
     - name: Test
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
@@ -38,14 +42,15 @@ jobs:
     - name: clang-format
       run: find ./source ./test -iname '*.cpp' -o -iname '*.hpp' | xargs clang-format -n -Werror --ferror-limit=1
 
-  static-analysis:
-    runs-on: ubuntu-latest
+        # static-analysis:
+        # needs: [build-and-test]
+        # runs-on: ubuntu-latest
     
-    steps:
-    - uses: actions/checkout@v3
+        # steps:
+        # - uses: actions/checkout@v3
 
-    - name: Prepare environment
-      run: sudo apt-get update && sudo apt-get install clang-format
+        # - name: Prepare environment
+        # run: sudo apt-get update && sudo apt-get install clang-format
     
-    - name: clang-tidy
-      run: run-clang-tidy ./source/
+        # - name: clang-tidy
+        # run: run-clang-tidy ./source/
