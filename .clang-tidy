@@ -1,9 +1,11 @@
----
-Checks: "-*,
-        -readability-*,
-        -cppcoreguidelines-*,
-        -misc-non-private-member-variables-in-classes,
+Checks: "
+  readability-*, 
+  portability-*, 
+  performance-*, 
+  cppcoreguidelines-*
+  modernize-use-no-discard,
+  modernize-use-auto
 "
-WarningsAsErrors: ''
-HeaderFilterRegex: ''
-FormatStyle:     none
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+

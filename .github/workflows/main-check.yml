@@ -17,8 +17,7 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Prepare environment
-      run: 
-        sudo apt-get update && sudo apt-get install libboost-system-dev
+      run: sudo apt-get update && sudo apt-get install libboost-system-dev
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
@@ -30,7 +29,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
     
-  code-analysis:
+  code-formatting:
     runs-on: ubuntu-latest
     
     steps:
@@ -38,4 +37,15 @@ jobs:
     
     - name: clang-format
       run: find ./source ./test -iname '*.cpp' -o -iname '*.hpp' | xargs clang-format -n -Werror --ferror-limit=1
+
+  static-analysis:
+    runs-on: ubuntu-latest
     
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Prepare environment
+      run: sudo apt-get update && sudo apt-get install clang-format
+    
+    - name: clang-tidy
+      run: run-clang-format ./source/
