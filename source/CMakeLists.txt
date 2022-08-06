@@ -13,18 +13,23 @@ add_executable(
     ./view/ftxui_ext/extended_containers.cpp
     ./view/ftxui_ext/extended_containers.hpp
 
-    ./model/default_log_repository.cpp
-    ./model/default_log_repository.hpp
+    ./model/local_log_repository.cpp
+    ./model/local_log_repository.hpp
     ./model/log_repository_base.hpp
     ./model/online_repository.hpp
     ./model/log_file.cpp
     ./model/log_file.hpp
+    ./model/year_overview_data.cpp
+    ./model/year_overview_data.hpp
 
     ./date/date.cpp
     ./date/date.hpp
+
+    ./utils/string.hpp
+    ./utils/http_client.hpp
 )
 
-target_include_directories(clog PRIVATE ./)
+target_include_directories(clog PRIVATE ./ ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(clog
     ftxui::screen

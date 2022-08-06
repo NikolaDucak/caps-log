@@ -6,59 +6,92 @@
 #include <fmt/format.h>
 #include <sstream>
 
+#include "fmt/core.h"
+#include "model/log_file.hpp"
+#include "model/year_overview_data.hpp"
+#include "utils/string.hpp"
 
-/*
-"* tag",
-"* Tag",
-"* TAG",
-"* tag title",
-"* Tag Title",
-"* TagTitle",
-"* verry long tag title with a bunch of words yada yadda",
-"* Verry Log tag tiTLe Bla blas",
-"* tag title       (info)",
-"* Tag stuff",
-"*    tag",
-"* tag(info)",
-"* tag: body",
-"*    tag(info);",
-" * section",
-"    * sections",
-*/
+#include "mocks.hpp"
 
-struct TagTestData {
-    std::string base;
-    std::string title;
-    std::string info;
-    std::string toString() {
-        return fmt::format(base, title);
-    }
+struct ParsingTestData {
+    std::string text;
+    std::vector<std::string> expectedResult;
 };
 
-const std::string TAG_REGEX { R"(^( +)?\*( +)([a-z A-Z]+)(\(.+\))?(:?))" };
+inline ParsingTestData makeTagParsingData(std::string base, std::string title) {
+    return {fmt::format(base, title), {clog::utils::lowercase(title)}};
+}
 
-const std::vector<std::string> invalidTags  {
-// invalid"
-"* tag(:",
-"* tag:)",
-"*",
-"  some other words * realy long tag title with a lot of words(and info): and a body",
+inline ParsingTestData makeSectionParsingData(std::string base, std::string title) {
+    // prepend a newline since first line is ignored when it comes to parsing sections
+    return {fmt::format(std::string{"\n"} + base, title), {clog::utils::lowercase(title)}};
+}
+
+namespace {
+const std::vector<ParsingTestData> validTagsTestData  {
+    makeTagParsingData("* {}", "tag"),
+    makeTagParsingData("* {}", "TAG"),
+    makeTagParsingData("*   {}", "TAG"),
+    makeTagParsingData("*   {}\n", "TAG"),
+    makeTagParsingData(" * {}    ", "TAG"),
+    makeTagParsingData("    *   {}", "TAG"),
+
+    makeTagParsingData("    *   {}", "Multi Word Title"),
+    makeTagParsingData(" * {}", "Multi Word Title"),
+    makeTagParsingData("*   {}\n", "VERRY long tag title with a bunchhhh of words and words and words and words"),
+
+    makeTagParsingData("*   {} (info)\n", "title 123"),
 };
 
-const std::vector<std::string> validSections { };
-const std::vector<std::string> invalidSections { };
+const std::vector<ParsingTestData> invalidTagsTestData  {
+    makeTagParsingData("*   {}     (123)\n", "123)"),
+    makeTagParsingData("*   {}     ($$$$)    ", "123)"),
+    makeTagParsingData("*   {}\n", "title with)"),
+    makeTagParsingData("*   {}\n", "# title with"),
+};
 
-std::string parse(std::istream s) { }
+const std::vector<ParsingTestData> validSectionsTestData  {
+    makeSectionParsingData("# {}", "section"),
+    makeSectionParsingData("# {}", "section title"),
+    makeSectionParsingData("#     {}", "section title"),
+    makeSectionParsingData("    # {}", "section"),
+};
 
+const std::vector<ParsingTestData> invalidSectionsTestData  {
+    makeSectionParsingData("## {}", "section"),
+    makeSectionParsingData("### {}", "section"),
+};
 
-TEST(LogEntry, ParseTags) {
-    for (line: testCases) {
-        auto c = parse(line);
+}
+
+TEST(LogEntry, ParseTagTitles_Valid) {
+    for (auto [text, expectedTagTitles]: validTagsTestData) {
+        auto ss = std::stringstream{text};
+        auto parsedTagTitles = clog::model::LogFile::readTagTitles(ss);
+        EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
     }
 }
 
-TEST(LogEntry, ParseSections) {
+TEST(LogEntry, ParseSectionTitles_Valid) {
+    for (auto [text, expectedTagTitles]: validSectionsTestData) {
+        auto ss = std::stringstream{text};
+        auto parsedTagTitles = clog::model::LogFile::readSectionTitles(ss);
+        EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
+    }
 }
 
+TEST(LogEntry, ParseTagTitles_Invalid) {
+    for (auto [text, _]: invalidSectionsTestData) {
+        auto ss = std::stringstream{text};
+        auto parsedTagTitles = clog::model::LogFile::readTagTitles(ss);
+        EXPECT_TRUE(parsedTagTitles.empty()) << "Failed at: " << text;
+    }
+}
 
-
+TEST(LogEntry, ParseSectionTitles_Invalid) {
+    for (auto [text, _]: invalidSectionsTestData) {
+        auto ss = std::stringstream{text};
+        auto parsedTagTitles = clog::model::LogFile::readSectionTitles(ss);
+        EXPECT_TRUE(parsedTagTitles.empty()) << "Failed at: " << text;
+    }
+}

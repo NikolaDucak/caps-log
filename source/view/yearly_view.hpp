@@ -30,7 +30,9 @@ class YearView : public YearViewBase {
 
     const YearMap<bool> *m_highlightedLogsMap = nullptr;
     const YearMap<bool> *m_availabeLogsMap = nullptr;
-    std::vector<std::string> m_tags{}, m_sections{};
+    std::vector<std::string> *m_tags = nullptr, *m_sections = nullptr;
+
+    std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
   public:
     YearView(const Date &today);
@@ -52,9 +54,8 @@ class YearView : public YearViewBase {
     void setAvailableLogsMap(const YearMap<bool>* map) override { m_availabeLogsMap = map; }
     void setHighlightedLogsMap(const YearMap<bool>* map) override { m_highlightedLogsMap = map; }
 
-    void setTagMenuItems(std::vector<std::string> items) override { m_tags = std::move(items); }
-
-    void setSectionMenuItems(std::vector<std::string> items) override { m_sections = std::move(items); }
+    void setTagMenuItems(std::vector<std::string> items) override { m_tagMenuItems = std::move(items); }
+    void setSectionMenuItems(std::vector<std::string> items) override { m_sectionMenuItems = std::move(items); }
 
     void setPreviewString(const std::string& string) override;
 
@@ -68,9 +69,9 @@ class YearView : public YearViewBase {
 
 private:
     std::shared_ptr<Promptable> makeFullUIComponent();
-    CalendarOption makeCalendarOptions(const Date& today);
     std::shared_ptr<WindowedMenu> makeTagsMenu();
     std::shared_ptr<WindowedMenu> makeSectionsMenu();
+    CalendarOption makeCalendarOptions(const Date& today);
 };
 
 } // namespace clog::view

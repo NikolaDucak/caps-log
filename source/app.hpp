@@ -2,6 +2,7 @@
 
 #include "editor/editor_base.hpp"
 #include "model/log_file.hpp"
+#include "model/year_overview_data.hpp"
 #include "model/log_repository_base.hpp"
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
@@ -17,6 +18,8 @@ using namespace view;
 using namespace model;
 using namespace editor;
 
+inline static std::string LOG_BASE_TEMPLATE {"# %d. %m. %y."};
+
 class App : public InputHandlerBase {
     unsigned m_displayedYear;
     std::shared_ptr<YearViewBase> m_view;
@@ -28,11 +31,12 @@ class App : public InputHandlerBase {
     std::vector<const YearMap<bool> *> m_sectionMaps;
 
     void updateViewSectionsAndTagsAfterLogChange(const Date &dateOfChangedLog) {
-        m_repo->injectOverviewDataForDate(m_data, dateOfChangedLog);
-        updatePointersForHighlightMaps(m_tagMaps, m_data.taskMap);
-        updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
-        m_view->setTagMenuItems(makeMenuTitles(m_data.taskMap));
+        m_data.collect(m_repo, dateOfChangedLog);
+        m_view->setTagMenuItems(makeMenuTitles(m_data.tagMap));
         m_view->setSectionMenuItems(makeMenuTitles(m_data.sectionMap));
+
+        updatePointersForHighlightMaps(m_tagMaps, m_data.tagMap);
+        updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
         if (dateOfChangedLog == m_view->getFocusedDate()) {
             if (auto log = m_repo->read(m_view->getFocusedDate())) {
                 m_view->setPreviewString(log->getContent());
@@ -46,7 +50,7 @@ class App : public InputHandlerBase {
     App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m,
         std::shared_ptr<EditorBase> editor)
         : m_displayedYear(Date::getToday().year), m_view{std::move(y)}, m_repo{std::move(m)},
-          m_editor{std::move(editor)}, m_data{m_repo->collectYearOverviewData(m_displayedYear)} {
+          m_editor{std::move(editor)}, m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year)} {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -75,30 +79,22 @@ class App : public InputHandlerBase {
     };
 
   private:
-    bool handleRootEvent(const int input) {
-        switch (input) {
-        case '\x1B':
-            quit();
-            break;
-        case 'd':
+    bool handleRootEvent(const std::string& input) {
+        if (input == "\x1B") quit();
+        else if (input ==  "d")
             deleteFocusedLog();
-            break;
-        case '+':
+        else if (input == "+")
             displayYear(+1);
-            break;
-        case '-':
+        else if (input ==  "-")
             displayYear(-1);
-            break;
-        case 'm':
+        else if (input ==  "m")
             toggle();
-            break;
-        default:
-            return false;
-        };
+        else return false;
+
         return true;
     }
 
-    void handleFocusedDateChange(const int /* unused */) {
+    void handleFocusedDateChange(const std::string& /* unused */) {
         if (auto log = m_repo->read(m_view->getFocusedDate())) {
             m_view->setPreviewString(log->getContent());
         } else {
@@ -106,15 +102,15 @@ class App : public InputHandlerBase {
         }
     }
 
-    void handleFocusedTagChange(const int newTag) {
+    void handleFocusedTagChange(const std::string& newTag) {
         m_view->selectedSection() = 0;
-        const auto highlighMap = m_tagMaps.at(newTag);
+        const auto highlighMap = m_tagMaps.at(std::stoi(newTag));
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
-    void handleFocusedSectionChange(const int newSection) {
+    void handleFocusedSectionChange(const std::string& newSection) {
         m_view->selectedTag() = 0;
-        const auto highlighMap = m_sectionMaps.at(newSection);
+        const auto highlighMap = m_sectionMaps.at(std::stoi(newSection));
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
@@ -132,7 +128,7 @@ class App : public InputHandlerBase {
 
     void displayYear(int diff) {
         m_displayedYear += diff;
-        m_data = m_repo->collectYearOverviewData(m_displayedYear);
+        m_data = YearOverviewData::collect(m_repo, m_displayedYear);
         m_view->showCalendarForYear(m_displayedYear);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
@@ -141,33 +137,44 @@ class App : public InputHandlerBase {
         /*
         const auto tag = m_view->selectedTag();
         if (tag != 0) {
-            auto log = m_repo.readOrMakeLogFile(m_view->getFocusedDate());
-            // if tag is available in that log, remove it
-            // if (m_tagMaps.at(tag)->get(m_view->getFocusedDate())) {
-            if (log.hasTag(tag)) {
-                log.removeTag(tag);
+            auto log = m_repo.read(m_view->getFocusedDate());
+            if (log) {
+                // if (m_tagMaps.at(tag)->get(m_view->getFocusedDate())) {
+                if (log.hasTag(tag)) {
+                    log.removeTag(tag);
+                } else {
+                    log.addTag(tag);
+                }
+
             } else {
-                log.addTag(tag);
+                m_repo.write(makeLogEntryWithTag(tag))
             }
         }
         */
     }
 
+    // TODO: i feel like this needs more tests
+    // 1) editor leaves log existing
+    // 2) editor removes log
+    // 3) no meaningful content
     void handleCalendarButtonClick() {
         m_view->withRestoredIO([this]() {
             auto date = m_view->getFocusedDate();
-            //if (not m_data.logAvailabilityMap.get(date)) {
-            //    LogFile log {date, ""};
-            //    m_repo->write(date, "");
-            //}
-            m_editor->openEditor(m_repo->path(date));
-
             auto log = m_repo->read(date);
+            if (not log.has_value()) {
+                m_repo->write({date, date.formatToString("# %d. %m. %y.")});
+                // this looks a little awkward, it's easy to forget to reread after write
+                log = m_repo->read(date);
+            } 
+
+            assert(log);
+            m_editor->openEditor(*log);
+
+            // check that after editing still exists
+            log = m_repo->read(date);
             if (log && !log->hasMeaningfullContent()) {
                 m_repo->remove(date);
             } 
-            // TODO: can sections and tasks vector be owned by controller and view only haveing
-            // a refference to them? that way they can automaticaly be updated
             updateViewSectionsAndTagsAfterLogChange(date);
         });
     }
@@ -190,9 +197,10 @@ class App : public InputHandlerBase {
     static void updatePointersForHighlightMaps(std::vector<const YearMap<bool> *> &vec,
                                                const StringYearMap &map) {
         vec.clear();
+        vec.reserve(map.size());
         vec.push_back(nullptr); // 0 index = no highlighted days
         for (auto const &imap : map) {
-            vec.push_back(&imap.second);
+            vec.emplace_back(&imap.second);
         }
     }
 
@@ -203,10 +211,12 @@ class App : public InputHandlerBase {
      */
     static std::vector<std::string> makeMenuTitles(const StringYearMap &map) {
         std::vector<std::string> strs;
+        strs.reserve(map.size());
         strs.push_back(" ----- ");
-        for (auto const &imap : map)
-            strs.push_back(std::string("(") + std::to_string(imap.second.daysSet()) + ") - " +
+        for (auto const &imap : map) {
+            strs.push_back(std::string{"("} + std::to_string(imap.second.daysSet()) + ") - " +
                            imap.first);
+        }
         return std::move(strs);
     }
 };

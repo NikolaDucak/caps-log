@@ -1,6 +1,7 @@
 #pragma once
 
 #include "date/date.hpp"
+#include <variant>
 
 namespace clog::view {
 
@@ -13,10 +14,13 @@ struct UIEvent {
         CALENDAR_BUTTON_CLICK
     };
     const Type type;
-    const int input;
+    const std::string input;
 
-    UIEvent(Type t, int in = 0) : type{t}, input{in} {}
+    UIEvent(Type t, std::string in = "") : type{t}, input{in} {}
 };
+
+// TODO: DisplayedYearChange -> DisplayedIntervalChange
+// std::variant<OpenLogEvent, FocusedDateChange, FocusedSectionChange, FocusedTagChange, FocusedTagChange, DisplayedYearChange, ToggleTag>
 
 class InputHandlerBase {
   public:

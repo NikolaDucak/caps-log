@@ -4,10 +4,21 @@
 #include "ftxui/component/component_options.hpp"
 #include "date/date.hpp"
 #include "view/calendar_component.hpp"
+#include "view/yearly_view.hpp"
 
 using namespace ftxui;
 using namespace clog::view;
 using namespace clog::date;
+
+/*
+TEST(YearViewTest, t) {
+    YearView (mockScreen);
+    v.setInputHandler(mockInputHandler);
+    mockScreen.onCall(run()) {
+        rootComponent.onEvent(Event::Character('l'));
+    }
+}
+*/
 
 TEST(CalendarComponent, GetFocusedDate) {
     Date today = {6,6,2022};

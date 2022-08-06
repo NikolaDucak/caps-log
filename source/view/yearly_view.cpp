@@ -9,12 +9,14 @@
 #include <ftxui/screen/terminal.hpp>
 #include <sstream>
 
+#include <boost/lexical_cast.hpp>
+
 namespace clog::view {
 
 YearView::YearView(const date::Date &today)
     : m_screen{ScreenInteractive::Fullscreen()}, 
       m_calendarButtons{Calendar::make(today, makeCalendarOptions(today))},
-      m_tagsMenu{makeSectionsMenu()},
+      m_tagsMenu{makeTagsMenu()},
       m_sectionsMenu{makeSectionsMenu()},
       m_rootComponent{makeFullUIComponent()} {}
 
@@ -54,10 +56,9 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
     });
 
     auto event_handler = CatchEvent(whole_ui_renderer, [&](Event e) {
-        // TODO: why is e.input() a string? Will i miss some data if i just take the first char?
         // TODO: gotta prevent tab reverse error
         if (not e.is_mouse() && e != Event::TabReverse) {
-            return m_handler->handleInputEvent({UIEvent::ROOT_EVENT, e.input().front()});
+            return m_handler->handleInputEvent({UIEvent::ROOT_EVENT, e.input()});
         };
         return false;
     });
@@ -92,15 +93,17 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
 
 std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
     MenuOption option{.on_change = [this] {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_TAG_CHANGE, m_tagsMenu->selected()});
+        m_handler->handleInputEvent({UIEvent::FOCUSED_TAG_CHANGE, 
+                boost::lexical_cast<std::string>(m_tagsMenu->selected())});
     }};
-    return WindowedMenu::make("Tags", &m_tags, option);
+    return WindowedMenu::make("Tags", &m_tagMenuItems, option);
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
     MenuOption option = {.on_change = [this] {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_SECTION_CHANGE, m_sectionsMenu->selected()});
+        m_handler->handleInputEvent({UIEvent::FOCUSED_SECTION_CHANGE, 
+                boost::lexical_cast<std::string>(m_sectionsMenu->selected())});
     }};
-    return WindowedMenu::make("Sections", &m_sections, option);
+    return WindowedMenu::make("Sections", &m_sectionMenuItems, option);
 }
 } // namespace clog::view

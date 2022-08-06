@@ -6,27 +6,25 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 
+
 namespace clog::view {
 
-using namespace ftxui;
-using date::Date;
-
 struct CalendarOption {
-    std::function<Element(const Date &, const EntryState &)> transform = nullptr;
-    std::function<void(const Date &)> focusChange = nullptr;
-    std::function<void(const Date &)> enter = nullptr;
+    std::function<ftxui::Element(const date::Date&, const ftxui::EntryState&)> transform = nullptr;
+    std::function<void(const date::Date &)> focusChange = nullptr;
+    std::function<void(const date::Date &)> enter = nullptr;
 };
 
-class Calendar : public ComponentBase {
-    Date m_today;
-    Component m_root;
+class Calendar : public ftxui::ComponentBase {
+    date::Date m_today;
+    ftxui::Component m_root;
     int m_selectedMonth = 0;
     std::array<int,12> m_selectedDay { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     CalendarOption m_option;
     unsigned m_displayedYear;
 
 public:
-    Calendar(const Date& today, CalendarOption option = {});
+    Calendar(const date::Date& today, CalendarOption option = {});
     auto root() { return m_root; }
 
     void displayYear(unsigned year) {
@@ -36,12 +34,12 @@ public:
         Add(m_root);
     }
 
-    bool OnEvent(Event event) override {
+    bool OnEvent(ftxui::Event event) override {
         // there is no way to inject a callback for selection change for
         // ftxui containers as for ftxui menus, this is a workaround to
         // check for selection change and trigger a callback
         static auto lastSelectedDate = getFocusedDate();
-        const auto result = ComponentBase::OnEvent(event);
+        const auto result = ftxui::ComponentBase::OnEvent(event);
         const auto newDate = getFocusedDate();
         if (m_option.focusChange && lastSelectedDate != newDate) {
             m_option.focusChange(newDate);
@@ -52,20 +50,20 @@ public:
 
     // TODO: perhaps it would be nicer to get a pointer to a Date where
     // this component stores the focused Date, it would be more like ftxui
-    Date getFocusedDate() {
+    date::Date getFocusedDate() {
         const auto activeMonth = m_selectedMonth;
         const auto activeDay = m_selectedDay[m_selectedMonth];
         return {(unsigned int)activeDay + 1, (unsigned int)activeMonth + 1, m_displayedYear};
     }
 
-    static inline auto make(const Date &today, CalendarOption option = {}) {
+    static inline auto make(const date::Date &today, CalendarOption option = {}) {
         return std::make_shared<Calendar>(today, option);
     }
 
   private:
-    Component createYear(unsigned year);
-    Component createMonth(unsigned month, unsigned year);
-    Component createDay(const Date &date);
+    ftxui::Component createYear(unsigned year);
+    ftxui::Component createMonth(unsigned month, unsigned year);
+    ftxui::Component createDay(const date::Date &date);
 };
 
 } // namespace clog::view

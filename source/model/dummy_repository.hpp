@@ -4,32 +4,16 @@
 
 namespace clog::model {
 
-class DummyRepo: public clog::model::LogRepositoryBase {
+class DummyLogRepository: public clog::model::LogRepositoryBase {
 public:
-     YearOverviewData collectYearOverviewData(unsigned year) const override {
-         YearMap<bool> map;
-         map.set(Date::getToday(), true);
-         return {
-             .logAvailabilityMap = map,
-             .sectionMap{},
-             .taskMap{},
-             .tagMap{},
-         };
-    }
 
-     void injectOverviewDataForDate(YearOverviewData& data, const Date& date) const override {
-         data.logAvailabilityMap.set(date, true);
-     }
-
-     std::optional<LogFile> read(const Date& date) const override {
-         return LogFile{"Some dummy content..."};
+     std::optional<LogFile> read(const clog::date::Date& date) const override {
+         return LogFile{date, "Some dummy content..."};
      };
 
-     void remove(const Date& date) override { }
+     void remove(const clog::date::Date& date) override { }
 
-     void write(const LogFile& date) override { }
-
-     std::string path(const Date& date) override { return "/dummy/path"; }
+     void write(const clog::model::LogFile& date) override { }
 };
 
 }

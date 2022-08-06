@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
-# ------------------------------ Fetch FTXUI ----------------------------- #
+# --------------------------------- ftxui ------------------------------- #
  
 set(FETCHCONTENT_UPDATES_DISCONNECTED TRUE)
 FetchContent_Declare(ftxui GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui)
@@ -19,6 +19,13 @@ if(NOT ftxui_POPULATED)
     FetchContent_Populate(ftxui)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+
+# ------------------------------ boost beast ----------------------------- #
+
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+
+find_package(Boost 1.69 COMPONENTS system filesystem)
 
 # ---------------------------------- json -------------------------------- #
 
@@ -37,6 +44,7 @@ endif()
 
 if(${BUILD_TESTS})
     message("Tests will be built")
+    include(CTest)
     add_subdirectory(./test)
 endif()
 

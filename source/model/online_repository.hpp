@@ -3,6 +3,7 @@
 #include "date/date.hpp"
 #include "log_repository_base.hpp"
 #include "nlohmann/json.hpp"
+#include "utils/http_client.hpp"
 
 #include <optional>
 
@@ -41,8 +42,47 @@ namespace nlohmann::json {
 
 namespace clog::model {
 
+class OnlineRepository : LogRepositoryBase{
+    std::string m_apiBaseUrl;
+    std::string m_apiPort;
+    std::string m_sessionId;
+    utils::HTTPClient client;
 
-class OnlineRepository : public LogRepositoryBase {
+public:
+    OnlineRepository(
+            const std::string& username, 
+            const std::string& password, 
+            const std::string& apiBaseUrl, 
+            const std::string& apiPort) 
+        : m_apiBaseUrl{apiBaseUrl}, m_apiPort{apiPort} { auth(); }
+
+    bool isLoggedIn() {
+        return not m_sessionId.empty();
+    }
+
+    YearOverviewData collectYearOverviewData(unsigned year) const override {
+        auto response = client.get(m_apiBaseUrl, m_apiPort, "/getOverivewData", "");
+    }
+
+    void injectOverviewDataForDate(YearOverviewData &data, const Date &date) const override { }
+
+    std::optional<LogFile> read(const Date &date) const override {
+        return LogFile{"dummy content"};
+    }
+
+    void remove(const Date &date) override {  }
+
+    void write(const LogFile& entry) override {  }
+
+    std::string path(const Date &date) override { return ""; }
+private:
+    void auth() {
+
+    }
+};
+
+
+class OnlineWasmRepository : public LogRepositoryBase {
 public:
 
     YearOverviewData collectYearOverviewData(unsigned year) const override {
@@ -51,19 +91,15 @@ public:
 
     void injectOverviewDataForDate(YearOverviewData &data, const Date &date) const override { }
 
-    void std::optional<LogFile> read(const Date &date) const override {
+    std::optional<LogFile> read(const Date &date) const override {
         return LogFile{"dummy content"};
     }
 
-    void remove(const Date &date) override {
-        remove(date);
-    }
+    void remove(const Date &date) override { }
 
-    void write(const Date &date) override { 
-    }
+    void write(const LogFile &entry) override { }
 
     std::string path(const Date &date) override { return ""; }
-
 };
 
 }

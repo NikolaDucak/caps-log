@@ -8,32 +8,25 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <sstream>
+#include "utils/map.hpp"
+#include "utils/string.hpp"
+#include <regex>
 
 namespace clog::model {
-
-/*
- * Collection of information regarding the overview. 
- */
-struct YearOverviewData {
-    YearMap<bool> logAvailabilityMap;
-    StringYearMap sectionMap, taskMap, tagMap;
-};
 
 /*
  * Only class that actualy interacts with physical files on the drive
  */
 class LogRepositoryBase {
 public:
-    virtual ~LogRepositoryBase() {}
+    virtual ~LogRepositoryBase() {};
 
-    virtual YearOverviewData collectYearOverviewData(unsigned year) const = 0;
-    virtual void injectOverviewDataForDate(YearOverviewData &data, const Date &date) const = 0;
-
-    virtual std::optional<LogFile> read(const Date &date) const = 0;
-    virtual void remove(const Date &date) = 0;
+    virtual std::optional<LogFile> read(const date::Date &date) const = 0;
     virtual void write(const LogFile& log) = 0;
-
-    virtual std::string path(const Date &date) = 0;
+    virtual void remove(const date::Date &date) = 0;
 };
+
+
 
 } // namespace clog::model

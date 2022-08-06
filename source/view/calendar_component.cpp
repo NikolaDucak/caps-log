@@ -3,6 +3,8 @@
 #include "ftxui/dom/elements.hpp"
 
 namespace clog::view {
+using namespace ftxui;
+using namespace clog::date;
 
 namespace {
 Elements arrangeMonthsInCalendar(const Components &monthComponents, int columns) {

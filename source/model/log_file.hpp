@@ -4,27 +4,38 @@
 
 #include <filesystem>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
 namespace clog::model {
 
-using namespace date;
-
 class LogFile {
-    friend class LogRepository;
     std::string m_content;
+    clog::date::Date m_date;
 
-  public:
-    static const std::string LOG_FILE_TITLE_DATE_FORMAT;
-    static const std::string LOG_FILE_BASE_TEMPLATE;
+public:
+    LogFile(const clog::date::Date &date, std::string content) 
+        : m_date{date}, m_content{std::move(content)} {}
 
+    std::string getContent() const { return m_content; }
+    clog::date::Date getDate() const { return m_date; }
+
+
+    std::vector<std::string> readTagTitles() {
+        std::stringstream ss {m_content};
+        return readTagTitles(ss);
+    }
+
+    std::vector<std::string> readSectionTitles() {
+        std::stringstream ss {m_content};
+        return readSectionTitles(ss);
+    }
+    
     bool hasMeaningfullContent();
-    LogFile(std::string content) : m_content(std::move(content)) {}
 
-    LogFile(const Date &date, std::string content) : m_content(std::move(content)) {}
-
-    std::string getContent() { return m_content; }
+    static std::vector<std::string> readTagTitles(std::istream& input);
+    static std::vector<std::string> readSectionTitles(std::istream& input);
 };
 
 } // namespace clog::model

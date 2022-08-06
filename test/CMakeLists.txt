@@ -1,5 +1,3 @@
-enable_testing()
-
 # ------------------------------- Fetch FMT ------------------------------ #
  
 FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt)
@@ -27,10 +25,13 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
     tests
     ./controler_test.cpp
-    ./model/date_test.cpp
+    ./local_log_repository_test.cpp
+    ./log_entry_test.cpp
+    ./../source/model/online_repository.hpp
     ./../source/date/date.cpp
     ./../source/model/log_file.cpp
-    ./../source/model/default_log_repository.cpp
+    ./../source/model/local_log_repository.cpp
+    ./../source/model/year_overview_data.cpp
 )
 
 target_link_libraries(

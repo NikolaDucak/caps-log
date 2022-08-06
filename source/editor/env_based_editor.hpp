@@ -4,14 +4,19 @@
 #include <string>
 
 #include "editor_base.hpp"
+#include "model/local_log_repository.hpp"
 
 namespace clog::editor {
 
 class EnvBasedEditor : public EditorBase {
+    clog::model::LocalFSLogFilePathProvider m_pathProvider;
   public:
-    void openEditor(const std::string &path) {
+    EnvBasedEditor(clog::model::LocalFSLogFilePathProvider pathProvider) : 
+        m_pathProvider{std::move(pathProvider)} {}
+
+    void openEditor(const clog::model::LogFile& log) override {
         if (std::getenv("EDITOR")) {
-            std::system(("$EDITOR " + path).c_str());
+            std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
         }
     }
 };

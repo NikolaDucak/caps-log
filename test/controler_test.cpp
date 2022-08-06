@@ -1,89 +1,196 @@
 #include "app.hpp"
 #include "mocks.hpp"
 
-#include "model/default_log_repository.hpp"
+#include "model/log_file.hpp"
+#include "model/log_repository_base.hpp"
+#include "view/input_handler.hpp"
+#include "view/year_view_base.hpp"
+
 #include <fstream>
+#include <ftxui/component/event.hpp>
+#include <gmock/gmock-spec-builders.h>
+#include <memory>
 
 using namespace clog;
 using namespace testing;
 
-TEST(ContollerTest, EscQuits) {
-    const auto mock_view   = std::make_shared<testing::NiceMock<MockYearView>>();
-    const auto mock_repo   = std::make_shared<testing::NiceMock<MockRepo>>();
-    const auto mock_editor = std::make_shared<MockEditor>();
-    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+class ControllerTest : public testing::Test {
+protected:
+    clog::date::Date selectedDate{25,5,2005};
+    std::shared_ptr<NiceMock<DMockYearView>> mock_view = std::make_shared<NiceMock<DMockYearView>>();
+    std::shared_ptr<NiceMock<DMockRepo>> mock_repo = std::make_shared<NiceMock<DMockRepo>>();
+    std::shared_ptr<MockEditor> mock_editor = std::make_shared<MockEditor>();
+public:
+    ControllerTest() {
+        selectedDate = mock_view->getDummyView().m_focusedDate;
+    }
+};
+
+TEST_F(ControllerTest, EscQuits) {
+    clog::App clog {mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         EXPECT_CALL(*mock_view, stop());
-        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, '\x1B'});
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::Escape.input()});
     });
-
     clog.run();
 }
 
-TEST(ContollerTest, RemoveLog) {
-    const auto mock_view   = std::make_shared<testing::NiceMock<MockYearView>>();
-    const auto mock_repo   = std::make_shared<testing::NiceMock<MockRepo>>();
-    const auto mock_editor = std::make_shared<MockEditor>();
-    const auto selectedDate = model::Date{25,5,2005};
-    auto map = YearMap<bool>{};
-    map.set(selectedDate, true);
-    const auto data = YearOverviewData { .logAvailabilityMap = map };
-
-    EXPECT_CALL(*mock_repo, collectYearOverviewData(model::Date::getToday().year))
-        .WillOnce(Return(data));
-    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+TEST_F(ControllerTest, SpecialCharsDontQuit) {
+    clog::App clog {mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_view, getFocusedDate()).WillOnce(testing::Return(selectedDate));
-        EXPECT_CALL(*mock_view, prompt(_, _)).WillOnce(InvokeArgument<1>());
-        EXPECT_CALL(*mock_repo, remove(selectedDate));
-        EXPECT_CALL(*mock_view, setPreviewString(""));
-        // TODO: assert that it does set the updated values
-        EXPECT_CALL(*mock_view, setSectionMenuItems(_));
-        EXPECT_CALL(*mock_view, setTagMenuItems(_));
-        EXPECT_CALL(*mock_view, setAvailableLogsMap(_));
-        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, 'd'});
+        ON_CALL(*mock_view, stop)
+            .WillByDefault([]{ ASSERT_FALSE(true) << "Expected to not quit."; });
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowDown.input()});
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowUp.input()});
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowLeft.input()});
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::ArrowRight.input()});
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::Tab.input()});
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, ftxui::Event::TabReverse.input()});
+    });
+
+    clog.run();
+}
+
+TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
+    mock_repo->write(LogFile{selectedDate, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+    selectedDate = mock_view->getFocusedDate();
+
+    // Expect dummy data has been propagated to view
+    // ignoring first item '-----' that represents nothing
+    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
+    ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
+    EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems[1], clog::view::makeMenuItemTitle("dummy section", 1));
+    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems[1], clog::view::makeMenuItemTitle("dummy tag", 1));
+
+    EXPECT_CALL(*mock_view, run());
+    ON_CALL(*mock_view, run()).WillByDefault([&] {
+        EXPECT_CALL(*mock_view, prompt(_,_));
+        ON_CALL(*mock_view, prompt).WillByDefault([&](auto, auto cb) {
+            // trigger callback as if user clicked 'yes'
+            cb();
+        });
+        clog.handleInputEvent(UIEvent{UIEvent::ROOT_EVENT, "d"});
+        // assert that it has indeed been removed
+        EXPECT_FALSE(mock_repo->read(selectedDate));
+        // and that the view things have been updated
+        EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
+        EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
     });
     clog.run();
 }
 
+TEST_F(ControllerTest, OnFocusedDateChange_UpdatePreviewString) {
+    auto dummyLog1 = LogFile{selectedDate, "dummy content 1"};
+    auto dummyLog2 = LogFile{{10, 10, 2005}, "dummy content 2"};
+    mock_repo->write(dummyLog1);
+    mock_repo->write(dummyLog2);
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+    ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog1.getContent());
+    ASSERT_EQ(mock_view->getDummyView().m_focusedDate, dummyLog1.getDate());
 
-TEST(ContollerTest, AddLog) {
-    const auto mock_view = std::make_shared<testing::NiceMock<MockYearView>>();
-    const auto mock_repo = std::make_shared<testing::NiceMock<MockRepo>>();
-    const auto mock_editor = std::make_shared<MockEditor>();
+    EXPECT_CALL(*mock_view, run());
+    ON_CALL(*mock_view, run()).WillByDefault([&] {
+        mock_view->getDummyView().m_focusedDate = dummyLog2.getDate();
+        clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_DATE_CHANGE, ""});
+        ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog2.getContent());
+    });
+
+    clog.run();
+}
+
+TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
+    auto dummyLog1 = LogFile{selectedDate, "\n# dummy section 1\n* dummy tag 1"};
+    auto dummyLog2 = LogFile{{selectedDate.day+1, selectedDate.month, selectedDate.year}, "\n# dummy section 2\n* dummy tag 2"};
+    mock_repo->write(dummyLog1);
+    mock_repo->write(dummyLog2);
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
+    EXPECT_CALL(*mock_view, run());
+    ON_CALL(*mock_view, run()).WillByDefault([&]() {
+
+        // tags and sections are passed from the view as an index in the section/tagMenuItem vector 
+        // 0 = '------' aka nothing selected
+        clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_TAG_CHANGE, "1"});
+        auto dummy_view = &mock_view->getDummyView();
+
+        // tags
+        ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);
+        ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
+        ASSERT_FALSE(dummy_view->m_highlightedLogsMap->get(dummyLog2.getDate()));
+
+        clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_TAG_CHANGE, "2"});
+        ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);
+        ASSERT_FALSE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
+        ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog2.getDate()));
+
+        // sections
+        clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_SECTION_CHANGE, "1"});
+        ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);
+        ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
+        ASSERT_FALSE(dummy_view->m_highlightedLogsMap->get(dummyLog2.getDate()));
+
+        clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_SECTION_CHANGE, "2"});
+        ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);
+        ASSERT_FALSE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
+        ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog2.getDate()));
+    });
+    clog.run();
+}
+
+// TODO: test UIEvent::ROOT_EVENT 'd', '+', '-', 'm'
+
+TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+    // +1 for '-----' aka no section
+    ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
+    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
+    ASSERT_NE(mock_view->getDummyView().m_availableLogsMap, nullptr);
+    EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
+
+    EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
-        clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, '\x1B'});
-        // EXPECT_CALL(*mock_editor, openEditor(_,_);
-        // TODO: assert that it does set the updated values
-        EXPECT_CALL(*mock_view, setSectionMenuItems(_));
-        EXPECT_CALL(*mock_view, setTagMenuItems(_));
-        EXPECT_CALL(*mock_view, setAvailableLogsMap(_));
+        // expect editor to open
+        EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](auto) {
+            auto log = LogFile { selectedDate, "\n# section title \nsome dummy content\n * tag title" };
+            mock_repo->getDummyRepo().write(log);
+        });
+
+        // on callendar button click
+        clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, ""});
+
+        // expect the initialy set availability map pointer to still be valid
+        EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), true);
+        ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
+        EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.at(1), "(1) - section title");
+        ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
+        EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.at(1), "(1) - tag title");
     });
 
     clog.run();
 }
 
-// TODO: move to another file -----------------------------------------
-
-static const std::string TEST_LOG_DIRECTORY
-    {std::filesystem::temp_directory_path().string() + "/clog_test_dir"};
-
-TEST(DefaultLogRepositoryTest, RemoveLog) {
-    const auto selectedDate = model::Date{25,5,2005};
-    auto repo = DefaultLogRepository(TEST_LOG_DIRECTORY);
-    {
-        std::ofstream of(repo.path(selectedDate));
-        of << "aaa";
-    }
-    ASSERT_TRUE(repo.collectYearOverviewData(2005).logAvailabilityMap.get(selectedDate));
-    repo.remove(selectedDate);
-    ASSERT_FALSE(repo.collectYearOverviewData(2005).logAvailabilityMap.get(selectedDate));
+TEST_F(ControllerTest, AddLog_WhenLogHasNoMeaningfullContentItIsRemoved) {
+    ASSERT_FALSE(true);
 }
 
+TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+    EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
+
+    ON_CALL(*mock_view, run()).WillByDefault([&] {
+        EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](auto) {
+            auto baseLog = mock_repo->getDummyRepo().read(selectedDate);
+            ASSERT_TRUE(baseLog);
+            EXPECT_EQ(baseLog->getContent(), selectedDate.formatToString(LOG_BASE_TEMPLATE));
+        });
+        clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, ""});
+    });
+
+    clog.run();
+}
 

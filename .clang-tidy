@@ -1,0 +1,9 @@
+---
+Checks: "-*,
+        -readability-*,
+        -cppcoreguidelines-*,
+        -misc-non-private-member-variables-in-classes,
+"
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     none
