@@ -21,7 +21,7 @@ class WindowedMenu : public ComponentBase {
   public:
     WindowedMenu(std::string title, std::vector<std::string> *items, Ref<MenuOption> option) {
         auto menu = Menu(items, &m_selected, std::move(option));
-        auto menuRenderer = Renderer(menu, [=]() {
+        auto menuRenderer = Renderer(menu, [title = std::move(title), menu = std::move(menu)]() {
             return window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
         });
         Add(menuRenderer);

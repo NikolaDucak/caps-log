@@ -1,11 +1,14 @@
 Checks: "
+  -readability-magic-numbers
+  -readability-braces-around-statements
   readability-*, 
   portability-*, 
   performance-*, 
   cppcoreguidelines-*
   modernize-use-no-discard,
   modernize-use-auto
+  clang-analyzer-cplusplus
 "
 WarningsAsErrors: '*'
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: ''
 

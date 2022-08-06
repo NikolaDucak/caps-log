@@ -14,7 +14,7 @@ using namespace ftxui;
 class ContainerBase : public ComponentBase {
   public:
     ContainerBase(Components children, int *selector)
-        : selector_(selector ? selector : &selected_) {
+        : selector_(selector != 0 ? selector : &selected_) {
         for (Component &child : children) {
             Add(std::move(child));
         }
@@ -90,37 +90,38 @@ class GridContainer : public ContainerBase {
   public:
     using ContainerBase::ContainerBase;
     GridContainer(int width, Components c, int *selector)
-        : ContainerBase(c, selector), width_(width) {}
+        : ContainerBase(std::move(c), selector), width_(width) {}
 
     Element Render() override {
         Elements elements;
-        for (auto &it : children_)
+        for (auto &it : children_) {
             elements.push_back(it->Render());
-        if (elements.size() == 0)
+        }
+        if (elements.empty()) {
             return text("Empty container") | reflect(box_);
+        }
         return vbox(std::move(elements)) | reflect(box_);
     }
 
     bool EventHandler(Event event) override {
         int old_selected = *selector_;
 
-        if (event == Event::ArrowLeft || event == Event::Character('h'))
+        if (event == Event::ArrowLeft || event == Event::Character('h')) {
             MoveSelector(-1);
-        if (event == Event::ArrowRight || event == Event::Character('l'))
+        } else if (event == Event::ArrowRight || event == Event::Character('l')) {
             MoveSelector(+1);
-
-        if (event == Event::ArrowUp || event == Event::Character('k'))
+        } else if (event == Event::ArrowUp || event == Event::Character('k')) {
             MoveSelector(-width_);
-        if (event == Event::ArrowDown || event == Event::Character('j'))
+        } else if (event == Event::ArrowDown || event == Event::Character('j')) {
             MoveSelector(+width_);
-
-        if (event == Event::Home) {
-            for (size_t i = 0; i < children_.size(); ++i)
+        } else if (event == Event::Home) {
+            for (size_t i = 0; i < children_.size(); ++i) {
                 MoveSelector(-1);
-        }
-        if (event == Event::End) {
-            for (size_t i = 0; i < children_.size(); ++i)
+            }
+        } else if (event == Event::End) {
+            for (size_t i = 0; i < children_.size(); ++i) {
                 MoveSelector(1);
+            }
         }
 
         *selector_ = std::max(0, std::min(int(children_.size()) - 1, *selector_));
@@ -128,15 +129,17 @@ class GridContainer : public ContainerBase {
     }
 
     bool OnMouseEvent(Event event) override {
-        if (ContainerBase::OnMouseEvent(event))
+        if (ContainerBase::OnMouseEvent(event)) {
             return true;
+        }
 
         if (event.mouse().button != Mouse::WheelUp && event.mouse().button != Mouse::WheelDown) {
             return false;
         }
 
-        if (!box_.Contain(event.mouse().x, event.mouse().y))
+        if (!box_.Contain(event.mouse().x, event.mouse().y)) {
             return false;
+        }
 
         if (event.mouse().button == Mouse::WheelUp)
             MoveSelector(-1);
@@ -225,7 +228,8 @@ class CustomInputContainer : public ContainerBase {
   public:
     using ContainerBase::ContainerBase;
     CustomInputContainer(Components children, int *selector, Event s, Event sb)
-        : ContainerBase(children, selector), switch_(s), switchBack_(sb) {}
+        : ContainerBase(std::move(children), selector), switch_(std::move(s)),
+          switchBack_(std::move(sb)) {}
 
     Element Render() override {
         Elements elements;
@@ -285,8 +289,8 @@ class CustomInputContainer : public ContainerBase {
     Event switch_, switchBack_;
 };
 
-Component CustomContainer(Components children, Event switchEvent, Event switchBack) {
-    return std::make_shared<CustomInputContainer>(children, nullptr, switchEvent, switchBack);
+Component CustomContainer(Components children, Event next, Event prev) {
+    return std::make_shared<CustomInputContainer>(children, nullptr, next, prev);
 }
 
 } // namespace clog::view::ftxui_ext

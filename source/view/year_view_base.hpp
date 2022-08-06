@@ -14,7 +14,7 @@ using namespace date;
  * A utility function that formats a string for a section or tag menu with a title
  * and a number of mentions. eg '(10) tag title'
  */
-inline std::string makeMenuItemTitle(std::string title, unsigned count) {
+inline std::string makeMenuItemTitle(const std::string &title, unsigned count) {
     return std::string{"("} + std::to_string(count) + ") - " + title;
 }
 

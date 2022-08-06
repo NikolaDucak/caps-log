@@ -25,9 +25,8 @@ std::optional<LogFile> LocalLogRepository::read(const Date &date) const {
         std::stringstream buffer;
         buffer << t.rdbuf();
         return LogFile{date, std::string{buffer.str()}};
-    } else {
-        return {};
     }
+    return {};
 }
 
 void LocalLogRepository::write(const LogFile &log) {

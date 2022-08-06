@@ -16,7 +16,7 @@ struct UIEvent {
     const Type type;
     const std::string input;
 
-    UIEvent(Type t, std::string in = "") : type{t}, input{in} {}
+    UIEvent(Type type, std::string input = "") : type{type}, input{std::move(input)} {}
 };
 
 // TODO: DisplayedYearChange -> DisplayedIntervalChange

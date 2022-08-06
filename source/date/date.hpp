@@ -65,10 +65,10 @@ struct Date {
     bool isValid() const;
 };
 
-std::ostream &operator<<(std::ostream &out, const Date &d);
-bool operator==(const Date &l, const Date &r);
-bool operator!=(const Date &l, const Date &r);
-bool operator<(const Date &l, const Date &r);
+std::ostream &operator<<(std::ostream &out, const Date &date);
+bool operator==(const Date &left, const Date &right);
+bool operator!=(const Date &left, const Date &right);
+bool operator<(const Date &left, const Date &right);
 
 /**
  * A type of "map" container that maps dates in one year to T

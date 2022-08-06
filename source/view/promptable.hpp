@@ -17,11 +17,11 @@ class Promptable : public ComponentBase {
     Component m_main;
     Component m_prompt;
     std::string m_message;
-    std::function<void()> m_cb;
+    std::function<void()> m_callback;
 
   public:
     Promptable(Component main);
-    void prompt(const std::string &message, std::function<void()> cb);
+    void prompt(std::string message, std::function<void()> callback);
 
     Element Render() override;
 };

@@ -35,18 +35,18 @@ void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
     if (not input) {
         logAvailabilityMap.set(date, false);
         return;
-    } else {
-        logAvailabilityMap.set(date, true);
     }
+
+    logAvailabilityMap.set(date, true);
 
     // then parse and set mentions again
     auto parsedSections = input->readSectionTitles();
     auto parsedTags = input->readTagTitles();
 
-    for (auto tag : parsedTags) {
+    for (const auto &tag : parsedTags) {
         tagMap[tag].set(date, true);
     }
-    for (auto section : parsedSections) {
+    for (const auto &section : parsedSections) {
         sectionMap[section].set(date, true);
     }
 }

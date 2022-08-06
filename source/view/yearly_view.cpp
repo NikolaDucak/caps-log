@@ -54,10 +54,10 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
                center;
     });
 
-    auto event_handler = CatchEvent(whole_ui_renderer, [&](Event e) {
+    auto event_handler = CatchEvent(whole_ui_renderer, [&](const Event &event) {
         // TODO: gotta prevent tab reverse error
-        if (not e.is_mouse() && e != Event::TabReverse) {
-            return m_handler->handleInputEvent({UIEvent::ROOT_EVENT, e.input()});
+        if (not event.is_mouse() && event != Event::TabReverse) {
+            return m_handler->handleInputEvent({UIEvent::ROOT_EVENT, event.input()});
         };
         return false;
     });

@@ -48,9 +48,9 @@ class App : public InputHandlerBase {
     }
 
   public:
-    App(std::shared_ptr<YearViewBase> y, std::shared_ptr<LogRepositoryBase> m,
+    App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor)
-        : m_displayedYear(Date::getToday().year), m_view{std::move(y)}, m_repo{std::move(m)},
+        : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
           m_editor{std::move(editor)}, m_data{YearOverviewData::collect(
                                            m_repo, date::Date::getToday().year)} {
         m_view->setInputHandler(this);
@@ -82,18 +82,19 @@ class App : public InputHandlerBase {
 
   private:
     bool handleRootEvent(const std::string &input) {
-        if (input == "\x1B")
+        if (input == "\x1B") {
             quit();
-        else if (input == "d")
+        } else if (input == "d") {
             deleteFocusedLog();
-        else if (input == "+")
+        } else if (input == "+") {
             displayYear(+1);
-        else if (input == "-")
+        } else if (input == "-") {
             displayYear(-1);
-        else if (input == "m")
+        } else if (input == "m") {
             toggle();
-        else
+        } else {
             return false;
+        }
 
         return true;
     }
@@ -108,13 +109,13 @@ class App : public InputHandlerBase {
 
     void handleFocusedTagChange(const std::string &newTag) {
         m_view->selectedSection() = 0;
-        const auto highlighMap = m_tagMaps.at(std::stoi(newTag));
+        const auto *const highlighMap = m_tagMaps.at(std::stoi(newTag));
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
     void handleFocusedSectionChange(const std::string &newSection) {
         m_view->selectedTag() = 0;
-        const auto highlighMap = m_sectionMaps.at(std::stoi(newSection));
+        const auto *const highlighMap = m_sectionMaps.at(std::stoi(newSection));
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
@@ -183,8 +184,7 @@ class App : public InputHandlerBase {
         });
     }
 
-  private:
-    static const YearMap<bool> *findOrNull(const StringYearMap &map, std::string key) {
+    static const YearMap<bool> *findOrNull(const StringYearMap &map, const std::string &key) {
         auto result = map.find(key);
         if (result == map.end()) {
             return nullptr;

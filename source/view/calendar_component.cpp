@@ -36,7 +36,7 @@ Calendar::Calendar(const Date &today, CalendarOption option)
 
 Component Calendar::createYear(unsigned year) {
     Components month_components;
-    for (unsigned month = 1; month <= 12; month++) {
+    for (unsigned month = 1; month <= DECEMBER; month++) {
         month_components.push_back(createMonth(month, year));
     }
     auto container = ftxui_ext::AnyDir(month_components, &m_selectedMonth);
@@ -74,11 +74,12 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
             underlined;
         std::vector<Elements> render_data = {header1, {}};
         auto starting_weekday = date::getStartingWeekdayForMonth(month, m_displayedYear);
-        unsigned curren_weekday = starting_weekday - 1, calendar_day = 1;
+        unsigned curren_weekday = starting_weekday - 1;
+        unsigned calendar_day = 1;
         for (int i = 1; i < starting_weekday; i++) {
             render_data.back().push_back(filler());
         }
-        for (const auto btn : buttons) {
+        for (const auto &btn : buttons) {
             if (curren_weekday % 7 == 0) {
                 render_data.push_back({});
             }
