@@ -20,26 +20,6 @@ if(NOT ftxui_POPULATED)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-# ------------------------------ boost beast ----------------------------- #
-
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-
-find_package(Boost 1.69 COMPONENTS system filesystem)
-
-# ---------------------------------- json -------------------------------- #
-
-FetchContent_Declare(json
-    GIT_REPOSITORY https://github.com/nlohmann/json
-    GIT_TAG v3.10.5
-)
-
-FetchContent_GetProperties(json)
-if(NOT json_POPULATED)
-    FetchContent_Populate(json)
-    add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
 # --------------------------------- tests -------------------------------- #
 
 if(${BUILD_TESTS})
@@ -51,21 +31,3 @@ endif()
 # ---------------------------------- clog -------------------------------- #
 
 add_subdirectory(./source)
-
-# -------------------------------- clog-web ------------------------------ #
-
-if (EMSCRIPTEN) 
-    message(STATUS "WASM build enabled")
-    target_compile_definitions(clog PUBLIC WASM_BUILD)
-    target_compile_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1)
-    target_link_options(clog PUBLIC -fexceptions -sUSE_PTHREADS=1 -sPROXY_TO_PTHREAD -sASYNCIFY)
-
-    foreach(file "index.html" "run_webassembly.py")
-        configure_file("web/${file}" ${file})
-    endforeach(file)
-
-    em_link_js_library(clog "web/lib.js")
-    set_target_properties(clog_1_lib_js PROPERTIES LINKER_LANGUAGE CXX) # ... cmake complains without this
-else()
-    install(TARGETS clog RUNTIME DESTINATION bin)
-endif()

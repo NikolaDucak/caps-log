@@ -27,7 +27,6 @@ add_executable(
     ./controler_test.cpp
     ./local_log_repository_test.cpp
     ./log_entry_test.cpp
-    ./../source/model/online_repository.hpp
     ./../source/date/date.cpp
     ./../source/model/log_file.cpp
     ./../source/model/local_log_repository.cpp

@@ -16,7 +16,6 @@ add_executable(
     ./model/local_log_repository.cpp
     ./model/local_log_repository.hpp
     ./model/log_repository_base.hpp
-    ./model/online_repository.hpp
     ./model/log_file.cpp
     ./model/log_file.hpp
     ./model/year_overview_data.cpp
@@ -26,7 +25,7 @@ add_executable(
     ./date/date.hpp
 
     ./utils/string.hpp
-    ./utils/http_client.hpp
+    ./utils/map.hpp
 )
 
 target_include_directories(clog PRIVATE ./ ${Boost_INCLUDE_DIRS})
@@ -35,5 +34,4 @@ target_link_libraries(clog
     ftxui::screen
     ftxui::dom
     ftxui::component 
-    nlohmann_json::nlohmann_json
 )

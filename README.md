@@ -23,8 +23,8 @@ For examples of valid and invalid section and tag margers see [./test/log_entry_
 
 # Building & installing
 **Dependancies**
+`clog`fetches it's dependancies from github, so no extra action should be necessary.
 
-clog fetches most of it's dependancies from github except `boost`
 
 To build the `clog` executable run:
 ```
@@ -32,6 +32,13 @@ mkdir build && cd build && cmake ..
 make 
 ```
 After a successfull build. Run: `sudo make install`.
+
+To also build & run the tests tests do
+```
+mkdir build && cd build && cmake .. -DBUILD_TESTS=ON
+make 
+ctest
+```
 
 # Planned work
 - [ ] spike: editor in browser wasm build
