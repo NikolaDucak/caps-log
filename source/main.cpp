@@ -4,9 +4,7 @@
 #include "date/date.hpp"
 #include "editor/disabled_editor.hpp"
 #include "editor/env_based_editor.hpp"
-#include "model/dummy_repository.hpp"
 #include "model/local_log_repository.hpp"
-#include "nlohmann/json.hpp"
 
 auto makeClog() {
     auto pathProvider = clog::model::LocalFSLogFilePathProvider{};
