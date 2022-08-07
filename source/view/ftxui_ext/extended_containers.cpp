@@ -296,7 +296,8 @@ class CustomInputContainer : public ContainerBase {
 // clang-tidy keeps complaining about value arguments even tho they are std::moved.
 // NOLINTNEXTLINE (performance-unnecessary-value-param)
 Component CustomContainer(Components children, Event next, Event prev) {
-    return std::make_shared<CustomInputContainer>(std::move(children), nullptr, std::move(next), std::move(prev));
+    return std::make_shared<CustomInputContainer>(std::move(children), nullptr, std::move(next),
+                                                  std::move(prev));
 }
 
 } // namespace clog::view::ftxui_ext

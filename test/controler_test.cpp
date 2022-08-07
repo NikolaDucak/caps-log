@@ -182,7 +182,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     clog.run();
 }
 
-TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) { 
+TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
@@ -203,15 +203,17 @@ TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_editor, openEditor(_)).WillOnce([&](auto) {
-            // Assert only base template has been written
-            auto baseLog = mock_repo->getDummyRepo().read(selectedDate);
-            ASSERT_TRUE(baseLog);
-            EXPECT_EQ(baseLog->getContent(), selectedDate.formatToString(LOG_BASE_TEMPLATE));
-        }).WillOnce([&](auto){
-            // Write an empty log
-            mock_repo->getDummyRepo().write({selectedDate, ""});
-        });
+        EXPECT_CALL(*mock_editor, openEditor(_))
+            .WillOnce([&](auto) {
+                // Assert only base template has been written
+                auto baseLog = mock_repo->getDummyRepo().read(selectedDate);
+                ASSERT_TRUE(baseLog);
+                EXPECT_EQ(baseLog->getContent(), selectedDate.formatToString(LOG_BASE_TEMPLATE));
+            })
+            .WillOnce([&](auto) {
+                // Write an empty log
+                mock_repo->getDummyRepo().write({selectedDate, ""});
+            });
 
         clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, ""});
         EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));

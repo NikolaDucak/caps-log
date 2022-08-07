@@ -50,13 +50,10 @@ class App : public InputHandlerBase {
 
   public:
     App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-        std::shared_ptr<EditorBase> editor) : 
-        m_displayedYear(Date::getToday().year), 
-        m_view{std::move(view)}, 
-        m_repo{std::move(repo)},
-        m_editor{std::move(editor)}, 
-        m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year)} 
-    {
+        std::shared_ptr<EditorBase> editor)
+        : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
+          m_editor{std::move(editor)}, m_data{YearOverviewData::collect(
+                                           m_repo, date::Date::getToday().year)} {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -186,7 +183,7 @@ class App : public InputHandlerBase {
         });
     }
 
-    static bool noMeningfullContent(const std::string& content, const Date& date) {
+    static bool noMeningfullContent(const std::string &content, const Date &date) {
         return content == date.formatToString(LOG_BASE_TEMPLATE) || content.empty();
     }
 
