@@ -13,16 +13,17 @@ Currently clog uses your `$EDITOR` environment variable to start the editor.
 when editing. Only syntax that is mandatory to provide sections & tags features is respecting the sections & tasks rules.
 
 *Sections*
-`# section name`
+To mark a section just do: `# section name`. All text below untill the next section is considered part of it.
 
 *Tags*
-`* tag name`
-`* tag name (some other optional info)`
-`* tag name (some other optional info): a multiline body that is ignored by clog`
+- `* tag name`
+- `* tag name (some other optional info)`
+- `* tag name (some other optional info): a multiline body that is ignored by clog`
 For examples of valid and invalid section and tag margers see [./test/log_entry_test.cpp](./test/log_entry_test.cpp)
 
 # Building & installing
 **Dependancies**
+
 clog fetches most of it's dependancies from github except `boost`
 
 To build the `clog` executable run:
