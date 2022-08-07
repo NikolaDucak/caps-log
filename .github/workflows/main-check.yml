@@ -32,7 +32,8 @@ jobs:
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+      # Exclude LocalLogRepository test as they write to the filesystem
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "*LocalLogRepository*"
 
     - name: Static Analysis
       if: always()

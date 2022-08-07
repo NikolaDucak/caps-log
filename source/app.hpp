@@ -4,6 +4,7 @@
 #include "model/log_file.hpp"
 #include "model/log_repository_base.hpp"
 #include "model/year_overview_data.hpp"
+#include "utils/string.hpp"
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
 
@@ -49,10 +50,13 @@ class App : public InputHandlerBase {
 
   public:
     App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-        std::shared_ptr<EditorBase> editor)
-        : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
-          m_editor{std::move(editor)}, m_data{YearOverviewData::collect(
-                                           m_repo, date::Date::getToday().year)} {
+        std::shared_ptr<EditorBase> editor) : 
+        m_displayedYear(Date::getToday().year), 
+        m_view{std::move(view)}, 
+        m_repo{std::move(repo)},
+        m_editor{std::move(editor)}, 
+        m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year)} 
+    {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -159,15 +163,13 @@ class App : public InputHandlerBase {
     }
 
     // TODO: i feel like this needs more tests
-    // 1) editor leaves log existing
     // 2) editor removes log
-    // 3) no meaningful content
     void handleCalendarButtonClick() {
         m_view->withRestoredIO([this]() {
             auto date = m_view->getFocusedDate();
             auto log = m_repo->read(date);
             if (not log.has_value()) {
-                m_repo->write({date, date.formatToString("# %d. %m. %y.")});
+                m_repo->write({date, date.formatToString(LOG_BASE_TEMPLATE)});
                 // this looks a little awkward, it's easy to forget to reread after write
                 log = m_repo->read(date);
             }
@@ -177,11 +179,15 @@ class App : public InputHandlerBase {
 
             // check that after editing still exists
             log = m_repo->read(date);
-            if (log && !log->hasMeaningfullContent()) {
+            if (log && noMeningfullContent(log->getContent(), date)) {
                 m_repo->remove(date);
             }
             updateViewSectionsAndTagsAfterLogChange(date);
         });
+    }
+
+    static bool noMeningfullContent(const std::string& content, const Date& date) {
+        return content == date.formatToString(LOG_BASE_TEMPLATE) || content.empty();
     }
 
     static const YearMap<bool> *findOrNull(const StringYearMap &map, const std::string &key) {

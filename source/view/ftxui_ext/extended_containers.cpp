@@ -216,10 +216,14 @@ class AnyDirContainer : public ContainerBase {
     Box box_;
 };
 
+// clang-tidy keeps complaining about value arguments even tho they are std::moved.
+// NOLINTNEXTLINE (performance-unnecessary-value-param)
 Component Grid(int width, Components children, int *selected) {
     return std::make_shared<GridContainer>(width, std::move(children), selected);
 }
 
+// clang-tidy keeps complaining about value arguments even tho they are std::moved.
+// NOLINTNEXTLINE (performance-unnecessary-value-param)
 Component AnyDir(Components children, int *selected) {
     return std::make_shared<AnyDirContainer>(std::move(children), selected);
 }
@@ -289,8 +293,10 @@ class CustomInputContainer : public ContainerBase {
     Event switch_, switchBack_;
 };
 
+// clang-tidy keeps complaining about value arguments even tho they are std::moved.
+// NOLINTNEXTLINE (performance-unnecessary-value-param)
 Component CustomContainer(Components children, Event next, Event prev) {
-    return std::make_shared<CustomInputContainer>(children, nullptr, next, prev);
+    return std::make_shared<CustomInputContainer>(std::move(children), nullptr, std::move(next), std::move(prev));
 }
 
 } // namespace clog::view::ftxui_ext

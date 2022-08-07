@@ -34,7 +34,7 @@ void LocalLogRepository::write(const LogFile &log) {
 }
 
 void LocalLogRepository::remove(const Date &date) {
-    auto result = std::remove(m_pathProvider.path(date).c_str());
+    (void)std::remove(m_pathProvider.path(date).c_str());
 }
 
 } // namespace clog::model

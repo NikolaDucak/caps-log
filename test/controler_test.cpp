@@ -3,6 +3,7 @@
 
 #include "model/log_file.hpp"
 #include "model/log_repository_base.hpp"
+#include "model/year_overview_data.hpp"
 #include "view/input_handler.hpp"
 #include "view/year_view_base.hpp"
 
@@ -16,14 +17,20 @@ using namespace testing;
 
 class ControllerTest : public testing::Test {
   protected:
-    clog::date::Date selectedDate{25, 5, 2005};
+    // Clog collects info for the date::Date::getToday().year
+    // so collected data will miss info for other year
+    // this is not very obvious when testing, resulting in failing
+    // asserting some data is added if this fact is forgotten.
+    // TODO: Maybe pass year as a constructor param?
+    date::Date selectedDate{25, 5, date::Date::getToday().year};
+    date::Date dayAfterSelectedDate{26, 5, date::Date::getToday().year};
     std::shared_ptr<NiceMock<DMockYearView>> mock_view =
         std::make_shared<NiceMock<DMockYearView>>();
     std::shared_ptr<NiceMock<DMockRepo>> mock_repo = std::make_shared<NiceMock<DMockRepo>>();
     std::shared_ptr<MockEditor> mock_editor = std::make_shared<MockEditor>();
 
   public:
-    ControllerTest() { selectedDate = mock_view->getDummyView().m_focusedDate; }
+    ControllerTest() { mock_view->getDummyView().m_focusedDate = selectedDate; }
 };
 
 TEST_F(ControllerTest, EscQuits) {
@@ -107,21 +114,20 @@ TEST_F(ControllerTest, OnFocusedDateChange_UpdatePreviewString) {
 }
 
 TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
-    auto dummyLog1 = LogFile{selectedDate, "\n# dummy section 1\n* dummy tag 1"};
-    auto dummyLog2 = LogFile{{selectedDate.day + 1, selectedDate.month, selectedDate.year},
-                             "\n# dummy section 2\n* dummy tag 2"};
-    mock_repo->write(dummyLog1);
-    mock_repo->write(dummyLog2);
+    auto dummyLog1 = LogFile{selectedDate, "\n# sectone \n* tagone"};
+    auto dummyLog2 = LogFile{dayAfterSelectedDate, "\n# secttwo \n* tagtwo"};
+    mock_repo->getDummyRepo().write(dummyLog1);
+    mock_repo->getDummyRepo().write(dummyLog2);
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&]() {
-        // tags and sections are passed from the view as an index in the section/tagMenuItem vector
+        // Tags and sections are passed from the view as an index in the section/tagMenuItem vector
         // 0 = '------' aka nothing selected
         clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_TAG_CHANGE, "1"});
         auto dummy_view = &mock_view->getDummyView();
 
-        // tags
+        // Tags
         ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);
         ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
         ASSERT_FALSE(dummy_view->m_highlightedLogsMap->get(dummyLog2.getDate()));
@@ -131,7 +137,7 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
         ASSERT_FALSE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
         ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog2.getDate()));
 
-        // sections
+        // Sections
         clog.handleInputEvent(UIEvent{UIEvent::FOCUSED_SECTION_CHANGE, "1"});
         ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);
         ASSERT_TRUE(dummy_view->m_highlightedLogsMap->get(dummyLog1.getDate()));
@@ -144,8 +150,6 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
     });
     clog.run();
 }
-
-// TODO: test UIEvent::ROOT_EVENT 'd', '+', '-', 'm'
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
@@ -178,9 +182,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     clog.run();
 }
 
-TEST_F(ControllerTest, AddLog_WhenLogHasNoMeaningfullContentItIsRemoved) { ASSERT_FALSE(true); }
-
-TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
+TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) { 
     auto clog = clog::App{mock_view, mock_repo, mock_editor};
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
@@ -193,5 +195,29 @@ TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
         clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, ""});
     });
 
+    clog.run();
+}
+
+TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
+    auto clog = clog::App{mock_view, mock_repo, mock_editor};
+    EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
+
+    ON_CALL(*mock_view, run()).WillByDefault([&] {
+        EXPECT_CALL(*mock_editor, openEditor(_)).WillOnce([&](auto) {
+            // Assert only base template has been written
+            auto baseLog = mock_repo->getDummyRepo().read(selectedDate);
+            ASSERT_TRUE(baseLog);
+            EXPECT_EQ(baseLog->getContent(), selectedDate.formatToString(LOG_BASE_TEMPLATE));
+        }).WillOnce([&](auto){
+            // Write an empty log
+            mock_repo->getDummyRepo().write({selectedDate, ""});
+        });
+
+        clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, ""});
+        EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));
+
+        clog.handleInputEvent(UIEvent{UIEvent::CALENDAR_BUTTON_CLICK, ""});
+        EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));
+    });
     clog.run();
 }
