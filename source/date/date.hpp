@@ -45,7 +45,7 @@ struct Date {
     Date(unsigned day, unsigned month, unsigned year);
 
     /**
-     * A constructor that accepts a date represented as 2-366.
+     * A constructor that accepts a date represented as 1-366.
      */
     Date(unsigned day, unsigned year);
 
@@ -55,10 +55,18 @@ struct Date {
     unsigned getWeekday() const;
 
     /**
+     *
+     */
+    bool isWeekend() const;
+
+    /**
      * Returns todays date.
      */
     static Date getToday();
 
+    /**
+     * Converts the date to a formated string.
+     */
     std::string formatToString(const std::string &format) const;
 
   private:

@@ -71,6 +71,8 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
         auto element = text(state.label);
         if (state.focused)
             element = element | inverted;
+        if (date.isWeekend())
+            element = element | color(Color::Blue);
         if (today == date)
             element = element | color(Color::Red);
         if (m_highlightedLogsMap && m_highlightedLogsMap->get(date))

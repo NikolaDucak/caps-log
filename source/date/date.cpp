@@ -59,6 +59,11 @@ unsigned Date::getWeekday() const {
     return target_time_result->tm_wday == 0 ? 6 : target_time_result->tm_wday - 1;
 }
 
+bool Date::isWeekend() const {
+    const auto weekday = getWeekday() + 1;
+    return weekday == SATURDAY || weekday == SUNDAY;
+}
+
 std::string Date::formatToString(const std::string &format) const {
     std::ostringstream a;
     std::tm date_time = dateToTm(*this);
