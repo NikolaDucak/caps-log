@@ -33,8 +33,19 @@ class LogFile {
 
     bool hasMeaningfullContent();
 
+    // TODO: cleanup
     static std::vector<std::string> readTagTitles(std::istream &input);
     static std::vector<std::string> readSectionTitles(std::istream &input);
+
+    static std::vector<std::string> readTagTitles(const std::string &input) {
+        std::stringstream ss{input};
+        return readTagTitles(ss);
+    }
+
+    static std::vector<std::string> readSectionTitles(const std::string &input) {
+        std::stringstream ss{input};
+        return readSectionTitles(ss);
+    }
 };
 
 } // namespace clog::model
