@@ -9,7 +9,7 @@
 #include <ftxui/screen/terminal.hpp>
 #include <sstream>
 
-#include <boost/lexical_cast.hpp>
+#include <string>
 
 namespace clog::view {
 
@@ -92,16 +92,16 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
 
 std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
     MenuOption option{.on_change = [this] {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_TAG_CHANGE,
-                                     boost::lexical_cast<std::string>(m_tagsMenu->selected())});
+        m_handler->handleInputEvent(
+            {UIEvent::FOCUSED_TAG_CHANGE, std::to_string(m_tagsMenu->selected())});
     }};
     return WindowedMenu::make("Tags", &m_tagMenuItems, option);
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
     MenuOption option = {.on_change = [this] {
-        m_handler->handleInputEvent({UIEvent::FOCUSED_SECTION_CHANGE,
-                                     boost::lexical_cast<std::string>(m_sectionsMenu->selected())});
+        m_handler->handleInputEvent(
+            {UIEvent::FOCUSED_SECTION_CHANGE, std::to_string(m_sectionsMenu->selected())});
     }};
     return WindowedMenu::make("Sections", &m_sectionMenuItems, option);
 }
