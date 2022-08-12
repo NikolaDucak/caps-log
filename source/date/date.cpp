@@ -56,11 +56,12 @@ unsigned Date::getWeekday() const {
     auto t2 = std::mktime(&date_time);
     auto *target_time_result = std::localtime(&t2);
 
-    return target_time_result->tm_wday == 0 ? 6 : target_time_result->tm_wday - 1;
+    // sunday = 0, barbaric
+    return target_time_result->tm_wday == 0 ? 7 : target_time_result->tm_wday;
 }
 
 bool Date::isWeekend() const {
-    const auto weekday = getWeekday() + 1;
+    const auto weekday = getWeekday();
     return weekday == SATURDAY || weekday == SUNDAY;
 }
 

@@ -17,6 +17,7 @@ add_executable(
     tests
     ./config_test.cpp
     ./controler_test.cpp
+    ./date_test.cpp
     ./local_log_repository_test.cpp
     ./log_entry_test.cpp
     ./year_overview_data_test.cpp
