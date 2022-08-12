@@ -3,3 +3,4 @@ build_web/
 .vscode/
 .cache/
 compile_commands.json
+.DS_Store

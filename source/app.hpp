@@ -31,9 +31,10 @@ class App : public InputHandlerBase {
 
     std::vector<const YearMap<bool> *> m_tagMaps;
     std::vector<const YearMap<bool> *> m_sectionMaps;
+    bool m_skipFirstLine;
 
     void updateViewSectionsAndTagsAfterLogChange(const Date &dateOfChangedLog) {
-        m_data.collect(m_repo, dateOfChangedLog);
+        m_data.collect(m_repo, dateOfChangedLog, m_skipFirstLine);
         m_view->setTagMenuItems(makeMenuTitles(m_data.tagMap));
         m_view->setSectionMenuItems(makeMenuTitles(m_data.sectionMap));
 
@@ -50,10 +51,11 @@ class App : public InputHandlerBase {
 
   public:
     App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-        std::shared_ptr<EditorBase> editor)
+        std::shared_ptr<EditorBase> editor, bool skipFirstLine = true)
         : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
           m_editor{std::move(editor)}, m_data{YearOverviewData::collect(
-                                           m_repo, date::Date::getToday().year)} {
+                                           m_repo, date::Date::getToday().year, skipFirstLine)},
+          m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -134,7 +136,7 @@ class App : public InputHandlerBase {
 
     void displayYear(int diff) {
         m_displayedYear += diff;
-        m_data = YearOverviewData::collect(m_repo, m_displayedYear);
+        m_data = YearOverviewData::collect(m_repo, m_displayedYear, m_skipFirstLine);
         m_view->showCalendarForYear(m_displayedYear);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }

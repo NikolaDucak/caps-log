@@ -19,7 +19,7 @@ auto makeClog(const clog::Config &conf) {
     auto view =
         std::make_shared<clog::view::YearView>(clog::date::Date::getToday(), conf.sundayStart);
     auto editor = std::make_shared<clog::editor::EnvBasedEditor>(pathProvider);
-    return clog::App{std::move(view), std::move(repo), std::move(editor)};
+    return clog::App{std::move(view), std::move(repo), std::move(editor), conf.ignoreFirstLineWhenParsingSections};
 }
 
 int main(int argc, const char **argv) try {

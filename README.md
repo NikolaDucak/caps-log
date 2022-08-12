@@ -21,8 +21,8 @@ when editing. This 'syntax' was chosen with little thought based on personal pre
 *Sections*
 To mark a section just do: `# section name`. All text below untill the next section is considered part of it, although 
 clog currently does not care for that text, just the section title. By default, the first line of the file is ignored when
-looking up section titles, as I like to use that line for a section with the date of the current line, this will be configurable
-in the future.
+looking up section titles, as I like to use that line for a section with the date of the current line, this is configurable via 
+command line args or config file
 
 *Tags*
 The tags do not apply to a specific section but to the whole log entry file. 
@@ -44,6 +44,8 @@ A small TUI journaling tool.
  --log-dir-path <path>         - path where log files are stored (default: ~/.clog/day/)
  --log-name-format <format>    - format in which log entry markdown files are saved (default: d%Y_%m_%d.md)
  --sunday-start                - have the calendar display sunday as first day of the week)"};
+ --ignore-first-line-section   - if a section mark is placed on the first line, 
+                                 by default it is ignored as it's left for log title, this overrides this behaviour
 ```
 
 *Config file*
@@ -51,6 +53,7 @@ A small TUI journaling tool.
 log-dir-path = /path/to/log/dir
 log-name-format = %Y_%d_%m.txt
 sunday-start = true
+ignore-first-line-section = true
 ```
 
 

@@ -5,12 +5,12 @@
 namespace clog::model {
 
 YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
-                                           unsigned year) {
+                                           unsigned year, bool skipFirstLine) {
     YearOverviewData data;
 
     for (unsigned month = date::Month::JANUARY; month <= date::Month::DECEMBER; month++) {
         for (unsigned day = 1; day <= date::getNumberOfDaysForMonth(month, year); day++) {
-            data.collect(repo, date::Date{day, month, year});
+            data.collect(repo, date::Date{day, month, year}, skipFirstLine);
         }
     }
 
@@ -18,7 +18,7 @@ YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBa
 }
 
 void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
-                               const date::Date &date) {
+                               const date::Date &date, bool skipFirstLine) {
     // first remove all set mentions
     utils::mapRemoveIf(tagMap, [date](auto &tag) {
         tag.second.set(date, false);
@@ -40,7 +40,7 @@ void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
     logAvailabilityMap.set(date, true);
 
     // then parse and set mentions again
-    auto parsedSections = input->readSectionTitles();
+    auto parsedSections = input->readSectionTitles(skipFirstLine);
     auto parsedTags = input->readTagTitles();
 
     for (const auto &tag : parsedTags) {

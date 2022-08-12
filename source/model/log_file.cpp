@@ -62,11 +62,13 @@ std::vector<std::string> LogFile::readTagTitles(std::istream &input) {
     return result;
 }
 
-std::vector<std::string> LogFile::readSectionTitles(std::istream &input) {
+std::vector<std::string> LogFile::readSectionTitles(std::istream &input, bool skipFirstLine) {
     std::vector<std::string> result;
 
     std::string line;
-    getline(input, line); // skip first line, because I like it that way
+
+    if (skipFirstLine)
+        getline(input, line);
 
     forEachLogLine(input, [&](const auto &line) {
         if (std::smatch sm; std::regex_match(line, sm, SECTION_TITLE_REGEX)) {

@@ -26,25 +26,27 @@ class LogFile {
         return readTagTitles(ss);
     }
 
-    std::vector<std::string> readSectionTitles() {
+    std::vector<std::string> readSectionTitles(bool skipFirstLine = true) {
         std::stringstream ss{m_content};
-        return readSectionTitles(ss);
+        return readSectionTitles(ss, skipFirstLine);
     }
 
     bool hasMeaningfullContent();
 
     // TODO: cleanup
     static std::vector<std::string> readTagTitles(std::istream &input);
-    static std::vector<std::string> readSectionTitles(std::istream &input);
+    static std::vector<std::string> readSectionTitles(std::istream &input,
+                                                      bool skipFirstLine = true);
 
     static std::vector<std::string> readTagTitles(const std::string &input) {
         std::stringstream ss{input};
         return readTagTitles(ss);
     }
 
-    static std::vector<std::string> readSectionTitles(const std::string &input) {
+    static std::vector<std::string> readSectionTitles(const std::string &input,
+                                                      bool skipFirstLine = true) {
         std::stringstream ss{input};
-        return readSectionTitles(ss);
+        return readSectionTitles(ss, skipFirstLine);
     }
 };
 
