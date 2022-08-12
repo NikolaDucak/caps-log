@@ -224,7 +224,7 @@ TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
     clog.run();
 }
 
-TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) { 
+TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
     auto clog = clog::App{mock_view, mock_repo, mock_editor, true};
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
     mock_repo->write(LogFile{selectedDate, "# Dummy section"});
