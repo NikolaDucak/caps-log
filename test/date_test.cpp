@@ -63,3 +63,21 @@ TEST(DateTest, GetStringNameForMonth) {
     EXPECT_EQ(getStringNameForMonth(NOVEMBER), "november");
     EXPECT_EQ(getStringNameForMonth(DECEMBER), "december");
 }
+
+TEST(DateTest, GetNumberOfDaysForMonth) {
+    struct test_data {
+        Date month;
+        unsigned days;
+    };
+    std::vector<test_data> data{
+        {{1, JANUARY, 1}, 31},   {{1, FEBRUARY, 1}, 28},   {{1, FEBRUARY, 4}, 29},
+        {{1, MARCH, 1}, 31},     {{1, APRIL, 1}, 30},      {{1, MAY, 1}, 31},
+        {{1, JUNE, 1}, 30},      {{1, JULY, 1}, 31},       {{1, AUGUST, 1}, 31},
+        {{1, SEPTEMBER, 1}, 30}, {{1, OCTOBER, 1}, 31},    {{1, NOVEMBER, 1}, 30},
+        {{1, DECEMBER, 1}, 31},  {{1, FEBRUARY, 2021}, 28}};
+
+    for (const auto &test : data) {
+        EXPECT_EQ(getNumberOfDaysForMonth(test.month.month, test.month.year), test.days)
+            << "Error on month: " << test.month.month;
+    }
+}
