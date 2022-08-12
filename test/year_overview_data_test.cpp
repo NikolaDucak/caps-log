@@ -16,10 +16,10 @@ TEST(YearOverviewDataTest, Collect) {
     ASSERT_EQ(data.tagMap.size(), 1);
     ASSERT_EQ(data.sectionMap.size(), 1);
     ASSERT_EQ(data.logAvailabilityMap.daysSet(), 1);
+    ASSERT_EQ(data.logAvailabilityMap.get(dummyDate), true);
 
     ASSERT_EQ(data.tagMap["dummy tag"].daysSet(), 1);
     ASSERT_EQ(data.sectionMap["dummy section"].daysSet(), 1);
-    ASSERT_EQ(data.logAvailabilityMap.get(dummyDate), true);
     ASSERT_EQ(data.tagMap["dummy tag"].get(dummyDate), true);
     ASSERT_EQ(data.sectionMap["dummy section"].get(dummyDate), true);
 

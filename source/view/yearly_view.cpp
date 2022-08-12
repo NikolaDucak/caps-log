@@ -13,9 +13,9 @@
 
 namespace clog::view {
 
-YearView::YearView(const date::Date &today)
-    : m_screen{ScreenInteractive::Fullscreen()}, m_calendarButtons{Calendar::make(
-                                                     today, makeCalendarOptions(today))},
+YearView::YearView(const date::Date &today, bool sundayStart)
+    : m_screen{ScreenInteractive::Fullscreen()},
+      m_calendarButtons{Calendar::make(today, makeCalendarOptions(today, sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()}, m_rootComponent{
                                                                           makeFullUIComponent()} {}
 
@@ -65,7 +65,7 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
     return std::make_shared<Promptable>(event_handler);
 }
 
-CalendarOption YearView::makeCalendarOptions(const Date &today) {
+CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart) {
     CalendarOption option;
     option.transform = [this, today](const auto &date, const auto &state) {
         auto element = text(state.label);
@@ -89,6 +89,7 @@ CalendarOption YearView::makeCalendarOptions(const Date &today) {
     option.enter = [this](const auto & /* date */) {
         m_handler->handleInputEvent({UIEvent::CALENDAR_BUTTON_CLICK});
     };
+    option.sundayStart = sundayStart;
     return std::move(option);
 }
 

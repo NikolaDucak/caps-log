@@ -1,12 +1,3 @@
-# ------------------------------- Fetch FMT ------------------------------ #
- 
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt)
-FetchContent_GetProperties(fmt)
-if(NOT fmt_POPULATED)
-    FetchContent_Populate(fmt)
-    add_subdirectory(${fmt_SOURCE_DIR} ${fmt_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
-
 # --------------------------------- gtest -------------------------------- #
 
 set(INSTALL_GTEST OFF)
@@ -24,9 +15,13 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(
     tests
+    ./config_test.cpp
     ./controler_test.cpp
     ./local_log_repository_test.cpp
     ./log_entry_test.cpp
+    ./year_overview_data_test.cpp
+
+    ./../source/config.cpp
     ./../source/date/date.cpp
     ./../source/model/log_file.cpp
     ./../source/model/local_log_repository.cpp
@@ -41,6 +36,7 @@ target_link_libraries(
     ftxui::dom
     ftxui::component 
     fmt::fmt
+    Boost::program_options
 )
 
 target_include_directories(

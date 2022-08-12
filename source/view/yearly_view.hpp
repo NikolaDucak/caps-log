@@ -35,7 +35,7 @@ class YearView : public YearViewBase {
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
   public:
-    YearView(const Date &today);
+    YearView(const Date &today, bool sundayStart);
 
     void run() override;
     void stop() override;
@@ -75,7 +75,7 @@ class YearView : public YearViewBase {
     std::shared_ptr<Promptable> makeFullUIComponent();
     std::shared_ptr<WindowedMenu> makeTagsMenu();
     std::shared_ptr<WindowedMenu> makeSectionsMenu();
-    CalendarOption makeCalendarOptions(const Date &today);
+    CalendarOption makeCalendarOptions(const Date &today, bool sundayStart);
 };
 
 } // namespace clog::view

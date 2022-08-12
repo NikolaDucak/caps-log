@@ -13,14 +13,15 @@ struct CalendarOption {
         nullptr;
     std::function<void(const date::Date &)> focusChange = nullptr;
     std::function<void(const date::Date &)> enter = nullptr;
+    bool sundayStart = false;
 };
 
 class Calendar : public ftxui::ComponentBase {
+    CalendarOption m_option;
     date::Date m_today;
     ftxui::Component m_root;
     int m_selectedMonth = 0;
     std::array<int, 12> m_selectedDay{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    CalendarOption m_option;
     unsigned m_displayedYear;
 
   public:

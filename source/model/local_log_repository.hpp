@@ -16,11 +16,7 @@ class LocalFSLogFilePathProvider {
     std::string m_logDirectory, m_logFilenameFormat;
 
   public:
-    static const std::string DEFAULT_LOG_DIR_PATH;
-    static const std::string DEFAULT_LOG_FILENAME_FORMAT;
-
-    LocalFSLogFilePathProvider(std::string logDir = DEFAULT_LOG_DIR_PATH,
-                               std::string logFilenameFormat = DEFAULT_LOG_FILENAME_FORMAT)
+    LocalFSLogFilePathProvider(std::string logDir, std::string logFilenameFormat)
         : m_logDirectory{std::move(logDir)}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
 
     inline std::string path(const date::Date &date) const {

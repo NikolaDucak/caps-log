@@ -32,7 +32,29 @@ The tags do not apply to a specific section but to the whole log entry file.
 For examples of valid and invalid section and tag margers see [./test/log_entry_test.cpp](./test/log_entry_test.cpp)
 
 # Configuration & command line options
-**TODO**
+Currently clog silently ignores unknown options or bad arguments
+
+*Command line options*
+```
+clog (Captains Log)
+A small TUI journaling tool.
+
+ -h --help                     - show this message
+ -c --config <path>            - override the default config file path (~/.clog/config.ini)
+ --log-dir-path <path>         - path where log files are stored (default: ~/.clog/day/)
+ --log-name-format <format>    - format in which log entry markdown files are saved (default: d%Y_%m_%d.md)
+ --sunday-start                - have the calendar display sunday as first day of the week)"};
+```
+
+*Config file*
+```
+log-dir-path = /path/to/log/dir
+log-name-format = %Y_%d_%m.txt
+sunday-start = true
+```
+
+
+
 
 # Building & installing
 **Dependancies**
@@ -54,12 +76,18 @@ make
 ctest
 ```
 
-
 # Planned work
-- [ ] fix: check if editor env var is available
+- [ ] test: add date tests
+- [ ] feat: command line arguments
+    - [ ] log directory path 
+    - [ ] log filename format
+    - [ ] sunday first
+    - [ ] enable old task syntax as tag
+    - [ ] ignore first line section
+- [ ] feat: cofiguration file
+
 - [ ] refactor: write a better README
 - [ ] feat: add ability to toggle tags from clog directly instead of opening the editor
-- [ ] feat: command line argument to pass in log directory
 - [ ] feat: displaying different years than current is not fully functional
 - [ ] ? feat: local log repo wrapper that syncs files with github or mega.nz
 - [ ] ? feat: repeat events: forgetable things like birthdays and aniversaries are highlighted if user wants to do so.

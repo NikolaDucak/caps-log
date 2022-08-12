@@ -1,6 +1,7 @@
 #include "calendar_component.hpp"
 
 #include "ftxui/dom/elements.hpp"
+#include <iostream>
 
 namespace clog::view {
 using namespace ftxui;
@@ -24,11 +25,11 @@ Elements arrangeMonthsInCalendar(const Components &monthComponents, int columns)
 } // namespace
 
 Calendar::Calendar(const Date &today, CalendarOption option)
-    : m_today(today),
+    : m_option(std::move(option)), m_today(today),
       // TODO: SetActiveChild does nothing, this is the only
       // way to focus a specific date on startup. Investigate.
       m_selectedMonth(today.month - 1), m_root(createYear(m_today.year)),
-      m_option(std::move(option)), m_displayedYear(today.year) {
+      m_displayedYear(today.year) {
     Add(m_root);
     // the rest will selfcorect
     m_selectedDay[m_selectedMonth] = today.day - 1;
@@ -68,12 +69,15 @@ Component Calendar::createMonth(unsigned month, unsigned year) {
     m_selectedDay[month - 1] = 0;
     const auto container = ftxui_ext::Grid(7, buttons, &m_selectedDay[month - 1]);
 
-    auto root_component = Renderer(container, [=, this]() {
+    auto root_component = Renderer(container, [&displayedYear = m_displayedYear, month = month,
+                                               sundayStart = (m_option.sundayStart ? 1 : 0),
+                                               buttons = std::move(buttons)]() {
         const Elements header1 =
             Elements{cell("M"), cell("T"), cell("W"), cell("T"), cell("F"), cell("S"), cell("S")} |
             underlined;
         std::vector<Elements> render_data = {header1, {}};
-        auto starting_weekday = date::getStartingWeekdayForMonth(month, m_displayedYear);
+        auto starting_weekday =
+            date::getStartingWeekdayForMonth(month, displayedYear) + sundayStart;
         unsigned curren_weekday = starting_weekday - 1;
         unsigned calendar_day = 1;
         for (int i = 1; i < starting_weekday; i++) {

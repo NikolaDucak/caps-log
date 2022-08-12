@@ -10,11 +10,6 @@ namespace clog::model {
 
 using namespace date;
 
-const std::string LocalFSLogFilePathProvider::DEFAULT_LOG_DIR_PATH =
-    std::getenv("HOME") + std::string{"/.clog/day"};
-
-const std::string LocalFSLogFilePathProvider::DEFAULT_LOG_FILENAME_FORMAT = "d%Y_%m_%d.md";
-
 LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider)
     : m_pathProvider(std::move(pathProvider)) {
     std::filesystem::create_directories(m_pathProvider.getLogDirPath());

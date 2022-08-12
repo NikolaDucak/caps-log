@@ -2,6 +2,8 @@ add_executable(
     clog
 
     main.cpp
+    config.cpp
+    config.hpp
 
     ./view/calendar_component.cpp
     ./view/calendar_component.hpp
@@ -28,10 +30,12 @@ add_executable(
     ./utils/map.hpp
 )
 
-target_include_directories(clog PRIVATE ./ ${Boost_INCLUDE_DIRS})
+target_include_directories(clog PRIVATE ./ )
 
 target_link_libraries(clog
     ftxui::screen
     ftxui::dom
     ftxui::component 
+    fmt::fmt
+    Boost::program_options
 )

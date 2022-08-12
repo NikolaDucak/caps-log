@@ -1,3 +1,4 @@
+#include "config.hpp"
 #include "date/date.hpp"
 #include "mocks.hpp"
 #include "model/local_log_repository.hpp"
@@ -21,8 +22,8 @@ const std::string TEST_LOG_DIRECTORY{std::filesystem::temp_directory_path().stri
 
 class LocalLogRepositoryTest : public ::testing::Test {
   protected:
-    LocalFSLogFilePathProvider TMPDirPathProvider{
-        TEST_LOG_DIRECTORY, LocalFSLogFilePathProvider::DEFAULT_LOG_FILENAME_FORMAT};
+    LocalFSLogFilePathProvider TMPDirPathProvider{TEST_LOG_DIRECTORY,
+                                                  clog::Config::DEFAULT_LOG_FILENAME_FORMAT};
 
   public:
     void SetUp() override { std::filesystem::remove_all(TMPDirPathProvider.getLogDirPath()); }
@@ -59,7 +60,7 @@ TEST_F(LocalLogRepositoryTest, Remove) {
 
 TEST_F(LocalLogRepositoryTest, Write) {
     const auto date = Date{25, 5, 2005};
-    auto repo = LocalLogRepository(TEST_LOG_DIRECTORY);
+    auto repo = LocalLogRepository(TMPDirPathProvider);
     const std::string logContent = "Dummy string";
 
     repo.write(LogFile{date, logContent});
