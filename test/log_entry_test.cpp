@@ -109,9 +109,9 @@ TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
 ```
     )";
 
-    auto parsedSectionTitles = clog::model::LogFile::readSectionTitles(sectionInCodeBlock);
+    auto parsedSectionTitles = clog::model::LogFile::readSectionTitles(sectionInCodeBlock, true);
     EXPECT_TRUE(parsedSectionTitles.empty());
-    parsedSectionTitles = clog::model::LogFile::readSectionTitles(sectionInCodeBlock2);
+    parsedSectionTitles = clog::model::LogFile::readSectionTitles(sectionInCodeBlock2, true);
     EXPECT_TRUE(parsedSectionTitles.empty());
 }
 
