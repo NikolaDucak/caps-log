@@ -1,3 +1,4 @@
+#include <functional>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -94,7 +95,10 @@ A small TUI journaling tool.
  -c --config <path             - override the default config file path (~/.clog/config.ini)
  --log-dir-path <path>         - path where log files are stored (default: ~/.clog/day/)
  --log-name-format <format>    - format in which log entry markdown files are saved (default: d%Y_%m_%d.md)
- --sunday-start                - have the calendar display sunday as first day of the week)"};
+ --sunday-start                - have the calendar display sunday as first day of the week
+ --ignore-first-line-section   - if a section mark is placed on the first line, 
+                                 by default it is ignored as it's left for log title, this overrides this behaviour
+ )"};
     // clang-format-on
     return HELP_STRING;
 }
