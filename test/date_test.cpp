@@ -14,7 +14,7 @@ TEST(DateTest, InvalidDatesThrow) {
     EXPECT_THROW(Date(6, JANUARY - 1, 2000), std::invalid_argument);
     EXPECT_THROW(Date(15, MARCH, 1), std::invalid_argument);
     EXPECT_THROW(Date(0, DECEMBER, 2021), std::invalid_argument);
-    EXPECT_THROW(Date(1000, DECEMBER + 100, 999999999), std::invalid_argument);
+    EXPECT_THROW(Date(10, DECEMBER + 1, 999999999), std::invalid_argument);
 }
 
 TEST(DateTest, ValidDatesDontThrow) {
@@ -70,14 +70,14 @@ TEST(DateTest, GetNumberOfDaysForMonth) {
         unsigned days;
     };
     std::vector<test_data> data{
-        {{1, JANUARY, 1}, 31},   {{1, FEBRUARY, 1}, 28},   {{1, FEBRUARY, 4}, 29},
-        {{1, MARCH, 1}, 31},     {{1, APRIL, 1}, 30},      {{1, MAY, 1}, 31},
-        {{1, JUNE, 1}, 30},      {{1, JULY, 1}, 31},       {{1, AUGUST, 1}, 31},
-        {{1, SEPTEMBER, 1}, 30}, {{1, OCTOBER, 1}, 31},    {{1, NOVEMBER, 1}, 30},
-        {{1, DECEMBER, 1}, 31},  {{1, FEBRUARY, 2021}, 28}};
+        {{1, JANUARY, 1900}, 31},   {{1, FEBRUARY, 1901}, 28}, {{1, FEBRUARY, 1904}, 29},
+        {{1, MARCH, 1900}, 31},     {{1, APRIL, 1900}, 30},    {{1, MAY, 1900}, 31},
+        {{1, JUNE, 1900}, 30},      {{1, JULY, 2000}, 31},     {{1, AUGUST, 1900}, 31},
+        {{1, SEPTEMBER, 1900}, 30}, {{1, OCTOBER, 1900}, 31},  {{1, NOVEMBER, 1900}, 30},
+        {{1, DECEMBER, 1900}, 31},  {{1, FEBRUARY, 2021}, 28}};
 
     for (const auto &test : data) {
         EXPECT_EQ(getNumberOfDaysForMonth(test.month.month, test.month.year), test.days)
-            << "Error on month: " << test.month.month;
+            << "Error on month: " << test.month.month << " for year: " << test.month.year;
     }
 }

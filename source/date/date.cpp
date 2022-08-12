@@ -100,19 +100,14 @@ bool operator<(const Date &l, const Date &r) {
 }
 
 unsigned getNumberOfDaysForMonth(unsigned month, unsigned year) {
-    if (month == FEBRUARY) {
-        if (year % 4 == 0) {
-            return 29;
-        }
-        return 28;
-    }
-    if (month <= JUNE) {
-        return ((month % 2) != 0) ? 31 : 30;
-    }
-    if (month <= DECEMBER) {
-        return ((month % 2) != 1) ? 31 : 30;
-    }
-    return 0;
+    static const std::array<unsigned, 13> days{
+        0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+    };
+
+    if (year % 4 == 0 && month == 2)
+        return 29;
+    else
+        return days[month];
 }
 
 unsigned getStartingWeekdayForMonth(unsigned month, unsigned year) {
