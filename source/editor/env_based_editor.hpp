@@ -17,7 +17,7 @@ class EnvBasedEditor : public EditorBase {
 
     void openEditor(const clog::model::LogFile &log) override {
         if (std::getenv("EDITOR") != nullptr) {
-            std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
+            (void)std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
         }
     }
 };
