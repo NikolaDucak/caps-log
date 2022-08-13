@@ -9,7 +9,7 @@ using namespace clog::date;
 using namespace testing;
 
 TEST(DateTest, InvalidDatesThrow) {
-    // It is difficult to know if date is valid or not 
+    // It is difficult to know if date is valid or not
     // it seems to be platform or std library dependant
     // this is just a set of random wierd looking values
     EXPECT_THROW(Date(31, DECEMBER, 1800), std::invalid_argument);
