@@ -22,7 +22,7 @@ when editing. This 'syntax' was chosen with little thought based on personal pre
 To mark a section just do: `# section name`. All text below untill the next section is considered part of it, although 
 clog currently does not care for that text, just the section title. By default, the first line of the file is ignored when
 looking up section titles, as I like to use that line for a section with the date of the current line, this is configurable via 
-command line args or config file
+command line args or config file.
 
 *Tags*
 The tags do not apply to a specific section but to the whole log entry file. 
@@ -32,7 +32,7 @@ The tags do not apply to a specific section but to the whole log entry file.
 For examples of valid and invalid section and tag margers see [./test/log_entry_test.cpp](./test/log_entry_test.cpp)
 
 # Configuration & command line options
-Currently clog silently ignores unknown options or bad arguments
+Currently clog silently ignores unknown options or bad arguments, so watch out. This will probably be changed in the future.
 
 *Command line options*
 ```
@@ -49,6 +49,8 @@ A small TUI journaling tool.
 ```
 
 *Config file*
+
+Here is an example with all supported options:
 ```
 log-dir-path = /path/to/log/dir
 log-name-format = %Y_%d_%m.txt
@@ -56,13 +58,10 @@ sunday-start = true
 ignore-first-line-section = true
 ```
 
-
-
-
 # Building & installing
 **Dependancies**
+`clog` fetches it's dependancies from github, except from boost, you should have boost program options isntalled.
 
-`clog` fetches it's dependancies from github, so no extra action should be necessary (I hope).
 
 To build the `clog` executable, run:
 ```sh
