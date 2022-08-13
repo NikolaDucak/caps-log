@@ -13,6 +13,7 @@ const std::string Config::DEFAULT_CONFIG_LOCATION =
 const std::string Config::DEFAULT_LOG_DIR_PATH = std::getenv("HOME") + std::string{"/.clog/day"};
 const std::string Config::DEFAULT_LOG_FILENAME_FORMAT = "d%Y_%m_%d.md";
 const bool Config::DEFAULT_SATURDAY_START = false;
+const bool Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS = true;
 
 namespace {
 Config applyCommandlineOverrides(const Config &config, const ArgParser &commandLineArgs) {
@@ -21,7 +22,7 @@ Config applyCommandlineOverrides(const Config &config, const ArgParser &commandL
         .logFilenameFormat =
             commandLineArgs.getIfHas("--log-filename-format").value_or(config.logFilenameFormat),
         .sundayStart = commandLineArgs.has("--sunday-start") ? true : config.sundayStart,
-        .ignoreFirstLineWhenParsingSections = commandLineArgs.has("--ignore-first-line-section")
+        .ignoreFirstLineWhenParsingSections = commandLineArgs.has("--first-line-section")
                                                   ? true
                                                   : config.ignoreFirstLineWhenParsingSections};
 }
@@ -37,7 +38,7 @@ Config applyConfigFileOverrides(const Config &config, std::istream &istream) {
                                  .value_or(config.logFilenameFormat),
         .sundayStart = ptree.get_optional<bool>("sunday-start").value_or(config.sundayStart),
         .ignoreFirstLineWhenParsingSections =
-            ptree.get_optional<bool>("ignore-first-line-section")
+            ptree.get_optional<bool>("--first-line-section")
                 .value_or(config.ignoreFirstLineWhenParsingSections),
     };
 }
@@ -50,10 +51,11 @@ Config Config::make(const FileReader &fileReader, const ArgParser &cmdLineArgs) 
     auto configFile = fileReader(selectedConfigFilePath);
 
     Config defaultConfig{
-        .logDirPath = (Config::DEFAULT_LOG_DIR_PATH),
-        .logFilenameFormat = (Config::DEFAULT_LOG_FILENAME_FORMAT),
-        .sundayStart = (Config::DEFAULT_SATURDAY_START),
-        .ignoreFirstLineWhenParsingSections = (Config::DEFAULT_SATURDAY_START),
+        .logDirPath = Config::DEFAULT_LOG_DIR_PATH,
+        .logFilenameFormat = Config::DEFAULT_LOG_FILENAME_FORMAT,
+        .sundayStart = Config::DEFAULT_SATURDAY_START,
+        .ignoreFirstLineWhenParsingSections =
+            Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS,
     };
 
     auto config = configFile ? applyConfigFileOverrides(defaultConfig, *configFile) : defaultConfig;
