@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -22,7 +23,7 @@ class ArgParser {
                                    : std::find_if(argv, argv + argc, [&](auto arg) {
                                          return arg == opt || arg == optAlt;
                                      });
-        return it < argv + argc;
+        return found(it);
     }
 
     std::optional<std::string> get(const std::string &opt, const std::string &optAlt = "") const {
@@ -31,10 +32,10 @@ class ArgParser {
                                          return arg == opt || arg == optAlt;
                                      });
 
-        if (not(it < (argv + argc)))
+        if (not found(it))
             throw std::runtime_error{*it + std::string{" - option required but not provided"}};
 
-        if (not((it + 1) < (argv + argc)))
+        if (not found(it + 1))
             throw std::runtime_error{*it + std::string{" - has no value set, but requires one"}};
 
         return std::string{*(it + 1)};
@@ -47,14 +48,17 @@ class ArgParser {
                                          return arg == opt || arg == optAlt;
                                      });
 
-        if (not(it < (argv + argc)))
+        if (not found(it))
             return {};
 
-        if (not((it + 1) < (argv + argc)))
+        if (not found(it + 1))
             throw std::runtime_error{*it + std::string{" - has no value set, but requires one"}};
 
         return std::string{*(it + 1)};
     }
+
+public:
+    bool found(const char* arg[]) const { return arg < (argv + argc); }
 };
 
 } // namespace clog
