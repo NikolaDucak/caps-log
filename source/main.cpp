@@ -6,6 +6,7 @@
 #include <string>
 
 #include "app.hpp"
+#include "arg_parser.hpp"
 #include "config.hpp"
 #include "date/date.hpp"
 #include "editor/disabled_editor.hpp"
@@ -13,12 +14,12 @@
 #include "model/local_log_repository.hpp"
 
 auto makeClog(const clog::Config &conf) {
-    auto pathProvider =
-        clog::model::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
-    auto repo = std::make_shared<clog::model::LocalLogRepository>(pathProvider);
-    auto view =
-        std::make_shared<clog::view::YearView>(clog::date::Date::getToday(), conf.sundayStart);
-    auto editor = std::make_shared<clog::editor::EnvBasedEditor>(pathProvider);
+    using namespace clog;
+
+    auto pathProvider = model::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
+    auto repo = std::make_shared<model::LocalLogRepository>(pathProvider);
+    auto view = std::make_shared<view::YearView>(date::Date::getToday(), conf.sundayStart);
+    auto editor = std::make_shared<editor::EnvBasedEditor>(pathProvider);
     return clog::App{std::move(view), std::move(repo), std::move(editor),
                      conf.ignoreFirstLineWhenParsingSections};
 }

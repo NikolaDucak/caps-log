@@ -1,3 +1,4 @@
+#include "arg_parser.hpp"
 #include "config.hpp"
 
 #include <gmock/gmock-spec-builders.h>

@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include "arg_parser.hpp"
 
 #include <boost/program_options/config.hpp>
 #include <boost/property_tree/ini_parser.hpp>
