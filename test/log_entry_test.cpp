@@ -42,6 +42,9 @@ const std::vector<ParsingTestData> validTagsTestData{
         "*   {}\n", "VERRY long tag title with a bunchhhh of words and words and words and words"),
 
     makeTagParsingData("*   {} (info)\n", "title 123"),
+    makeTagParsingData("* {}: some other information", "tag title"),
+    makeTagParsingData("* {} (minor info): some other information", "tag title"),
+    makeTagParsingData("* {} (minor info): some other information\non two lines", "tag title"),
 };
 
 const std::vector<ParsingTestData> invalidTagsTestData{

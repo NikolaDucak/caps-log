@@ -15,7 +15,8 @@ namespace {
  */
 const auto SECTION_TITLE_REGEX = std::regex{"^# \\s*(.*?)\\s*$"};
 const auto TAG_REGEX =
-    std::regex{R"(^( +)?\*( +)([a-z A-Z 0-9]+)(\(.+\))?(:?))", std::regex_constants::extended};
+    std::regex{R"(^( +)?\*( +)([a-z A-Z 0-9]+)(\(.+\))?(:.*)?)", std::regex_constants::extended};
+
 const auto TASK_REGEX =
     std::regex{R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))",
                std::regex_constants::extended};
