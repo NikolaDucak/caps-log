@@ -57,8 +57,8 @@ class ArgParser {
         return std::string{*(it + 1)};
     }
 
-public:
-    bool found(const char* arg[]) const { return arg < (argv + argc); }
+  public:
+    bool found(const char *arg[]) const { return arg < (argv + argc); }
 };
 
 } // namespace clog
