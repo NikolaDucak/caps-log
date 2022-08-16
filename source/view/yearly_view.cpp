@@ -31,7 +31,7 @@ void YearView::setPreviewString(const std::string &string) {
     for (std::string line; std::getline(input, line);) {
         lines.push_back(text(line));
     }
-    m_logFileContentsPreview = vbox(lines) | flex_shrink | border | size(HEIGHT, EQUAL, 10);
+    m_logFileContentsPreview = vbox(lines) | flex_shrink | border | size(HEIGHT, EQUAL, 14);
 }
 
 std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
@@ -69,16 +69,20 @@ CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart
     CalendarOption option;
     option.transform = [this, today](const auto &date, const auto &state) {
         auto element = text(state.label);
-        if (state.focused)
-            element = element | inverted;
-        if (date.isWeekend())
-            element = element | color(Color::Blue);
+
         if (today == date)
             element = element | color(Color::Red);
-        if (m_highlightedLogsMap && m_highlightedLogsMap->get(date))
+        else if (m_highlightedLogsMap && m_highlightedLogsMap->get(date))
             element = element | color(Color::Yellow);
+        else if (date.isWeekend())
+            element = element | color(Color::Blue);
+
+        if (state.focused)
+            element = element | inverted;
+
         if (m_availabeLogsMap && !m_availabeLogsMap->get(date))
             element = element | dim;
+
         return element | center;
     };
     // TODO: Ignoring the provided new date only for the controller to ask
