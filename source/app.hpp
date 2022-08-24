@@ -136,6 +136,7 @@ class App : public InputHandlerBase {
         m_displayedYear += diff;
         m_data = YearOverviewData::collect(m_repo, m_displayedYear, m_skipFirstLine);
         m_view->showCalendarForYear(m_displayedYear);
+        m_view->setHighlightedLogsMap(nullptr);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
 
