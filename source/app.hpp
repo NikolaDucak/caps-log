@@ -93,8 +93,6 @@ class App : public InputHandlerBase {
             displayYear(+1);
         } else if (input == "-") {
             displayYear(-1);
-        } else if (input == "m") {
-            toggle();
         } else {
             return false;
         }
@@ -141,28 +139,6 @@ class App : public InputHandlerBase {
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
 
-    void toggle() {
-        /*
-        const auto tag = m_view->selectedTag();
-        if (tag != 0) {
-            auto log = m_repo.read(m_view->getFocusedDate());
-            if (log) {
-                // if (m_tagMaps.at(tag)->get(m_view->getFocusedDate())) {
-                if (log.hasTag(tag)) {
-                    log.removeTag(tag);
-                } else {
-                    log.addTag(tag);
-                }
-
-            } else {
-                m_repo.write(makeLogEntryWithTag(tag))
-            }
-        }
-        */
-    }
-
-    // TODO: i feel like this needs more tests
-    // 2) editor removes log
     void handleCalendarButtonClick() {
         m_view->withRestoredIO([this]() {
             auto date = m_view->getFocusedDate();
