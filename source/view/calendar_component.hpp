@@ -49,7 +49,7 @@ class Calendar : public ftxui::ComponentBase {
     }
 
     ftxui::Element Render() override {
-        if (Focused()) 
+        if (Focused())
             return m_root->Render();
         else
             return m_root->Render() | ftxui::dim;

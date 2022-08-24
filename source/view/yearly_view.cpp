@@ -32,7 +32,8 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
             m_sectionsMenu,
             m_calendarButtons,
             m_preview,
-        }, Event::Tab, Event::TabReverse);
+        },
+        Event::Tab, Event::TabReverse);
 
     auto whole_ui_renderer = Renderer(container, [this, container] {
         std::stringstream date;
@@ -40,7 +41,8 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
         // them centered while the preview window changes and stretches this vbox container than to
         // keep the preview window size fixed
-        auto main_section = hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
+        auto main_section =
+            hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
         return vbox(text(date.str()) | center, main_section | center, m_preview->Render()) | center;
     });
 

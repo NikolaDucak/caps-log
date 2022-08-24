@@ -10,9 +10,11 @@ ftxui::Element Preview::Render() {
     }
 
     if (Focused())
-        return vbox(visibleLines) | flex_shrink | borderStyled(BorderStyle::HEAVY) | size(HEIGHT, EQUAL, 14);
+        return vbox(visibleLines) | flex_shrink | borderStyled(BorderStyle::HEAVY) |
+               size(HEIGHT, EQUAL, 14);
     else
-        return vbox(visibleLines) | flex_shrink | borderStyled(BorderStyle::LIGHT) | size(HEIGHT, EQUAL, 14);
+        return vbox(visibleLines) | flex_shrink | borderStyled(BorderStyle::LIGHT) |
+               size(HEIGHT, EQUAL, 14);
 }
 
 bool Preview::Focusable() const { return true; }
@@ -27,7 +29,7 @@ bool Preview::OnEvent(ftxui::Event e) {
         if (m_topLineIndex + 1 < m_lines.size() - 1)
             m_topLineIndex++;
         return true;
-    } else if (e == Event::ArrowUp || e == Event::Character('k')){
+    } else if (e == Event::ArrowUp || e == Event::Character('k')) {
         if (m_topLineIndex - 1 >= 0)
             m_topLineIndex--;
         return true;
@@ -36,7 +38,7 @@ bool Preview::OnEvent(ftxui::Event e) {
     return false;
 }
 
-void Preview::setContent(const std::string& str) { 
+void Preview::setContent(const std::string &str) {
     using namespace ftxui;
     Elements lines;
     std::istringstream input{str};
@@ -46,4 +48,4 @@ void Preview::setContent(const std::string& str) {
     m_lines = std::move(lines);
 }
 
-}
+} // namespace clog::view
