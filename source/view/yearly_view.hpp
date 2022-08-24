@@ -3,6 +3,7 @@
 #include "calendar_component.hpp"
 #include "date/date.hpp"
 #include "input_handler.hpp"
+#include "preview.hpp"
 #include "promptable.hpp"
 #include "windowed_menu.hpp"
 #include "year_view_base.hpp"
@@ -23,15 +24,19 @@ using namespace date;
 class YearView : public YearViewBase {
     InputHandlerBase *m_handler;
     ScreenInteractive m_screen;
+
+    // UI compontents visible to the user
     std::shared_ptr<Calendar> m_calendarButtons;
     std::shared_ptr<WindowedMenu> m_tagsMenu, m_sectionsMenu;
+    std::shared_ptr<Preview> m_preview = std::make_unique<Preview>();
     std::shared_ptr<Promptable> m_rootComponent;
-    Element m_logFileContentsPreview;
 
+    // Maps that help m_calendarButtons highlight certain logs.
     const YearMap<bool> *m_highlightedLogsMap = nullptr;
     const YearMap<bool> *m_availabeLogsMap = nullptr;
     std::vector<std::string> *m_tags = nullptr, *m_sections = nullptr;
 
+    // Menu items for m_tagsMenu & m_sectionsMenu
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
   public:
@@ -61,7 +66,7 @@ class YearView : public YearViewBase {
         m_sectionMenuItems = std::move(items);
     }
 
-    void setPreviewString(const std::string &string) override;
+    void setPreviewString(const std::string &string) override { m_preview->setContent(string); }
 
     /**
      * Temporay restore terminal to its roriginal state

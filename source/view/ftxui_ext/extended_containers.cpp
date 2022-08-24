@@ -288,6 +288,8 @@ class CustomInputContainer : public ContainerBase {
         return false;
     }
 
+    bool Focusable() const override { return true; }
+
     int width_, height_;
     Box box_;
     Event switch_, switchBack_;

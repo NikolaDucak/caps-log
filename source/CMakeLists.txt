@@ -10,6 +10,8 @@ add_executable(
     ./view/input_handler.hpp
     ./view/promptable.cpp
     ./view/promptable.hpp
+    ./view/preview.cpp
+    ./view/preview.hpp
     ./view/yearly_view.cpp
     ./view/yearly_view.hpp
     ./view/ftxui_ext/extended_containers.cpp
@@ -30,7 +32,7 @@ add_executable(
     ./utils/map.hpp
 )
 
-target_include_directories(clog PRIVATE ./ )
+target_include_directories(clog PRIVATE ./)
 
 target_link_libraries(clog
     ftxui::screen

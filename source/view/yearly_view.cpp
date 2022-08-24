@@ -25,23 +25,14 @@ void YearView::stop() { m_screen.ExitLoopClosure()(); }
 
 void YearView::showCalendarForYear(unsigned year) { m_calendarButtons->displayYear(year); }
 
-void YearView::setPreviewString(const std::string &string) {
-    Elements lines;
-    std::istringstream input{string};
-    for (std::string line; std::getline(input, line);) {
-        lines.push_back(text(line));
-    }
-    m_logFileContentsPreview = vbox(lines) | flex_shrink | border | size(HEIGHT, EQUAL, 14);
-}
-
 std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
     auto container = ftxui_ext::CustomContainer(
         {
             m_tagsMenu,
             m_sectionsMenu,
             m_calendarButtons,
-        },
-        Event::Tab, Event::TabReverse);
+            m_preview,
+        }, Event::Tab, Event::TabReverse);
 
     auto whole_ui_renderer = Renderer(container, [this, container] {
         std::stringstream date;
@@ -49,9 +40,8 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
         // them centered while the preview window changes and stretches this vbox container than to
         // keep the preview window size fixed
-        return vbox(text(date.str()) | center, container->Render() | center,
-                    m_logFileContentsPreview) |
-               center;
+        auto main_section = hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
+        return vbox(text(date.str()) | center, main_section | center, m_preview->Render()) | center;
     });
 
     auto event_handler = CatchEvent(whole_ui_renderer, [&](const Event &event) {
