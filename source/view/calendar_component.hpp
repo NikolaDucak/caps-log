@@ -26,7 +26,6 @@ class Calendar : public ftxui::ComponentBase {
 
   public:
     Calendar(const date::Date &today, CalendarOption option = {});
-    auto root() { return m_root; }
 
     void displayYear(unsigned year) {
         m_displayedYear = year;
@@ -47,6 +46,13 @@ class Calendar : public ftxui::ComponentBase {
             lastSelectedDate = newDate;
         }
         return result;
+    }
+
+    ftxui::Element Render() override {
+        if (Focused()) 
+            return m_root->Render();
+        else
+            return m_root->Render() | ftxui::dim;
     }
 
     // TODO: perhaps it would be nicer to get a pointer to a Date where
