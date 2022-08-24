@@ -17,7 +17,8 @@ this functionality is disabled. This looks pretty cool with terminal based edito
 - `hjkl` or arrow keys = for navigating within calendar or menus
 - `tab` or `shift + tab` =  switch focus between calendar and menus
 - `enter` = highlight logs that contain tag/section or open log entry in `$EDITOR` for date under the cursor
-- `d` - delete
+- `d` = delete
+- `+` / `-` = show calendar for next / previouse year
 
 ## Log entry tags and sections
 `clog` stores all logs as simple markdown files purely to give your editor some syntax highlighting when editing. 
@@ -88,13 +89,9 @@ ctest
 ```
 
 ## Planned work
-- [ ] emojis? unicode support ok? need to switch to wstring?
-- [ ] feat: add ability to toggle tags from clog directly instead of opening the editor
-- [ ] feat: displaying different years than current is not fully functional
-- [ ] feat: repeat events: forgettable things like birthdays and anniversaries are highlighted if user wants to do so.
-
-lower priority work:
-- [ ] feat: shift + J/K skip whole month
+**may or may not be implement, i might just give up on these**
 - [ ] feat: preview window focuses parts of the text that matches tag or task selected
-- [ ] feat: scrollable preview window
+- [ ] feat: add ability to toggle tags from clog directly instead of opening the editor
+- [ ] feat: repeat events: forgettable things like birthdays and anniversaries are highlighted if user wants to do so.
+- [ ] feat: shift + J/K skip whole month
 - [ ] fix: mouse wont focus unfocused menus
