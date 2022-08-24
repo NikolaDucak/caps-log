@@ -34,7 +34,6 @@ class YearView : public YearViewBase {
     // Maps that help m_calendarButtons highlight certain logs.
     const YearMap<bool> *m_highlightedLogsMap = nullptr;
     const YearMap<bool> *m_availabeLogsMap = nullptr;
-    std::vector<std::string> *m_tags = nullptr, *m_sections = nullptr;
 
     // Menu items for m_tagsMenu & m_sectionsMenu
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
@@ -68,10 +67,6 @@ class YearView : public YearViewBase {
 
     void setPreviewString(const std::string &string) override { m_preview->setContent(string); }
 
-    /**
-     * Temporay restore terminal to its roriginal state
-     * to executa a function. used to start the editor
-     */
     void withRestoredIO(std::function<void()> func) override { m_screen.WithRestoredIO(func)(); }
 
     Date getFocusedDate() const override { return m_calendarButtons->getFocusedDate(); }
