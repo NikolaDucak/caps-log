@@ -13,11 +13,15 @@ Clicking on a date or pressing enter when a date is focused will (maybe) open th
 Currently clog uses your `$EDITOR` environment variable to start the editor, if that environment variable is set. Otherwise
 this functionality is disabled. This looks pretty cool with terminal based editors.
 
+**Note**
+- it's kinda wierd with emojis, maybe FTXUI issue or i'm just using FTXUI wrong.
+- it's not that pretty to use in small terminals, it is usable, but it's best when whole calendar is visible
+
 ## Keybindings 
-- `hjkl` or arrow keys = for navigating within calendar or menus
 - `tab` or `shift + tab` =  switch focus between calendar and menus
+- `hjkl` or arrow keys = for navigating within calendar or menus
 - `enter` = highlight logs that contain tag/section or open log entry in `$EDITOR` for date under the cursor
-- `d` = delete
+- `d` = delete log under the cursor if calendar is focused
 - `+` / `-` = show calendar for next / previouse year
 
 ## Log entry tags and sections
@@ -94,4 +98,4 @@ ctest
 - [ ] feat: add ability to toggle tags from clog directly instead of opening the editor
 - [ ] feat: repeat events: forgettable things like birthdays and anniversaries are highlighted if user wants to do so.
 - [ ] feat: shift + J/K skip whole month
-- [ ] fix: mouse wont focus unfocused menus
+- [ ] fix: it worksmouse support for custom container
