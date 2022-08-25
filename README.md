@@ -1,7 +1,7 @@
 # Captain's Log - or `clog` for short
 `clog` is a small terminal based journaling tool. 
 
-![clog screenshot](./clog.png)
+![clog screenshot](./clog.jpg)
 
 ## What it does
 Daily entires are saved locally as markdown files. Level 1 headers are interpreted as 'sections' and unordered lists
