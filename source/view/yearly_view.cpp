@@ -6,6 +6,7 @@
 #include "ftxui/dom/flexbox_config.hpp"
 #include "ftxui_ext/extended_containers.hpp"
 
+#include "fmt/format.h"
 #include <ftxui/screen/terminal.hpp>
 #include <sstream>
 
@@ -36,14 +37,16 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
         Event::Tab, Event::TabReverse);
 
     auto whole_ui_renderer = Renderer(container, [this, container] {
-        std::stringstream date;
-        date << "Today: " << date::Date::getToday().formatToString("%d. %m. %Y.");
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
         // them centered while the preview window changes and stretches this vbox container than to
         // keep the preview window size fixed
+        auto dateStr = date::Date::getToday().formatToString("%d. %m. %Y.");
+        auto titleText = fmt::format("Today is: {} -- There are {} log entries for year {}.",
+                                     dateStr, m_availabeLogsMap ? m_availabeLogsMap->daysSet() : 0,
+                                     m_calendarButtons->getFocusedDate().year);
         auto main_section =
             hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
-        return vbox(text(date.str()) | center, main_section | center, m_preview->Render()) | center;
+        return vbox(text(titleText) | center, main_section | center, m_preview->Render()) | center;
     });
 
     auto event_handler = CatchEvent(whole_ui_renderer, [&](const Event &event) {
