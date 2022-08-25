@@ -75,8 +75,12 @@ CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart
         if (state.focused)
             element = element | inverted;
 
-        if (m_availabeLogsMap && !m_availabeLogsMap->get(date))
-            element = element | dim;
+        if (m_availabeLogsMap) {
+            if (m_availabeLogsMap->get(date))
+                element = element | underlined;
+            else
+                element = element | dim;
+        }
 
         return element | center;
     };
