@@ -10,11 +10,9 @@ ftxui::Element Preview::Render() {
     }
 
     if (Focused())
-        return vbox(visibleLines) | flex_shrink | borderStyled(BorderStyle::HEAVY) |
-               size(HEIGHT, EQUAL, 14);
+        return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, 14);
     else
-        return vbox(visibleLines) | flex_shrink | borderStyled(BorderStyle::LIGHT) |
-               size(HEIGHT, EQUAL, 14);
+        return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, 14) | dim;
 }
 
 bool Preview::Focusable() const { return true; }
