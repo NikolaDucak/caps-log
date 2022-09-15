@@ -36,6 +36,8 @@ bool Preview::OnEvent(ftxui::Event e) {
     return false;
 }
 
+void Preview::resetScroll() { m_topLineIndex = 0; }
+
 void Preview::setContent(const std::string &str) {
     using namespace ftxui;
     Elements lines;

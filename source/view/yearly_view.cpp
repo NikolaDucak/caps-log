@@ -87,6 +87,7 @@ CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart
     // TODO: Ignoring the provided new date only for the controller to ask
     // for new date is ugly
     option.focusChange = [this](const auto & /* date */) {
+        m_preview->resetScroll();
         m_handler->handleInputEvent({UIEvent::FOCUSED_DATE_CHANGE});
     };
     option.enter = [this](const auto & /* date */) {

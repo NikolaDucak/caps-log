@@ -14,6 +14,7 @@ class Preview : public ftxui::ComponentBase {
     bool Focusable() const override;
     bool OnEvent(ftxui::Event e) override;
 
+    void resetScroll();
     void setContent(const std::string &str);
 };
 
