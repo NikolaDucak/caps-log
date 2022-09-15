@@ -40,13 +40,19 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
         // them centered while the preview window changes and stretches this vbox container than to
         // keep the preview window size fixed
-        auto dateStr = date::Date::getToday().formatToString("%d. %m. %Y.");
-        auto titleText = fmt::format("Today is: {} -- There are {} log entries for year {}.",
-                                     dateStr, m_availabeLogsMap ? m_availabeLogsMap->daysSet() : 0,
-                                     m_calendarButtons->getFocusedDate().year);
-        auto main_section =
+        const auto dateStr = date::Date::getToday().formatToString("%d. %m. %Y.");
+        const auto titleText =
+            fmt::format("Today is: {} -- There are {} log entries for year {}.", dateStr,
+                        m_availabeLogsMap ? m_availabeLogsMap->daysSet() : 0,
+                        m_calendarButtons->getFocusedDate().year);
+        const auto main_section =
             hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
-        return vbox(text(titleText) | center, main_section | center, m_preview->Render()) | center;
+
+        static const auto helpString = std::string{"hjkl/arrow keys - navigation | d - delete log "
+                                                   "| tab - move focus between menus and calendar"};
+        return vbox(text(titleText) | center, main_section | center, m_preview->Render(),
+                    text(helpString) | dim | center) |
+               center;
     });
 
     auto event_handler = CatchEvent(whole_ui_renderer, [&](const Event &event) {
