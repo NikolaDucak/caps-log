@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "fmt/format.h"
+#include "version.hpp"
+
 namespace clog {
 
 using FileReader = std::function<std::unique_ptr<std::istream>(std::string)>;
@@ -29,9 +32,10 @@ struct Config {
 inline std::string helpString() {
     // TODO: embed version
     // clang-format-off
-    static const std::string HELP_STRING{R"(
+    static const std::string HELP_STRING_BASE{R"(
 clog (Captains Log)
 A small TUI journaling tool.
+Version {}
 
  -h --help                     - show this message
  -c --config <path             - override the default config file path (~/.clog/config.ini)
@@ -42,7 +46,7 @@ A small TUI journaling tool.
                                  by default it is ignored as it's left for log title, this overrides this behaviour
  )"};
     // clang-format-on
-    return HELP_STRING;
+    return fmt::format(HELP_STRING_BASE, CLOG_VERSION);
 }
 
 } // namespace clog

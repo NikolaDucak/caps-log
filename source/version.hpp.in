@@ -1,0 +1,7 @@
+#pragma once
+
+// Propagating PROJECT_VERSION cmake variable to clog source code to be used where needed
+#ifndef CLOG_VERSION
+#  undef CLOG_VERSION
+#  define CLOG_VERSION "@PROJECT_VERSION@"
+#endif

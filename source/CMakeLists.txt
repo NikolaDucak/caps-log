@@ -1,3 +1,5 @@
+configure_file(version.hpp.in version.hpp)
+
 add_executable(
     clog
 
@@ -32,7 +34,8 @@ add_executable(
     ./utils/map.hpp
 )
 
-target_include_directories(clog PRIVATE ./)
+target_include_directories(clog PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
+message(FATAL ${PROJECT_BINARY_DIR})
 
 target_link_libraries(clog
     ftxui::screen
