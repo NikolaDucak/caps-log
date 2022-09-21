@@ -35,7 +35,6 @@ add_executable(
 )
 
 target_include_directories(clog PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
-message(FATAL ${PROJECT_BINARY_DIR})
 
 target_link_libraries(clog
     ftxui::screen
@@ -44,3 +43,5 @@ target_link_libraries(clog
     fmt::fmt
     Boost::program_options
 )
+
+install(TARGETS clog DESTINATION "bin")
