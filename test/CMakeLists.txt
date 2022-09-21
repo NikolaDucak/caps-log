@@ -13,6 +13,10 @@ FetchContent_MakeAvailable(googletest)
 
 # --------------------------------- tests -------------------------------- #
 
+# It sucks that this needs to be done, the cmake files are not that gread but
+# they do the trick so lets leave it like this for now.
+configure_file(../source/version.hpp.in version.hpp)
+
 add_executable(
     tests
     ./config_test.cpp
@@ -44,6 +48,7 @@ target_include_directories(
     tests
     PRIVATE
     ../source/
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 include(GoogleTest)
