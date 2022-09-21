@@ -14,15 +14,16 @@ Currently clog uses your `$EDITOR` environment variable to start the editor, if 
 this functionality is disabled. This looks pretty cool with terminal based editors.
 
 **Note**
-- it's kinda wierd with emojis, maybe FTXUI issue or i'm just using FTXUI wrong.
-- it's not that pretty to use in small terminals, it is usable, but it's best when whole calendar is visible
+- it's kinda weird with emojis, maybe FTXUI issue or I'm just using FTXUI wrong, maybe an issue with my font/terminal emulator. 
+On a line with an emoji drawn, it shifts all other chars to right by a place.
+- it's not that pretty to use in small terminals, it is usable, but it's best when whole calendar is visible.
 
 ## Keybindings 
 - `tab` or `shift + tab` =  switch focus between calendar and menus
 - `hjkl` or arrow keys = for navigating within calendar or menus
 - `enter` = highlight logs that contain tag/section or open log entry in `$EDITOR` for date under the cursor
 - `d` = delete log under the cursor if calendar is focused
-- `+` / `-` = show calendar for next / previouse year
+- `+` / `-` = show calendar for next / previous year
 
 ## Log entry tags and sections
 `clog` stores all logs as simple markdown files purely to give your editor some syntax highlighting when editing. 
@@ -92,10 +93,12 @@ make
 ctest
 ```
 
-## Planned work
-**may or may not be implement, i might just give up on these**
-- [ ] feat: preview window focuses parts of the text that matches tag or task selected
-- [ ] feat: add ability to toggle tags from clog directly instead of opening the editor
-- [ ] feat: repeat events: forgettable things like birthdays and anniversaries are highlighted if user wants to do so.
-- [ ] feat: shift + J/K skip whole month
-- [ ] fix: it worksmouse support for custom container
+## Planned work ideas
+**Note: These are not that high of a priority, also I might just give up on these. They should be converted to an actual github issues.**
+- [ ] feat: preview window focuses parts of the text that matches the currently highlighted tag or task.
+- [ ] feat: on small terminals, figure out how to keep the portion of the calendar where focused that is shown when calendar is unfocused.
+- [ ] feat: add ability to toggle tags from clog directly instead of opening the editor.
+- [ ] feat: repeat events, forgettable things like birthdays and anniversaries are highlighted in the calendar
+- [ ] feat: shift + j/k while navigating the calendar jumps a whole month.
+- [ ] fix: mouse support for custom containers in `clog::view::ftxui_ext`
+- [ ] fix: maybe FTXUI issue, entire lines spanning multiple components in the terminal might be highlighted when they should not be.
