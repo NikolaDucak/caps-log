@@ -94,11 +94,4 @@ ctest
 ```
 
 ## Planned work ideas
-**Note: These are not that high of a priority, also I might just give up on these. They should be converted to an actual github issues.**
-- [ ] feat: preview window focuses parts of the text that matches the currently highlighted tag or task.
-- [ ] feat: on small terminals, figure out how to keep the portion of the calendar where focused that is shown when calendar is unfocused.
-- [ ] feat: add ability to toggle tags from clog directly instead of opening the editor.
-- [ ] feat: repeat events, forgettable things like birthdays and anniversaries are highlighted in the calendar
-- [ ] feat: shift + j/k while navigating the calendar jumps a whole month.
-- [ ] fix: mouse support for custom containers in `clog::view::ftxui_ext`
-- [ ] fix: maybe FTXUI issue, entire lines spanning multiple components in the terminal might be highlighted when they should not be.
+For any feature request and/or bug, please submit a GH Issue.
