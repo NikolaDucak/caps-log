@@ -22,14 +22,14 @@ class WindowedMenu : public ComponentBase {
     WindowedMenu(std::string title, MenuOption option) {
         auto menu = Menu(std::move(option));
         auto menuRenderer = Renderer(menu, [title = std::move(title), menu = std::move(menu)]() {
+            auto windowElement = window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
             if (not menu->Focused())
-                return window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25) |
-                       dim;
-            else
-                return window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
+                windowElement |= dim;
+            return windowElement;
         });
         Add(menuRenderer);
     }
+
     auto &selected() { return m_selected; }
 
     static auto make(std::string title, MenuOption option) {
