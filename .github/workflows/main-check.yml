@@ -10,14 +10,42 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  build:
+    strategy:
+      matrix:
+        compiler: ['clang','msvc','gcc']
+        os: ['ubuntu-latest', 'windows-latest']
+     runs-on: ${{ matrix.os }}
 
-  # both tests and static analysis depend on build artifact so
-  # they are grouped under the same job as it's simpler than cahing
-  # or artifact upload/download. Rith now the tests are pretty fast
-  # so not much would be gained from parallel run of test & analysis
-  build-and-test:
+     steps: 
+       - name: Prepare environment
+         uses: aminya/setup-cpp@v1
+         with:
+           compiler: ${{ matrix.compiler }}
+           vcvarsall: ${{ contains(matrix.os, 'windows' )}}
+           cmake: true
+           ninja: true
+           conan: false
+           vcpkg: false
+           ccache: false
+           clangtidy: false
+           cppcheck: false
+           gcovr: false
+           opencppcoverage: false
+
+       - name: Build 
+         run: |
+           cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
+           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+       - name: Test
+         working-directory: ${{github.workspace}}/build
+         # Exclude LocalLogRepository test as they write to the filesystem
+         run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "LocalLogRepository"
+
+
+  static-analysis:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     
@@ -25,15 +53,10 @@ jobs:
       run: sudo apt-get update && sudo apt-get install libboost-program-options-dev clang-tidy
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      # Exclude LocalLogRepository test as they write to the filesystem
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "LocalLogRepository"
+      run: cmake --build ${{github.workspace}}/build --config Release
 
     - name: Static Analysis
       run: ln -s ./build/compile_commands.json && run-clang-tidy ./source/
