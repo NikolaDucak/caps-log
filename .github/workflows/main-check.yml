@@ -35,12 +35,15 @@ jobs:
         opencppcoverage: false
 
     - name: Build 
-      run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
-        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run:
+        echo "${{github.workspace}}"
+        cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
+        echo "${{github.workspace}}"
+        cmake --build ${{ github.workspace }}/build --config ${{env.BUILD_TYPE}}
+        echo "${{github.workspace}}"
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{ github.workspace }}/build
       # Exclude LocalLogRepository test as they write to the filesystem
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "LocalLogRepository"
 
