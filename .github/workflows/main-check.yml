@@ -35,12 +35,9 @@ jobs:
         opencppcoverage: false
 
     - name: Build 
-      run:
-        echo "${{github.workspace}}"
+      run: |
         cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
-        echo "${{github.workspace}}"
         cmake --build ${{ github.workspace }}/build --config ${{env.BUILD_TYPE}}
-        echo "${{github.workspace}}"
 
     - name: Test
       working-directory: ${{ github.workspace }}/build
