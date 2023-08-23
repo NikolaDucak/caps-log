@@ -17,8 +17,8 @@ namespace clog::view {
 YearView::YearView(const date::Date &today, bool sundayStart)
     : m_screen{ScreenInteractive::Fullscreen()},
       m_calendarButtons{Calendar::make(today, makeCalendarOptions(today, sundayStart))},
-      m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()}, m_rootComponent{
-                                                                          makeFullUIComponent()} {}
+      m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
+      m_rootComponent{makeFullUIComponent()} {}
 
 void YearView::run() { m_screen.Loop(m_rootComponent); }
 
