@@ -4,7 +4,6 @@
 
 #include <filesystem>
 #include <map>
-#include <optional>
 
 namespace clog::model {
 
