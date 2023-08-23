@@ -36,6 +36,9 @@ jobs:
         gcovr: false
         opencppcoverage: false
 
+    - name: Get boost
+      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
 
