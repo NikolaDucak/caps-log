@@ -15,33 +15,33 @@ jobs:
       matrix:
         compiler: ['clang','msvc','gcc']
         os: ['ubuntu-latest', 'windows-latest']
-     runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-     steps: 
-       - name: Prepare environment
-         uses: aminya/setup-cpp@v1
-         with:
-           compiler: ${{ matrix.compiler }}
-           vcvarsall: ${{ contains(matrix.os, 'windows' )}}
-           cmake: true
-           ninja: true
-           conan: false
-           vcpkg: false
-           ccache: false
-           clangtidy: false
-           cppcheck: false
-           gcovr: false
-           opencppcoverage: false
+    steps: 
+    - name: Prepare environment
+      uses: aminya/setup-cpp@v1
+      with:
+        compiler: ${{ matrix.compiler }}
+        vcvarsall: ${{ contains(matrix.os, 'windows' )}}
+        cmake: true
+        ninja: true
+        conan: false
+        vcpkg: false
+        ccache: false
+        clangtidy: false
+        cppcheck: false
+        gcovr: false
+        opencppcoverage: false
 
-       - name: Build 
-         run: |
-           cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
-           cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    - name: Build 
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_TESTS=ON
+        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-       - name: Test
-         working-directory: ${{github.workspace}}/build
-         # Exclude LocalLogRepository test as they write to the filesystem
-         run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "LocalLogRepository"
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      # Exclude LocalLogRepository test as they write to the filesystem
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "LocalLogRepository"
 
 
   static-analysis:
