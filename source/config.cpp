@@ -25,7 +25,8 @@ Config applyCommandlineOverrides(const Config &config, const ArgParser &commandL
         .sundayStart = commandLineArgs.has("--sunday-start") ? true : config.sundayStart,
         .ignoreFirstLineWhenParsingSections = commandLineArgs.has("--first-line-section")
                                                   ? true
-                                                  : config.ignoreFirstLineWhenParsingSections};
+                                                  : config.ignoreFirstLineWhenParsingSections,
+        .password = commandLineArgs.getIfHas("--password").value_or(config.password)};
 }
 
 Config applyConfigFileOverrides(const Config &config, std::istream &istream) {
@@ -39,8 +40,10 @@ Config applyConfigFileOverrides(const Config &config, std::istream &istream) {
                                  .value_or(config.logFilenameFormat),
         .sundayStart = ptree.get_optional<bool>("sunday-start").value_or(config.sundayStart),
         .ignoreFirstLineWhenParsingSections =
-            ptree.get_optional<bool>("--first-line-section")
+            ptree.get_optional<bool>("first-line-section")
                 .value_or(config.ignoreFirstLineWhenParsingSections),
+        .password =
+            ptree.get_optional<std::string>("password").value_or(config.password),
     };
 }
 
@@ -57,6 +60,7 @@ Config Config::make(const FileReader &fileReader, const ArgParser &cmdLineArgs) 
         .sundayStart = Config::DEFAULT_SATURDAY_START,
         .ignoreFirstLineWhenParsingSections =
             Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS,
+        .password = "",
     };
 
     auto config = configFile ? applyConfigFileOverrides(defaultConfig, *configFile) : defaultConfig;

@@ -19,6 +19,7 @@ struct Config {
     const std::string logFilenameFormat;
     const bool sundayStart;
     const bool ignoreFirstLineWhenParsingSections;
+    const std::string password;
     // TODO: const bool useOldTaskSyntaxAsTags;
     // TODO: colors?
 

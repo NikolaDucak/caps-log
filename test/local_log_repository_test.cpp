@@ -18,6 +18,13 @@ using namespace clog::model;
 namespace {
 const std::string TEST_LOG_DIRECTORY{std::filesystem::temp_directory_path().string() +
                                      "clog_test_dir"};
+std::string readFile(const std::string& path) {
+    std::ifstream ifs {path};
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return buffer.str();
+}
+
 }
 
 class LocalLogRepositoryTest : public ::testing::Test {
@@ -65,4 +72,52 @@ TEST_F(LocalLogRepositoryTest, Write) {
 
     repo.write(LogFile{date, logContent});
     ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(date)));
+}
+
+TEST_F(LocalLogRepositoryTest, EncryptedRead) {
+    const auto selectedDate = Date{25, 5, 2005};
+    const auto dummyPassword = "dummy";
+
+    auto repo = LocalLogRepository(TMPDirPathProvider, dummyPassword);
+    const std::string logContent = "Dummy string";
+    const std::string encLogContent = "\x16\x1A/l\x1\x1" "7\a\x1\xEE\xD2n";
+
+    ASSERT_FALSE(repo.read(selectedDate).has_value());
+    writeDummyLog(selectedDate, encLogContent);
+
+    auto log = repo.read(selectedDate);
+    ASSERT_TRUE(log.has_value());
+    ASSERT_EQ(log->getDate(), selectedDate);
+    ASSERT_EQ(log->getContent(), logContent);
+
+    EXPECT_EQ(readFile(TMPDirPathProvider.path(selectedDate)), encLogContent);
+}
+
+TEST_F(LocalLogRepositoryTest, EncryptedWrite) {
+    const auto date = Date{25, 5, 2005};
+    const auto dummyPassword = "dummy";
+
+    auto repo = LocalLogRepository(TMPDirPathProvider, dummyPassword);
+    const std::string logContent = "Dummy string";
+    const std::string encLogContent = "\x16\x1A/l\x1\x1" "7\a\x1\xEE\xD2n";
+
+    repo.write(LogFile{date, logContent});
+    ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(date)));
+    EXPECT_EQ(readFile(TMPDirPathProvider.path(date)), encLogContent);
+}
+
+TEST_F(LocalLogRepositoryTest, EncryptionRoundtrip) {
+    const auto date = Date{25, 5, 2005};
+    const auto dummyPassword = "dummy";
+
+    auto repo = LocalLogRepository(TMPDirPathProvider, dummyPassword);
+    const std::string logContent = "Dummy string";
+
+    repo.write(LogFile{date, logContent});
+    ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(date)));
+
+    auto log = repo.read(date);
+    ASSERT_TRUE(log.has_value());
+    ASSERT_EQ(log->getDate(), date);
+    ASSERT_EQ(log->getContent(), logContent);
 }
