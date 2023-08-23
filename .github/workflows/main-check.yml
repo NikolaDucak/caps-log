@@ -15,7 +15,7 @@ jobs:
   # they are grouped under the same job as it's simpler than cahing
   # or artifact upload/download. Rith now the tests are pretty fast
   # so not much would be gained from parallel run of test & analysis
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,7 +36,6 @@ jobs:
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure -E "LocalLogRepository"
 
     - name: Static Analysis
-      if: always()
       run: ln -s ./build/compile_commands.json && run-clang-tidy ./source/
     
   code-formatting:
@@ -45,5 +44,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: clang-format
-      run: find ./source ./test -iname '*.cpp' -o -iname '*.hpp' | xargs clang-format -n -Werror --ferror-limit=1
+    - uses: DoozyX/clang-format-lint-action@v0.16
+      with:
+        source: 'source test'
+        extensions: 'hpp,cpp'
+        clangFormatVersion: 16
