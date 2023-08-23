@@ -19,6 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps: 
+
     - name: Prepare environment
       uses: aminya/setup-cpp@v1
       with:
@@ -33,6 +34,8 @@ jobs:
         cppcheck: false
         gcovr: false
         opencppcoverage: false
+
+    - uses: actions/checkout@v3
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
