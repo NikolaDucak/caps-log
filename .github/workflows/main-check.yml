@@ -69,13 +69,13 @@ jobs:
       if: matrix.os != 'windows-latest'
       run: sudo apt-get update && sudo apt-get install libboost-program-options-dev
 
-    - name: Configure CMake
-      run: |
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
-        else
-          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
-        fi
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+    - name: Configure CMake (Windows)
+      if: matrix.os != 'windows-latest'
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release
