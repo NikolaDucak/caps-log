@@ -6,13 +6,16 @@
 #include <boost/property_tree/ptree.hpp>
 #include <filesystem>
 #include <fstream>
+#include <pwd.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 namespace caps_log {
 
+const char* real_home = getpwuid(getuid())->pw_dir;
 const std::string Config::DEFAULT_CONFIG_LOCATION =
-    std::getenv("HOME") + std::string{"/.caps-log/config.ini"};
-const std::string Config::DEFAULT_LOG_DIR_PATH =
-    std::getenv("HOME") + std::string{"/.caps-log/day"};
+    std::string(real_home) + "/.clog/config.ini";
+const std::string Config::DEFAULT_LOG_DIR_PATH = std::string(real_home) + std::string{"/.clog/day"};
 const std::string Config::DEFAULT_LOG_FILENAME_FORMAT = "d%Y_%m_%d.md";
 const bool Config::DEFAULT_SATURDAY_START = false;
 const bool Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS = true;

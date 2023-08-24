@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.13)
 
 project(caps-log
     LANGUAGES CXX
@@ -7,6 +7,8 @@ project(caps-log
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option (CAPS_LOG_SNAP_BUILD, "Snap build of caps-log" Off)
 
 include(FetchContent)
 
@@ -50,7 +52,7 @@ endif()
 
 # --------------------------------- tests -------------------------------- #
 
-if(${BUILD_TESTS})
+if(${CAPS_LOG_BUILD_TESTS})
     message("Tests will be built")
     include(CTest)
     add_subdirectory(./test)

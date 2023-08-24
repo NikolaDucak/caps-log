@@ -1,0 +1,47 @@
+name: caps-log 
+base: core20
+
+version: '1.0.0'
+summary: A small TUI journaling tool.
+description: |
+  Captains log or caps-log is a small command line journaling tool based on markdown files. 
+  Daily entires are saved locally as markdown files. In the calendar, all days where an entry is not available is dim.
+  Level 1 headers and list items starting with '*' are interpreted as sections and tags respectively and listed in two menus. 
+  Selecting a section/tag in the menu highlight all days that contain entries where they are mentioned. It's a nice way to track your
+  activities/habits. Pressing enter on the focused date will open the log entry in your $EDITOR if available.
+
+grade: stable 
+confinement: devmode 
+
+parts:
+  caps-log-part:
+    plugin: cmake
+    source: . 
+    build-packages:
+      - g++
+      - make
+      - git
+      - libboost-program-options-dev 
+      - libssl-dev
+    stage-packages:
+      - libstdc++6
+      - xdg-utils
+
+plugs:
+  clog-dir:
+    interface: personal-files
+    write:
+      - $HOME/.clog
+  home:
+    read: all
+
+apps:
+  caps-log:
+    command: usr/local/bin/clog
+    plugs: 
+      - desktop
+      - desktop-legacy
+      - x11
+      - wayland
+      - clog-dir
+      - home

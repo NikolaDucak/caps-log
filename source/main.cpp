@@ -19,19 +19,38 @@
 #include <filesystem>
 
 auto makeCapsLog(const caps_log::Config &conf) {
+    constexpr auto isSnapBuild =
+#ifdef CAPS_LOG_SNAP_BUILD
+        true;
+#else
+        false;
+#endif
+
     using namespace caps_log;
 
     auto pathProvider = model::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
     auto repo = std::make_shared<model::LocalLogRepository>(pathProvider, conf.password);
     auto view = std::make_shared<view::YearView>(date::Date::getToday(), conf.sundayStart);
-    std::shared_ptr<editor::EditorBase> editor;
-    if (conf.password.empty()) {
-        editor = std::make_shared<editor::EnvBasedEditor>(pathProvider);
-    } else {
-        editor = std::make_shared<editor::EncryptedFileEditor>(pathProvider, conf.password);
-    }
+
+    auto editorOpener = [&]() {
+        if constexpr (isSnapBuild) {
+            return std::make_unique<editor::XdgOpenEditorOpener>();
+        } else {
+            return std::make_unique<editor::EnvVarEditorOpener>();
+        }
+    }();
+
+    std::shared_ptr<editor::EditorBase> editor = [&]() -> std::shared_ptr<editor::EditorBase> {
+        if (conf.password.empty()) {
+            return std::make_shared<editor::UserSetEditor>(std::move(editorOpener), pathProvider);
+        } else {
+            return std::make_shared<editor::EncryptedFileUserSetEditor>(
+                std::move(editorOpener), pathProvider, conf.password);
+        }
+    }();
+
     return caps_log::App{std::move(view), std::move(repo), std::move(editor),
-                         conf.ignoreFirstLineWhenParsingSections};
+                     conf.ignoreFirstLineWhenParsingSections};
 }
 
 enum class Crypto { Encrypt, Decrypt };

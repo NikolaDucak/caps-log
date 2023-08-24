@@ -10,38 +10,41 @@
 #include "editor_base.hpp"
 #include "model/local_log_repository.hpp"
 #include "utils/crypto.hpp"
+#include "editor_opener.hpp"
 
 namespace caps_log::editor {
 
-class EnvBasedEditor : public EditorBase {
-    caps_log::model::LocalFSLogFilePathProvider m_pathProvider;
+class UserSetEditor : public EditorBase {
+    std::unique_ptr<EditorOpener> m_editorOpener;
+    model::LocalFSLogFilePathProvider m_pathProvider;
 
   public:
-    EnvBasedEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider)
-        : m_pathProvider{std::move(pathProvider)} {}
+    UserSetEditor(std::unique_ptr<EditorOpener> editorOpener,
+                  model::LocalFSLogFilePathProvider pathProvider)
+        : m_editorOpener{std::move(editorOpener)}, m_pathProvider{std::move(pathProvider)} {}
 
     void openEditor(const caps_log::model::LogFile &log) override {
-        if (std::getenv("EDITOR") != nullptr) {
-            std::ignore = std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
-        }
+        m_editorOpener->open(m_pathProvider.path(log.getDate()));
     }
 };
 
-class EncryptedFileEditor : public EditorBase {
-    caps_log::model::LocalFSLogFilePathProvider m_pathProvider;
+class EncryptedFileUserSetEditor : public EditorBase {
+    std::unique_ptr<EditorOpener> m_editorOpener;
+    model::LocalFSLogFilePathProvider m_pathProvider;
     std::string m_password;
 
   public:
-    EncryptedFileEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider,
-                        std::string password)
-        : m_pathProvider{std::move(pathProvider)}, m_password{std::move(password)} {}
+    EncryptedFileUserSetEditor(std::unique_ptr<EditorOpener> editorOpener,
+                               model::LocalFSLogFilePathProvider pathProvider, std::string password)
+        : m_editorOpener{std::move(editorOpener)}, m_pathProvider{std::move(pathProvider)},
+          m_password{std::move(password)} {}
 
     void openEditor(const caps_log::model::LogFile &log) override {
         const auto tmp = getTmpFile();
         const auto originalLogPath = m_pathProvider.path(log.getDate());
         copyLogFile(originalLogPath, tmp);
         decryptFile(tmp);
-        openEnvEditor(tmp);
+        m_editorOpener->open(tmp);
         encryptFile(tmp);
         copyLogFile(tmp, originalLogPath);
     }
@@ -57,7 +60,6 @@ class EncryptedFileEditor : public EditorBase {
     }
 
     void copyLogFile(const std::string &src, const std::string &dest) {
-        // Implementation here...
         std::ifstream source(src, std::ios::binary);
         std::ofstream destination(dest, std::ios::binary);
         destination << source.rdbuf();
@@ -84,12 +86,6 @@ class EncryptedFileEditor : public EditorBase {
         {
             std::ofstream destination(path);
             destination << contents;
-        }
-    }
-
-    void openEnvEditor(const std::string &path) {
-        if (std::getenv("EDITOR") != nullptr) {
-            std::ignore = std::system(("$EDITOR " + path).c_str());
         }
     }
 };
