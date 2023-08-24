@@ -34,25 +34,33 @@ enum class Crypto { Encrypt, Decrypt };
 void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
     auto logsProcessed = 0u;
 
-    for (const auto &entry : std::filesystem::directory_iterator{conf.logDirPath}) {
+    const auto tryGetLogFileStream =
+        [&](const std::filesystem::directory_entry &entry) -> std::optional<std::ifstream> {
         std::tm tm;
         std::istringstream iss{entry.path().filename()};
         const auto s = std::get_time(&tm, conf.logFilenameFormat.c_str());
 
         if (entry.is_regular_file() && !iss.fail()) {
-            std::string fileContentsAfterCrypto;
+            std::ifstream ifs{entry.path().string()};
+            if (ifs.is_open())
+                return ifs;
+        }
+        return std::nullopt;
+    };
 
-            {
-                std::ifstream ifs{entry.path().string()};
-                if (c == Crypto::Encrypt) {
-                    fileContentsAfterCrypto = clog::utils::encrypt(conf.password, ifs);
-                } else {
-                    fileContentsAfterCrypto = clog::utils::decrypt(conf.password, ifs);
-                }
+    for (const auto &entry : std::filesystem::directory_iterator{conf.logDirPath}) {
+        if (auto ifs = tryGetLogFileStream(entry)) {
+            const auto fileContentsAfterCrypto = (c == Crypto::Encrypt)
+                                                     ? clog::utils::encrypt(conf.password, *ifs)
+                                                     : clog::utils::decrypt(conf.password, *ifs);
+            if (std::ofstream ofs{entry.path().string()}; ofs.is_open()) {
+                ofs << fileContentsAfterCrypto;
+            } else {
+                std::cerr << "Failed to write to file: " << entry.path() << std::endl;
             }
-
-            std::ofstream{entry} << fileContentsAfterCrypto;
             logsProcessed++;
+        } else {
+            std::cerr << "Failed to open file: " << entry.path() << std::endl;
         }
     }
     std::cout << "Finished! " << ((c == Crypto::Encrypt) ? "Encrypted " : "Decrypted ")

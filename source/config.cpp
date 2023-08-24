@@ -42,8 +42,7 @@ Config applyConfigFileOverrides(const Config &config, std::istream &istream) {
         .ignoreFirstLineWhenParsingSections =
             ptree.get_optional<bool>("first-line-section")
                 .value_or(config.ignoreFirstLineWhenParsingSections),
-        .password =
-            ptree.get_optional<std::string>("password").value_or(config.password),
+        .password = ptree.get_optional<std::string>("password").value_or(config.password),
     };
 }
 
