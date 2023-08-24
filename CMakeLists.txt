@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
-# --------------------------------- ftxui ------------------------------- #
+# -------------------------- Fetech ftxui ------------------------------- #
  
 set(FETCHCONTENT_UPDATES_DISCONNECTED TRUE)
 FetchContent_Declare(ftxui
@@ -30,6 +30,11 @@ find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 if(NOT Boost_FOUND)
     message(FATAL_ERROR "Boost Not found")
 endif()
+
+# ------------------------------- OpenSSL -------------------------------- #
+
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
 
 # ------------------------------- Fetch FMT ------------------------------ #
  

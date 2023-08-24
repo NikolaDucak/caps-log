@@ -30,6 +30,8 @@ add_executable(
     ./date/date.cpp
     ./date/date.hpp
 
+    ./utils/crypto.cpp
+    ./utils/crypto.hpp
     ./utils/string.hpp
     ./utils/map.hpp
 )
@@ -42,6 +44,8 @@ target_link_libraries(clog
     ftxui::component 
     fmt::fmt
     Boost::program_options
+    OpenSSL::Crypto
+    OpenSSL::SSL
 )
 
 install(TARGETS clog DESTINATION "bin")

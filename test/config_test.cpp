@@ -49,6 +49,24 @@ TEST(ConfigTest, ParseCmdLineArgs_SundayStart) {
     EXPECT_EQ(config.sundayStart, true);
 }
 
+TEST(ConfigTest, ParseCmdLineArgs_PasswordWithNoValue) {
+    auto mockFS = MockFilesystemReader{};
+    const char *argv[] = {"--password"};
+
+    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
+    ASSERT_ANY_THROW(Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv}));
+}
+
+TEST(ConfigTest, ParseCmdLineArgs_PasswordProvided) {
+    auto mockFS = MockFilesystemReader{};
+    const std::string password = {"dummy"};
+    const char *argv[] = {"--password", password.c_str()};
+
+    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
+    auto config = Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
+    EXPECT_EQ(config.password, password);
+}
+
 TEST(ConfigTest, ParseConfigFile_LogDirPath_NoPathProvided) {
     auto mockFS = MockFilesystemReader{};
 
@@ -87,6 +105,16 @@ TEST(ConfigTest, ParseConfigFile_SundayStart_BadParam) {
 
     auto config = Config::make(mockFS.AsStdFunction(), {});
     ASSERT_EQ(config.sundayStart, false);
+}
+
+TEST(ConfigTest, ParseConfigFile_Password_OK) {
+    auto mockFS = MockFilesystemReader{};
+
+    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
+        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("password = 123"))));
+
+    auto config = Config::make(mockFS.AsStdFunction(), {});
+    ASSERT_EQ(config.password, std::string{"123"});
 }
 
 TEST(ConfigTest, CMDLineArg_OverridesConfigFileArg) {

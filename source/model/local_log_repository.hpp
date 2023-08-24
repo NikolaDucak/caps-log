@@ -38,7 +38,7 @@ class LocalLogRepository : public LogRepositoryBase {
      * @param logFilenameFormat Format used to generate names for log entries,
      * that format is used with Date::formatToString that.
      */
-    LocalLogRepository(LocalFSLogFilePathProvider pathProvider);
+    LocalLogRepository(LocalFSLogFilePathProvider pathProvider, std::string password = "");
 
     std::optional<LogFile> read(const date::Date &date) const override;
     void remove(const date::Date &date) override;
@@ -46,6 +46,7 @@ class LocalLogRepository : public LogRepositoryBase {
 
   private:
     LocalFSLogFilePathProvider m_pathProvider;
+    std::string m_password;
 };
 
 } // namespace clog::model

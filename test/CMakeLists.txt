@@ -31,6 +31,7 @@ add_executable(
     ./../source/model/log_file.cpp
     ./../source/model/local_log_repository.cpp
     ./../source/model/year_overview_data.cpp
+    ./../source/utils/crypto.cpp
 )
 
 target_link_libraries(
@@ -42,6 +43,8 @@ target_link_libraries(
     ftxui::component 
     fmt::fmt
     Boost::program_options
+    OpenSSL::Crypto
+    OpenSSL::SSL
 )
 
 target_include_directories(
