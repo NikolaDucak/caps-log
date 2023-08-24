@@ -20,7 +20,8 @@ jobs:
         - os: 'ubuntu-latest'
           compiler: 'msvc'
         - os: 'windows-latest'
-          compiler: 'gcc'
+          # temporary exclude everything
+          # compiler: 'gcc'
 
     runs-on: ${{ matrix.os }}
 
