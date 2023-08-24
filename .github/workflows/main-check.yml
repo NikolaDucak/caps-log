@@ -16,10 +16,31 @@ jobs:
       matrix:
         compiler: ['clang','msvc','gcc']
         os: ['ubuntu-latest', 'windows-latest']
+        exclude:
+        - os: 'ubuntu-latest'
+          compiler: 'msvc'
+        - os: 'windows-latest'
+          compiler: 'gcc'
+
     runs-on: ${{ matrix.os }}
 
     steps: 
     - uses: actions/checkout@v3
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/vcpkg
+          ./build/vcpkg_installed
+          ${{ env.CONAN_USER_HOME }}
+          ~/.cache/pip
+          ${{ env.HOME }}/.cache/vcpkg/archives
+          ${{ env.XDG_CACHE_HOME }}/vcpkg/archives
+          ${{ env.LOCALAPPDATA }}\vcpkg\archives
+          ${{ env.APPDATA }}\vcpkg\archives
+        key: ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('./vcpkg.json')}}-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+            ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('./vcpkg.json') }}-
 
     - name: Prepare environment
       uses: aminya/setup-cpp@v1
@@ -36,11 +57,25 @@ jobs:
         gcovr: false
         opencppcoverage: false
 
+    - name: Setup vcpkg and install Boost (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg
+        ./bootstrap-vcpkg.bat
+        ./vcpkg install boost
+
     - name: Get boost
+      if: matrix.os != 'windows-latest'
       run: sudo apt-get update && sudo apt-get install libboost-program-options-dev
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
+      run: |
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+        else
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
+        fi
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release
