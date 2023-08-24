@@ -53,8 +53,8 @@ class App : public InputHandlerBase {
     App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor, bool skipFirstLine = true)
         : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
-          m_editor{std::move(editor)}, m_data{YearOverviewData::collect(
-                                           m_repo, date::Date::getToday().year, skipFirstLine)},
+          m_editor{std::move(editor)},
+          m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year, skipFirstLine)},
           m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
