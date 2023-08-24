@@ -45,6 +45,9 @@ Version {}
  --sunday-start                - have the calendar display sunday as first day of the week
  --first-line-section          - if a section mark is placed on the first line, 
                                  by default it is ignored as it's left for log title, this overrides this behaviour
+ --password                    - password for encrypted log repositores or to be used with --encrypt/--decrypt
+ --encrypt                     - apply encryption to all logs in log dir path (needs --password)
+ --decrypt                     - apply decryption to all logs in log dir path (needs --password)
  )"};
     // clang-format-on
     return fmt::format(HELP_STRING_BASE, CLOG_VERSION);
