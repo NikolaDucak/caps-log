@@ -38,9 +38,9 @@ jobs:
           ${{ env.XDG_CACHE_HOME }}/vcpkg/archives
           ${{ env.LOCALAPPDATA }}\vcpkg\archives
           ${{ env.APPDATA }}\vcpkg\archives
-        key: ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('./vcpkg.json')}}-${{ hashFiles('**/CMakeLists.txt') }}
+        key: ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt') }}
         restore-keys: |
-            ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('./vcpkg.json') }}-
+            ${{ runner.os }}-${{ matrix.compiler }}
 
     - name: Prepare environment
       uses: aminya/setup-cpp@v1
@@ -58,7 +58,8 @@ jobs:
         opencppcoverage: false
 
     - name: Setup vcpkg and install Boost (Windows)
-      if: matrix.os == 'windows-latest'
+      if: steps.cache-step.outputs.cache-hit != 'true' && matrix.os == 'windows-latest'
+
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         cd vcpkg
