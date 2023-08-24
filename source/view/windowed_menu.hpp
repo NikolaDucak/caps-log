@@ -19,8 +19,8 @@ class WindowedMenu : public ComponentBase {
     int m_selected;
 
   public:
-    WindowedMenu(std::string title, std::vector<std::string> *items, Ref<MenuOption> option) {
-        auto menu = Menu(items, &m_selected, std::move(option));
+    WindowedMenu(std::string title, MenuOption option) {
+        auto menu = Menu(std::move(option));
         auto menuRenderer = Renderer(menu, [title = std::move(title), menu = std::move(menu)]() {
             if (not menu->Focused())
                 return window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25) |
@@ -32,8 +32,8 @@ class WindowedMenu : public ComponentBase {
     }
     auto &selected() { return m_selected; }
 
-    static auto make(std::string title, std::vector<std::string> *items, Ref<MenuOption> option) {
-        return std::make_shared<WindowedMenu>(std::move(title), items, std::move(option));
+    static auto make(std::string title, MenuOption option) {
+        return std::make_shared<WindowedMenu>(std::move(title), std::move(option));
     }
 };
 

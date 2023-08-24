@@ -104,18 +104,26 @@ CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
-    MenuOption option{.on_change = [this] {
-        m_handler->handleInputEvent(
-            {UIEvent::FOCUSED_TAG_CHANGE, std::to_string(m_tagsMenu->selected())});
-    }};
-    return WindowedMenu::make("Tags", &m_tagMenuItems, option);
+    MenuOption option{
+        .entries = &m_tagMenuItems,
+        .on_change =
+            [this] {
+                m_handler->handleInputEvent(
+                    {UIEvent::FOCUSED_TAG_CHANGE, std::to_string(m_tagsMenu->selected())});
+            },
+    };
+    return WindowedMenu::make("Tags", option);
 }
 
 std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
-    MenuOption option = {.on_change = [this] {
-        m_handler->handleInputEvent(
-            {UIEvent::FOCUSED_SECTION_CHANGE, std::to_string(m_sectionsMenu->selected())});
-    }};
-    return WindowedMenu::make("Sections", &m_sectionMenuItems, option);
+    MenuOption option = {
+        .entries = &m_sectionMenuItems,
+        .on_change =
+            [this] {
+                m_handler->handleInputEvent(
+                    {UIEvent::FOCUSED_SECTION_CHANGE, std::to_string(m_sectionsMenu->selected())});
+            },
+    };
+    return WindowedMenu::make("Sections", option);
 }
 } // namespace clog::view
