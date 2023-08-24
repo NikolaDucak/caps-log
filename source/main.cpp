@@ -32,7 +32,6 @@ auto makeClog(const clog::Config &conf) {
 enum class Crypto { Encrypt, Decrypt };
 
 void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
-    auto dir = std::filesystem::directory_iterator{conf.logDirPath};
     auto logsProcessed = 0u;
 
     for (const auto &entry : std::filesystem::directory_iterator{conf.logDirPath}) {
@@ -44,7 +43,7 @@ void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
             std::string fileContentsAfterCrypto;
 
             {
-                std::ifstream ifs{entry};
+                std::ifstream ifs{entry.path().string()};
                 if (c == Crypto::Encrypt) {
                     fileContentsAfterCrypto = clog::utils::encrypt(conf.password, ifs);
                 } else {
