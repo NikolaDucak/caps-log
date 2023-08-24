@@ -24,7 +24,12 @@ auto makeClog(const clog::Config &conf) {
     auto pathProvider = model::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
     auto repo = std::make_shared<model::LocalLogRepository>(pathProvider, conf.password);
     auto view = std::make_shared<view::YearView>(date::Date::getToday(), conf.sundayStart);
-    auto editor = std::make_shared<editor::EnvBasedEditor>(pathProvider);
+    std::shared_ptr<editor::EditorBase> editor;
+    if (conf.password.empty()) {
+        editor = std::make_shared<editor::EnvBasedEditor>(pathProvider);
+    } else {
+        editor = std::make_shared<editor::EncryptedFileEditor>(pathProvider, conf.password);
+    }
     return clog::App{std::move(view), std::move(repo), std::move(editor),
                      conf.ignoreFirstLineWhenParsingSections};
 }
@@ -32,6 +37,12 @@ auto makeClog(const clog::Config &conf) {
 enum class Crypto { Encrypt, Decrypt };
 
 void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
+
+    if (conf.password.empty()) {
+        std::cerr << "Error: password is needed this action!";
+        return;
+    }
+
     auto logsProcessed = 0u;
 
     const auto tryGetLogFileStream =
