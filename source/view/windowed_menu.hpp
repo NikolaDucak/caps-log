@@ -22,7 +22,8 @@ class WindowedMenu : public ComponentBase {
     WindowedMenu(std::string title, MenuOption option) {
         auto menu = Menu(std::move(option));
         auto menuRenderer = Renderer(menu, [title = std::move(title), menu = std::move(menu)]() {
-            auto windowElement = window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
+            auto windowElement =
+                window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
             if (not menu->Focused())
                 windowElement |= dim;
             return windowElement;
