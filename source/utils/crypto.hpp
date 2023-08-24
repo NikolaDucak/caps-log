@@ -5,8 +5,8 @@
 
 namespace clog::utils {
 
-std::string encryptFile(const std::string& password, std::istream& file); 
-std::string decryptFile(const std::string& password, std::istream& file);
+std::string encrypt(const std::string& password, std::istream& file); 
+std::string decrypt(const std::string& password, std::istream& file);
 
 }
 

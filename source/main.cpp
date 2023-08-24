@@ -29,59 +29,52 @@ auto makeClog(const clog::Config &conf) {
                      conf.ignoreFirstLineWhenParsingSections};
 }
 
-
-enum class Crypto{
-  Encryption, Dectryption
-};
+enum class Crypto { Encrypt, Decrypt };
 
 void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
     auto dir = std::filesystem::directory_iterator{conf.logDirPath};
     auto logsProcessed = 0u;
 
-    for (const auto& entry : std::filesystem::directory_iterator{conf.logDirPath}) {
-      std::tm tm;
-      std::istringstream iss{entry.path().filename()};
-      const auto s = std::get_time(&tm, conf.logFilenameFormat.c_str());
+    for (const auto &entry : std::filesystem::directory_iterator{conf.logDirPath}) {
+        std::tm tm;
+        std::istringstream iss{entry.path().filename()};
+        const auto s = std::get_time(&tm, conf.logFilenameFormat.c_str());
 
-      if (entry.is_regular_file() && !iss.fail()) {
-        std::string fileContentsAfterCrypto;
+        if (entry.is_regular_file() && !iss.fail()) {
+            std::string fileContentsAfterCrypto;
 
-        {
-          std::ifstream ifs{entry};
-          if (c == Crypto::Encryption) {
-            fileContentsAfterCrypto = clog::utils::encryptFile(conf.password, ifs);
-          } else {
-            fileContentsAfterCrypto = clog::utils::decryptFile(conf.password, ifs);
-          }
+            {
+                std::ifstream ifs{entry};
+                if (c == Crypto::Encrypt) {
+                    fileContentsAfterCrypto = clog::utils::encrypt(conf.password, ifs);
+                } else {
+                    fileContentsAfterCrypto = clog::utils::decrypt(conf.password, ifs);
+                }
+            }
+
+            std::ofstream{entry} << fileContentsAfterCrypto;
+            logsProcessed++;
         }
-
-        std::ofstream{entry} << fileContentsAfterCrypto;
-        logsProcessed++;
-      }
     }
-    std::cout << "Finished! "
-              << ((c == Crypto::Encryption) ? "Encrypted " :"Decrypted ")
-              << logsProcessed
-              << " log files in: " << conf.logDirPath << "." << std::endl;
+    std::cout << "Finished! " << ((c == Crypto::Encrypt) ? "Encrypted " : "Decrypted ")
+              << logsProcessed << " log files in: " << conf.logDirPath << "." << std::endl;
 }
 
 int main(int argc, const char **argv) try {
     const auto commandLineArgs = clog::ArgParser{argc, argv};
 
-
     if (commandLineArgs.has("-h", "--help")) {
         std::cout << clog::helpString() << std::endl;
         return 0;
-    } 
+    }
 
     const auto config = clog::Config::make(
-        [](const auto &path) { return std::make_unique<std::ifstream>(path); },
-        commandLineArgs);
+        [](const auto &path) { return std::make_unique<std::ifstream>(path); }, commandLineArgs);
 
     if (commandLineArgs.has("--encrypt")) {
-      applyCryptograpyToLogFiles(config, Crypto::Encryption);
+        applyCryptograpyToLogFiles(config, Crypto::Encrypt);
     } else if (commandLineArgs.has("--decrypt")) {
-      applyCryptograpyToLogFiles(config, Crypto::Dectryption);
+        applyCryptograpyToLogFiles(config, Crypto::Decrypt);
     } else {
         makeClog(config).run();
     }

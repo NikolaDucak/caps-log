@@ -18,14 +18,14 @@ using namespace clog::model;
 namespace {
 const std::string TEST_LOG_DIRECTORY{std::filesystem::temp_directory_path().string() +
                                      "clog_test_dir"};
-std::string readFile(const std::string& path) {
-    std::ifstream ifs {path};
+std::string readFile(const std::string &path) {
+    std::ifstream ifs{path};
     std::stringstream buffer;
     buffer << ifs.rdbuf();
     return buffer.str();
 }
 
-}
+} // namespace
 
 class LocalLogRepositoryTest : public ::testing::Test {
   protected:
@@ -80,7 +80,8 @@ TEST_F(LocalLogRepositoryTest, EncryptedRead) {
 
     auto repo = LocalLogRepository(TMPDirPathProvider, dummyPassword);
     const std::string logContent = "Dummy string";
-    const std::string encLogContent = "\x16\x1A/l\x1\x1" "7\a\x1\xEE\xD2n";
+    const std::string encLogContent = "\x16\x1A/l\x1\x1"
+                                      "7\a\x1\xEE\xD2n";
 
     ASSERT_FALSE(repo.read(selectedDate).has_value());
     writeDummyLog(selectedDate, encLogContent);
@@ -99,7 +100,8 @@ TEST_F(LocalLogRepositoryTest, EncryptedWrite) {
 
     auto repo = LocalLogRepository(TMPDirPathProvider, dummyPassword);
     const std::string logContent = "Dummy string";
-    const std::string encLogContent = "\x16\x1A/l\x1\x1" "7\a\x1\xEE\xD2n";
+    const std::string encLogContent = "\x16\x1A/l\x1\x1"
+                                      "7\a\x1\xEE\xD2n";
 
     repo.write(LogFile{date, logContent});
     ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(date)));

@@ -155,4 +155,3 @@ TEST(ConfigTest, CMDLineArg_OverridesOverridenConfigFile) {
     auto config2 = Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
     EXPECT_EQ(config2.logDirPath, dummyLogDirPath);
 }
-
