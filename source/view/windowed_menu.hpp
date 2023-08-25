@@ -20,14 +20,15 @@ class WindowedMenu : public ComponentBase {
 
   public:
     WindowedMenu(std::string title, MenuOption option) {
-        auto menu = Menu(std::move(option));
-        auto menuRenderer = Renderer(menu, [title = std::move(title), menu = std::move(menu)]() {
-            auto windowElement =
-                window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
-            if (not menu->Focused())
-                windowElement |= dim;
-            return windowElement;
-        });
+        auto menuComponent = Menu(std::move(option));
+        auto menuRenderer =
+            Renderer(menuComponent, [title = std::move(title), menu = menuComponent]() {
+                auto windowElement =
+                    window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
+                if (not menu->Focused())
+                    windowElement |= dim;
+                return windowElement;
+            });
         Add(menuRenderer);
     }
 
