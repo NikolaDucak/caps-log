@@ -20,14 +20,14 @@ struct TagTogglerConfig {
 };
 
 class TagToggler {
-    std::shared_ptr<clog::model::LogRepositoryBase> m_repo;
+    std::shared_ptr<caps_log::model::LogRepositoryBase> m_repo;
     TagTogglerConfig m_config;
 
   public:
-    TagToggler(std::shared_ptr<clog::model::LogRepositoryBase> repo, TagTogglerConfig conf)
+    TagToggler(std::shared_ptr<caps_log::model::LogRepositoryBase> repo, TagTogglerConfig conf)
         : m_repo{std::move(repo)}, m_config{std::move(conf)} {}
 
-    void toggle(const std::string &tagName, clog::date::Date date) {
+    void toggle(const std::string &tagName, caps_log::date::Date date) {
         auto log = m_repo->read(date);
         if (log) {
             toggleInExistingFile(tagName, *log);
@@ -37,7 +37,7 @@ class TagToggler {
     }
 
   private:
-    void toggleInNonExistingFile(const std::string &tagName, clog::date::Date &date) {
+    void toggleInNonExistingFile(const std::string &tagName, caps_log::date::Date &date) {
         if (not m_config.allowAddingToNonExistingLogFiles)
             return;
 
@@ -47,14 +47,14 @@ class TagToggler {
         m_repo->write({date, content});
     }
 
-    void toggleInExistingFile(const std::string &tagName, clog::model::LogFile &log) {
+    void toggleInExistingFile(const std::string &tagName, caps_log::model::LogFile &log) {
         auto content = log.getContent();
         if (auto tags = findTagIfAlreadyThere(tagName, content); not tags.empty()) {
             for (const auto &tag : tags) {
                 eraseSubStr(content, tag);
             }
 
-            if (clog::utils::trim(content).empty()) {
+            if (caps_log::utils::trim(content).empty()) {
                 m_repo->remove(log.getDate());
             } else {
                 m_repo->write({log.getDate(), content});
@@ -85,7 +85,7 @@ class TagToggler {
             if (isTagLine(line, tagName)) {
                 inTag = !inTag;
                 resultV.push_back(line);
-            } else if (clog::utils::trim(line).empty() && inTag) {
+            } else if (caps_log::utils::trim(line).empty() && inTag) {
                 inTag = false;
             } else {
                 if (inTag)
@@ -97,7 +97,7 @@ class TagToggler {
     }
 
     bool isTagLine(const std::string &line, const std::string &targetTag) {
-        auto tags = clog::model::LogFile::readTagTitles(line);
+        auto tags = caps_log::model::LogFile::readTagTitles(line);
         return std::find(tags.begin(), tags.end(), targetTag) != tags.end();
     }
 
@@ -125,7 +125,7 @@ class TagToggler {
     }
 
     bool isTargetLine(const std::string &line, const std::vector<std::string> &targets) {
-        auto sections = clog::model::LogFile::readSectionTitles(line);
+        auto sections = caps_log::model::LogFile::readSectionTitles(line);
         return std::find(targets.begin(), targets.end(), sections.front()) != targets.end();
     }
 

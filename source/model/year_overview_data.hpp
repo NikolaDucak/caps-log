@@ -2,7 +2,7 @@
 
 #include "log_repository_base.hpp"
 
-namespace clog::model {
+namespace caps_log::model {
 
 /**
  * A class containing superficial data about the collection of logs.
@@ -28,4 +28,4 @@ class YearOverviewData {
                  bool skipFirstLine = true);
 };
 
-} // namespace clog::model
+} // namespace caps_log::model

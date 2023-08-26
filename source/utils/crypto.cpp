@@ -3,7 +3,7 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
-namespace clog::utils {
+namespace caps_log::utils {
 
 std::string encrypt(const std::string &password, std::istream &file) {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
@@ -108,4 +108,4 @@ std::string decrypt(const std::string &password, std::istream &file) {
 
     return output;
 }
-} // namespace clog::utils
+} // namespace caps_log::utils

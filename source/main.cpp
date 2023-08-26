@@ -18,8 +18,8 @@
 
 #include <filesystem>
 
-auto makeClog(const clog::Config &conf) {
-    using namespace clog;
+auto makeCapsLog(const caps_log::Config &conf) {
+    using namespace caps_log;
 
     auto pathProvider = model::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
     auto repo = std::make_shared<model::LocalLogRepository>(pathProvider, conf.password);
@@ -30,13 +30,13 @@ auto makeClog(const clog::Config &conf) {
     } else {
         editor = std::make_shared<editor::EncryptedFileEditor>(pathProvider, conf.password);
     }
-    return clog::App{std::move(view), std::move(repo), std::move(editor),
+    return caps_log::App{std::move(view), std::move(repo), std::move(editor),
                      conf.ignoreFirstLineWhenParsingSections};
 }
 
 enum class Crypto { Encrypt, Decrypt };
 
-void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
+void applyCryptograpyToLogFiles(const caps_log::Config &conf, Crypto c) {
 
     if (conf.password.empty()) {
         std::cerr << "Error: password is needed this action!";
@@ -62,8 +62,8 @@ void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
     for (const auto &entry : std::filesystem::directory_iterator{conf.logDirPath}) {
         if (auto ifs = tryGetLogFileStream(entry)) {
             const auto fileContentsAfterCrypto = (c == Crypto::Encrypt)
-                                                     ? clog::utils::encrypt(conf.password, *ifs)
-                                                     : clog::utils::decrypt(conf.password, *ifs);
+                                                     ? caps_log::utils::encrypt(conf.password, *ifs)
+                                                     : caps_log::utils::decrypt(conf.password, *ifs);
             if (std::ofstream ofs{entry.path().string()}; ofs.is_open()) {
                 ofs << fileContentsAfterCrypto;
             } else {
@@ -79,14 +79,14 @@ void applyCryptograpyToLogFiles(const clog::Config &conf, Crypto c) {
 }
 
 int main(int argc, const char **argv) try {
-    const auto commandLineArgs = clog::ArgParser{argc, argv};
+    const auto commandLineArgs = caps_log::ArgParser{argc, argv};
 
     if (commandLineArgs.has("-h", "--help")) {
-        std::cout << clog::helpString() << std::endl;
+        std::cout << caps_log::helpString() << std::endl;
         return 0;
     }
 
-    const auto config = clog::Config::make(
+    const auto config = caps_log::Config::make(
         [](const auto &path) { return std::make_unique<std::ifstream>(path); }, commandLineArgs);
 
     if (commandLineArgs.has("--encrypt")) {
@@ -94,11 +94,11 @@ int main(int argc, const char **argv) try {
     } else if (commandLineArgs.has("--decrypt")) {
         applyCryptograpyToLogFiles(config, Crypto::Decrypt);
     } else {
-        makeClog(config).run();
+        makeCapsLog(config).run();
     }
 
     return 0;
 } catch (std::exception &e) {
-    std::cerr << "clog encountered an error: \n " << e.what() << std::endl;
+    std::cerr << "Captains long encountered an error: \n " << e.what() << std::endl;
     return 1;
 }

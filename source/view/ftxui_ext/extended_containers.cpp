@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace clog::view::ftxui_ext {
+namespace caps_log::view::ftxui_ext {
 using namespace ftxui;
 
 class ContainerBase : public ComponentBase {
@@ -302,4 +302,4 @@ Component CustomContainer(Components children, Event next, Event prev) {
                                                   std::move(prev));
 }
 
-} // namespace clog::view::ftxui_ext
+} // namespace caps_log::view::ftxui_ext

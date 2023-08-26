@@ -1,6 +1,6 @@
 #include "preview.hpp"
 
-namespace clog::view {
+namespace caps_log::view {
 
 ftxui::Element Preview::Render() {
     using namespace ftxui;
@@ -48,4 +48,4 @@ void Preview::setContent(const std::string &str) {
     m_lines = std::move(lines);
 }
 
-} // namespace clog::view
+} // namespace caps_log::view

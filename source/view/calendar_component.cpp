@@ -3,9 +3,9 @@
 #include "ftxui/dom/elements.hpp"
 #include <iostream>
 
-namespace clog::view {
+namespace caps_log::view {
 using namespace ftxui;
-using namespace clog::date;
+using namespace caps_log::date;
 
 namespace {
 Elements arrangeMonthsInCalendar(const Components &monthComponents, int columns) {
@@ -105,4 +105,4 @@ Component Calendar::createDay(const date::Date &date) {
         }});
 }
 
-} // namespace clog::view
+} // namespace caps_log::view

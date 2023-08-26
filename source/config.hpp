@@ -7,7 +7,7 @@
 #include "fmt/format.h"
 #include "version.hpp"
 
-namespace clog {
+namespace caps_log {
 
 using FileReader = std::function<std::unique_ptr<std::istream>(std::string)>;
 
@@ -34,13 +34,13 @@ inline std::string helpString() {
     // TODO: embed version
     // clang-format-off
     static const std::string HELP_STRING_BASE{R"(
-clog (Captains Log)
+caps-log (Captains Log)
 A small TUI journaling tool.
 Version {}
 
  -h --help                     - show this message
- -c --config <path             - override the default config file path (~/.clog/config.ini)
- --log-dir-path <path>         - path where log files are stored (default: ~/.clog/day/)
+ -c --config <path             - override the default config file path (~/.caps-log/config.ini)
+ --log-dir-path <path>         - path where log files are stored (default: ~/.caps-log/day/)
  --log-name-format <format>    - format in which log entry markdown files are saved (default: d%Y_%m_%d.md)
  --sunday-start                - have the calendar display sunday as first day of the week
  --first-line-section          - if a section mark is placed on the first line, 
@@ -50,7 +50,7 @@ Version {}
  --decrypt                     - apply decryption to all logs in log dir path (needs --password)
  )"};
     // clang-format-on
-    return fmt::format(HELP_STRING_BASE, CLOG_VERSION);
+    return fmt::format(HELP_STRING_BASE, CAPS_LOG_VERSION);
 }
 
-} // namespace clog
+} // namespace caps_log

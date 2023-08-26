@@ -12,12 +12,12 @@
 #include <optional>
 #include <string>
 
-using namespace clog::date;
-using namespace clog::model;
+using namespace caps_log::date;
+using namespace caps_log::model;
 
 namespace {
 const std::string TEST_LOG_DIRECTORY{std::filesystem::temp_directory_path().string() +
-                                     "clog_test_dir"};
+                                     "caps_log_test_dir"};
 std::string readFile(const std::string &path) {
     std::ifstream ifs{path};
     std::stringstream buffer;
@@ -30,7 +30,7 @@ std::string readFile(const std::string &path) {
 class LocalLogRepositoryTest : public ::testing::Test {
   protected:
     LocalFSLogFilePathProvider TMPDirPathProvider{TEST_LOG_DIRECTORY,
-                                                  clog::Config::DEFAULT_LOG_FILENAME_FORMAT};
+                                                  caps_log::Config::DEFAULT_LOG_FILENAME_FORMAT};
 
   public:
     void SetUp() override { std::filesystem::remove_all(TMPDirPathProvider.getLogDirPath()); }

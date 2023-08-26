@@ -5,7 +5,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-using namespace clog;
+using namespace caps_log;
 using namespace testing;
 using MockFilesystemReader = testing::MockFunction<FileReader>;
 

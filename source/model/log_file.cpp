@@ -6,7 +6,7 @@
 #include <regex>
 #include <set>
 
-namespace clog::model {
+namespace caps_log::model {
 
 namespace {
 
@@ -80,4 +80,4 @@ std::vector<std::string> LogFile::readSectionTitles(std::istream &input, bool sk
     return result;
 }
 
-} // namespace clog::model
+} // namespace caps_log::model

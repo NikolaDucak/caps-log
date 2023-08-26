@@ -11,16 +11,16 @@
 #include "model/local_log_repository.hpp"
 #include "utils/crypto.hpp"
 
-namespace clog::editor {
+namespace caps_log::editor {
 
 class EnvBasedEditor : public EditorBase {
-    clog::model::LocalFSLogFilePathProvider m_pathProvider;
+    caps_log::model::LocalFSLogFilePathProvider m_pathProvider;
 
   public:
-    EnvBasedEditor(clog::model::LocalFSLogFilePathProvider pathProvider)
+    EnvBasedEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider)
         : m_pathProvider{std::move(pathProvider)} {}
 
-    void openEditor(const clog::model::LogFile &log) override {
+    void openEditor(const caps_log::model::LogFile &log) override {
         if (std::getenv("EDITOR") != nullptr) {
           std::ignore = std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
         }
@@ -28,14 +28,14 @@ class EnvBasedEditor : public EditorBase {
 };
 
 class EncryptedFileEditor : public EditorBase {
-    clog::model::LocalFSLogFilePathProvider m_pathProvider;
+    caps_log::model::LocalFSLogFilePathProvider m_pathProvider;
     std::string m_password;
 
   public:
-    EncryptedFileEditor(clog::model::LocalFSLogFilePathProvider pathProvider, std::string password)
+    EncryptedFileEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider, std::string password)
         : m_pathProvider{std::move(pathProvider)}, m_password{std::move(password)} {}
 
-    void openEditor(const clog::model::LogFile &log) override {
+    void openEditor(const caps_log::model::LogFile &log) override {
         const auto tmp = getTmpFile();
         const auto originalLogPath = m_pathProvider.path(log.getDate());
         copyLogFile(originalLogPath, tmp);
@@ -93,4 +93,4 @@ class EncryptedFileEditor : public EditorBase {
     }
 };
 
-} // namespace clog::editor
+} // namespace caps_log::editor

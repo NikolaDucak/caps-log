@@ -14,7 +14,7 @@
 #include <string_view>
 #include <vector>
 
-namespace clog {
+namespace caps_log {
 
 using namespace view;
 using namespace model;
@@ -206,4 +206,4 @@ class App : public InputHandlerBase {
         return std::move(strs);
     }
 };
-} // namespace clog
+} // namespace caps_log

@@ -3,7 +3,7 @@
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/component_base.hpp"
 
-namespace clog::view {
+namespace caps_log::view {
 using namespace ftxui;
 
 /**
@@ -26,4 +26,4 @@ class Promptable : public ComponentBase {
     Element Render() override;
 };
 
-} // namespace clog::view
+} // namespace caps_log::view

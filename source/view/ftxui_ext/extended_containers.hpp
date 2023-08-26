@@ -2,7 +2,7 @@
 
 #include "ftxui/component/component_base.hpp"
 
-namespace clog::view::ftxui_ext {
+namespace caps_log::view::ftxui_ext {
 using namespace ftxui;
 
 /**
@@ -30,4 +30,4 @@ Component AnyDir(Components children, int *selected = nullptr);
  */
 Component CustomContainer(Components children, Event next, Event prev);
 
-} // namespace clog::view::ftxui_ext
+} // namespace caps_log::view::ftxui_ext

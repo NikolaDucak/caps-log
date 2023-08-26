@@ -19,12 +19,12 @@ struct ParsingTestData {
 };
 
 inline ParsingTestData makeTagParsingData(const std::string &base, std::string title) {
-    return {fmt::format(base, title), {clog::utils::lowercase(title)}};
+    return {fmt::format(base, title), {caps_log::utils::lowercase(title)}};
 }
 
 inline ParsingTestData makeSectionParsingData(const std::string &base, std::string title) {
     // prepend a newline since first line is ignored when it comes to parsing sections
-    return {fmt::format(std::string{"\n"} + base, title), {clog::utils::lowercase(title)}};
+    return {fmt::format(std::string{"\n"} + base, title), {caps_log::utils::lowercase(title)}};
 }
 
 namespace {
@@ -71,28 +71,28 @@ const std::vector<ParsingTestData> invalidSectionsTestData{
 TEST(LogEntry, ParseTagTitles_Valid) {
     for (auto [text, expectedTagTitles] : validTagsTestData) {
         auto ss = std::stringstream{text};
-        auto parsedTagTitles = clog::model::LogFile::readTagTitles(ss);
+        auto parsedTagTitles = caps_log::model::LogFile::readTagTitles(ss);
         EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
     }
 }
 
 TEST(LogEntry, ParseSectionTitles_Valid) {
     for (const auto &[text, expectedTagTitles] : validSectionsTestData) {
-        const auto parsedTagTitles = clog::model::LogFile::readSectionTitles(text);
+        const auto parsedTagTitles = caps_log::model::LogFile::readSectionTitles(text);
         EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
     }
 }
 
 TEST(LogEntry, ParseTagTitles_Invalid) {
     for (const auto &[text, _] : invalidSectionsTestData) {
-        const auto parsedTagTitles = clog::model::LogFile::readTagTitles(text);
+        const auto parsedTagTitles = caps_log::model::LogFile::readTagTitles(text);
         EXPECT_TRUE(parsedTagTitles.empty()) << "Failed at: " << text;
     }
 }
 
 TEST(LogEntry, ParseSectionTitles_Invalid) {
     for (const auto &[text, _] : invalidSectionsTestData) {
-        const auto parsedTagTitles = clog::model::LogFile::readSectionTitles(text);
+        const auto parsedTagTitles = caps_log::model::LogFile::readSectionTitles(text);
         EXPECT_TRUE(parsedTagTitles.empty()) << "Failed at: " << text;
     }
 }
@@ -112,9 +112,9 @@ TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
 ```
     )";
 
-    auto parsedSectionTitles = clog::model::LogFile::readSectionTitles(sectionInCodeBlock, true);
+    auto parsedSectionTitles = caps_log::model::LogFile::readSectionTitles(sectionInCodeBlock, true);
     EXPECT_TRUE(parsedSectionTitles.empty());
-    parsedSectionTitles = clog::model::LogFile::readSectionTitles(sectionInCodeBlock2, true);
+    parsedSectionTitles = caps_log::model::LogFile::readSectionTitles(sectionInCodeBlock2, true);
     EXPECT_TRUE(parsedSectionTitles.empty());
 }
 
@@ -134,8 +134,8 @@ TEST(LogEntry, ParseTagTitels_IgnoreTagInCodeBlocks) {
 ```
     )";
 
-    auto parsedSectionTag = clog::model::LogFile::readTagTitles(sectionInCodeBlock);
+    auto parsedSectionTag = caps_log::model::LogFile::readTagTitles(sectionInCodeBlock);
     EXPECT_TRUE(parsedSectionTag.empty());
-    parsedSectionTag = clog::model::LogFile::readTagTitles(sectionInCodeBlock2);
+    parsedSectionTag = caps_log::model::LogFile::readTagTitles(sectionInCodeBlock2);
     EXPECT_TRUE(parsedSectionTag.empty());
 }

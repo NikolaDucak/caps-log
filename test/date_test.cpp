@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
 
-using namespace clog::date;
+using namespace caps_log::date;
 using namespace testing;
 
 TEST(DateTest, InvalidDatesThrow) {

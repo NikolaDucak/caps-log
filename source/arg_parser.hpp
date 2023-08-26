@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace clog {
+namespace caps_log {
 
 /**
  * A simple wrapper around command line arguments providing simpler arg lookup functionality.
@@ -61,4 +61,4 @@ class ArgParser {
     bool found(const char *arg[]) const { return arg < (argv + argc); }
 };
 
-} // namespace clog
+} // namespace caps_log

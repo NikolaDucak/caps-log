@@ -15,7 +15,7 @@
 #include <ftxui/dom/elements.hpp>
 #include <sstream>
 
-namespace clog::view {
+namespace caps_log::view {
 
 using namespace ftxui;
 
@@ -78,4 +78,4 @@ class YearView : public YearViewBase {
     CalendarOption makeCalendarOptions(const Date &today, bool sundayStart);
 };
 
-} // namespace clog::view
+} // namespace caps_log::view
