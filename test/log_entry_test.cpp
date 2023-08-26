@@ -112,7 +112,8 @@ TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
 ```
     )";
 
-    auto parsedSectionTitles = caps_log::model::LogFile::readSectionTitles(sectionInCodeBlock, true);
+    auto parsedSectionTitles =
+        caps_log::model::LogFile::readSectionTitles(sectionInCodeBlock, true);
     EXPECT_TRUE(parsedSectionTitles.empty());
     parsedSectionTitles = caps_log::model::LogFile::readSectionTitles(sectionInCodeBlock2, true);
     EXPECT_TRUE(parsedSectionTitles.empty());

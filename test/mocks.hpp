@@ -95,7 +95,8 @@ class DMockYearView : public caps_log::view::YearViewBase {
     MOCK_METHOD(void, prompt, (std::string message, std::function<void()> callback), (override));
 
     MOCK_METHOD(void, setAvailableLogsMap, (const caps_log::date::YearMap<bool> *map), (override));
-    MOCK_METHOD(void, setHighlightedLogsMap, (const caps_log::date::YearMap<bool> *map), (override));
+    MOCK_METHOD(void, setHighlightedLogsMap, (const caps_log::date::YearMap<bool> *map),
+                (override));
 
     MOCK_METHOD(void, setTagMenuItems, (std::vector<std::string> items), (override));
     MOCK_METHOD(void, setSectionMenuItems, (std::vector<std::string> items), (override));

@@ -22,7 +22,7 @@ class EnvBasedEditor : public EditorBase {
 
     void openEditor(const caps_log::model::LogFile &log) override {
         if (std::getenv("EDITOR") != nullptr) {
-          std::ignore = std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
+            std::ignore = std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
         }
     }
 };
@@ -32,7 +32,8 @@ class EncryptedFileEditor : public EditorBase {
     std::string m_password;
 
   public:
-    EncryptedFileEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider, std::string password)
+    EncryptedFileEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider,
+                        std::string password)
         : m_pathProvider{std::move(pathProvider)}, m_password{std::move(password)} {}
 
     void openEditor(const caps_log::model::LogFile &log) override {
@@ -88,7 +89,7 @@ class EncryptedFileEditor : public EditorBase {
 
     void openEnvEditor(const std::string &path) {
         if (std::getenv("EDITOR") != nullptr) {
-          std::ignore = std::system(("$EDITOR " + path).c_str());
+            std::ignore = std::system(("$EDITOR " + path).c_str());
         }
     }
 };

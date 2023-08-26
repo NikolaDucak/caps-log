@@ -31,7 +31,7 @@ auto makeCapsLog(const caps_log::Config &conf) {
         editor = std::make_shared<editor::EncryptedFileEditor>(pathProvider, conf.password);
     }
     return caps_log::App{std::move(view), std::move(repo), std::move(editor),
-                     conf.ignoreFirstLineWhenParsingSections};
+                         conf.ignoreFirstLineWhenParsingSections};
 }
 
 enum class Crypto { Encrypt, Decrypt };
@@ -61,9 +61,9 @@ void applyCryptograpyToLogFiles(const caps_log::Config &conf, Crypto c) {
 
     for (const auto &entry : std::filesystem::directory_iterator{conf.logDirPath}) {
         if (auto ifs = tryGetLogFileStream(entry)) {
-            const auto fileContentsAfterCrypto = (c == Crypto::Encrypt)
-                                                     ? caps_log::utils::encrypt(conf.password, *ifs)
-                                                     : caps_log::utils::decrypt(conf.password, *ifs);
+            const auto fileContentsAfterCrypto =
+                (c == Crypto::Encrypt) ? caps_log::utils::encrypt(conf.password, *ifs)
+                                       : caps_log::utils::decrypt(conf.password, *ifs);
             if (std::ofstream ofs{entry.path().string()}; ofs.is_open()) {
                 ofs << fileContentsAfterCrypto;
             } else {
