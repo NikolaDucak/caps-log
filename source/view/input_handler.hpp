@@ -3,7 +3,7 @@
 #include "date/date.hpp"
 #include <variant>
 
-namespace clog::view {
+namespace caps_log::view {
 
 struct UIEvent {
     enum Type {
@@ -29,4 +29,4 @@ class InputHandlerBase {
     virtual bool handleInputEvent(const UIEvent &event) = 0;
 };
 
-} // namespace clog::view
+} // namespace caps_log::view

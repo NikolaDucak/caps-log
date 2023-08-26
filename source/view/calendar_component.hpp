@@ -6,7 +6,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 
-namespace clog::view {
+namespace caps_log::view {
 
 struct CalendarOption {
     std::function<ftxui::Element(const date::Date &, const ftxui::EntryState &)> transform =
@@ -73,4 +73,4 @@ class Calendar : public ftxui::ComponentBase {
     ftxui::Component createDay(const date::Date &date);
 };
 
-} // namespace clog::view
+} // namespace caps_log::view

@@ -14,7 +14,7 @@
 #include <regex>
 #include <sstream>
 
-namespace clog::model {
+namespace caps_log::model {
 
 /*
  * Only class that actualy interacts with physical files on the drive
@@ -28,4 +28,4 @@ class LogRepositoryBase {
     virtual void remove(const date::Date &date) = 0;
 };
 
-} // namespace clog::model
+} // namespace caps_log::model

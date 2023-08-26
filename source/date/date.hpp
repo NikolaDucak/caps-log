@@ -8,7 +8,7 @@
 
 #include <chrono>
 
-namespace clog::date {
+namespace caps_log::date {
 
 enum Weekday {
     MONDAY = 1,
@@ -117,4 +117,4 @@ unsigned getNumberOfDaysForMonth(unsigned month, unsigned year);
 unsigned getStartingWeekdayForMonth(unsigned month, unsigned year);
 std::string getStringNameForMonth(unsigned month);
 
-} // namespace clog::date
+} // namespace caps_log::date

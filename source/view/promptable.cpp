@@ -1,6 +1,6 @@
 #include "promptable.hpp"
 
-namespace clog::view {
+namespace caps_log::view {
 
 Promptable::Promptable(Component main) : m_main(std::move(main)) {
     auto buttons = Container::Horizontal({
@@ -26,4 +26,4 @@ void Promptable::prompt(std::string message, std::function<void()> callback) {
 
 Element Promptable::Render() { return (m_depth == 0) ? m_main->Render() : m_prompt->Render(); }
 
-} // namespace clog::view
+} // namespace caps_log::view

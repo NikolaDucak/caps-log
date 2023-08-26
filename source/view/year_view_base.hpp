@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace clog::view {
+namespace caps_log::view {
 
 using namespace date;
 
@@ -46,4 +46,4 @@ class YearViewBase {
     virtual int &selectedSection() = 0;
 };
 
-} // namespace clog::view
+} // namespace caps_log::view

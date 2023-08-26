@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace clog::utils {
+namespace caps_log::utils {
 
 inline std::string trim(const std::string &str, const std::string &whitespace = " \t\n") {
     const auto strBegin = str.find_first_not_of(whitespace);
@@ -22,4 +22,4 @@ inline std::string lowercase(std::string data) {
     return data;
 }
 
-} // namespace clog::utils
+} // namespace caps_log::utils

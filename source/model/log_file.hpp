@@ -8,18 +8,18 @@
 #include <string>
 #include <vector>
 
-namespace clog::model {
+namespace caps_log::model {
 
 class LogFile {
     std::string m_content;
-    clog::date::Date m_date;
+    caps_log::date::Date m_date;
 
   public:
-    LogFile(const clog::date::Date &date, std::string content)
+    LogFile(const caps_log::date::Date &date, std::string content)
         : m_date{date}, m_content{std::move(content)} {}
 
     std::string getContent() const { return m_content; }
-    clog::date::Date getDate() const { return m_date; }
+    caps_log::date::Date getDate() const { return m_date; }
 
     std::vector<std::string> readTagTitles() {
         std::stringstream ss{m_content};
@@ -50,4 +50,4 @@ class LogFile {
     }
 };
 
-} // namespace clog::model
+} // namespace caps_log::model

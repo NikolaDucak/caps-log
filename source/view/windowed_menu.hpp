@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace clog::view {
+namespace caps_log::view {
 
 using namespace ftxui;
 
@@ -39,4 +39,4 @@ class WindowedMenu : public ComponentBase {
     }
 };
 
-} // namespace clog::view
+} // namespace caps_log::view

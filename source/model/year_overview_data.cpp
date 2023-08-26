@@ -2,7 +2,7 @@
 #include "date/date.hpp"
 #include <regex>
 
-namespace clog::model {
+namespace caps_log::model {
 
 YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
                                            unsigned year, bool skipFirstLine) {
@@ -24,7 +24,7 @@ void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
         tag.second.set(date, false);
         return tag.second.hasAnyDaySet() == 0;
     });
-    clog::utils::mapRemoveIf(sectionMap, [date](auto &section) {
+    caps_log::utils::mapRemoveIf(sectionMap, [date](auto &section) {
         section.second.set(date, false);
         return section.second.hasAnyDaySet() == 0;
     });
@@ -51,4 +51,4 @@ void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
     }
 }
 
-} // namespace clog::model
+} // namespace caps_log::model

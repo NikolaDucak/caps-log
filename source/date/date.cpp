@@ -7,7 +7,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace clog::date {
+namespace caps_log::date {
 
 namespace {
 
@@ -134,4 +134,4 @@ std::string getStringNameForMonth(unsigned month) {
     return month_names.at(month);
 }
 
-} // namespace clog::date
+} // namespace caps_log::date

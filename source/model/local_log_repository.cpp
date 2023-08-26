@@ -10,7 +10,7 @@
 #include <utility>
 #include <utils/crypto.hpp>
 
-namespace clog::model {
+namespace caps_log::model {
 
 using namespace date;
 
@@ -49,4 +49,4 @@ void LocalLogRepository::remove(const Date &date) {
     std::ignore = std::remove(m_pathProvider.path(date).c_str());
 }
 
-} // namespace clog::model
+} // namespace caps_log::model

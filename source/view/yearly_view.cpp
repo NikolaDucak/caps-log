@@ -12,7 +12,7 @@
 
 #include <string>
 
-namespace clog::view {
+namespace caps_log::view {
 
 YearView::YearView(const date::Date &today, bool sundayStart)
     : m_screen{ScreenInteractive::Fullscreen()},
@@ -126,4 +126,4 @@ std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
     };
     return WindowedMenu::make("Sections", option);
 }
-} // namespace clog::view
+} // namespace caps_log::view

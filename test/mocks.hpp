@@ -11,23 +11,23 @@
 #include <gtest/gtest.h>
 #include <sstream>
 
-class DummyYearView : public clog::view::YearViewBase {
+class DummyYearView : public caps_log::view::YearViewBase {
   public:
-    clog::view::InputHandlerBase *m_inputHandler = nullptr;
+    caps_log::view::InputHandlerBase *m_inputHandler = nullptr;
     int m_displayedYear;
     int m_selectedTag, m_selectedSection;
-    clog::date::Date m_focusedDate{5, 5, 2005};
+    caps_log::date::Date m_focusedDate{5, 5, 2005};
     std::string m_previewString;
-    const clog::date::YearMap<bool> *m_availableLogsMap, *m_highlightedLogsMap;
+    const caps_log::date::YearMap<bool> *m_availableLogsMap, *m_highlightedLogsMap;
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
     void run() override {}
     void stop() override {}
 
-    void setInputHandler(clog::view::InputHandlerBase *handler) override {
+    void setInputHandler(caps_log::view::InputHandlerBase *handler) override {
         m_inputHandler = handler;
     }
-    clog::date::Date getFocusedDate() const override { return m_focusedDate; }
+    caps_log::date::Date getFocusedDate() const override { return m_focusedDate; }
     void showCalendarForYear(unsigned year) override { m_displayedYear = year; }
 
     std::function<void()> promptCallback = nullptr;
@@ -35,10 +35,10 @@ class DummyYearView : public clog::view::YearViewBase {
         promptCallback = callback;
     }
 
-    void setAvailableLogsMap(const clog::date::YearMap<bool> *map) override {
+    void setAvailableLogsMap(const caps_log::date::YearMap<bool> *map) override {
         m_availableLogsMap = map;
     }
-    void setHighlightedLogsMap(const clog::date::YearMap<bool> *map) override {
+    void setHighlightedLogsMap(const caps_log::date::YearMap<bool> *map) override {
         m_highlightedLogsMap = map;
     }
 
@@ -54,7 +54,7 @@ class DummyYearView : public clog::view::YearViewBase {
     int &selectedSection() override { return m_selectedSection; }
 };
 
-class DMockYearView : public clog::view::YearViewBase {
+class DMockYearView : public caps_log::view::YearViewBase {
     DummyYearView view;
 
   public:
@@ -89,13 +89,14 @@ class DMockYearView : public clog::view::YearViewBase {
     MOCK_METHOD(void, run, (), (override));
     MOCK_METHOD(void, stop, (), (override));
 
-    MOCK_METHOD(void, setInputHandler, (clog::view::InputHandlerBase * handler), (override));
-    MOCK_METHOD(clog::date::Date, getFocusedDate, (), (const override));
+    MOCK_METHOD(void, setInputHandler, (caps_log::view::InputHandlerBase * handler), (override));
+    MOCK_METHOD(caps_log::date::Date, getFocusedDate, (), (const override));
     MOCK_METHOD(void, showCalendarForYear, (unsigned year), (override));
     MOCK_METHOD(void, prompt, (std::string message, std::function<void()> callback), (override));
 
-    MOCK_METHOD(void, setAvailableLogsMap, (const clog::date::YearMap<bool> *map), (override));
-    MOCK_METHOD(void, setHighlightedLogsMap, (const clog::date::YearMap<bool> *map), (override));
+    MOCK_METHOD(void, setAvailableLogsMap, (const caps_log::date::YearMap<bool> *map), (override));
+    MOCK_METHOD(void, setHighlightedLogsMap, (const caps_log::date::YearMap<bool> *map),
+                (override));
 
     MOCK_METHOD(void, setTagMenuItems, (std::vector<std::string> items), (override));
     MOCK_METHOD(void, setSectionMenuItems, (std::vector<std::string> items), (override));
@@ -107,29 +108,29 @@ class DMockYearView : public clog::view::YearViewBase {
     MOCK_METHOD(int &, selectedSection, (), (override));
 };
 
-class DummyRepository : public clog::model::LogRepositoryBase {
-    std::map<clog::date::Date, std::string> m_data;
+class DummyRepository : public caps_log::model::LogRepositoryBase {
+    std::map<caps_log::date::Date, std::string> m_data;
 
   public:
-    std::optional<clog::model::LogFile> read(const clog::date::Date &date) const override {
+    std::optional<caps_log::model::LogFile> read(const caps_log::date::Date &date) const override {
         if (auto it = m_data.find(date); it != m_data.end()) {
-            return clog::model::LogFile{it->first, it->second};
+            return caps_log::model::LogFile{it->first, it->second};
         }
         return {};
     }
 
-    void remove(const clog::date::Date &date) override {
+    void remove(const caps_log::date::Date &date) override {
         if (auto it = m_data.find(date); it != m_data.end()) {
             m_data.erase(it);
         }
     }
 
-    void write(const clog::model::LogFile &file) override {
+    void write(const caps_log::model::LogFile &file) override {
         m_data[file.getDate()] = file.getContent();
     }
 };
 
-class DMockRepo : public clog::model::LogRepositoryBase {
+class DMockRepo : public caps_log::model::LogRepositoryBase {
     DummyRepository m_repo;
 
   public:
@@ -143,13 +144,13 @@ class DMockRepo : public clog::model::LogRepositoryBase {
 
     auto &getDummyRepo() { return m_repo; }
 
-    MOCK_METHOD(std::optional<clog::model::LogFile>, read, (const clog::date::Date &date),
+    MOCK_METHOD(std::optional<caps_log::model::LogFile>, read, (const caps_log::date::Date &date),
                 (const override));
-    MOCK_METHOD(void, remove, (const clog::date::Date &date), (override));
-    MOCK_METHOD(void, write, (const clog::model::LogFile &file), (override));
+    MOCK_METHOD(void, remove, (const caps_log::date::Date &date), (override));
+    MOCK_METHOD(void, write, (const caps_log::model::LogFile &file), (override));
 };
 
-class MockEditor : public clog::editor::EditorBase {
+class MockEditor : public caps_log::editor::EditorBase {
   public:
-    MOCK_METHOD(void, openEditor, (const clog::model::LogFile &), (override));
+    MOCK_METHOD(void, openEditor, (const caps_log::model::LogFile &), (override));
 };

@@ -3,7 +3,7 @@
 #include <ftxui/component/component.hpp>
 #include <sstream>
 
-namespace clog::view {
+namespace caps_log::view {
 
 class Preview : public ftxui::ComponentBase {
     int m_topLineIndex = 0;
@@ -18,4 +18,4 @@ class Preview : public ftxui::ComponentBase {
     void setContent(const std::string &str);
 };
 
-} // namespace clog::view
+} // namespace caps_log::view

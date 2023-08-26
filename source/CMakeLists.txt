@@ -1,7 +1,7 @@
 configure_file(version.hpp.in version.hpp)
 
 add_executable(
-    clog
+    caps-log
 
     main.cpp
     config.cpp
@@ -36,9 +36,9 @@ add_executable(
     ./utils/map.hpp
 )
 
-target_include_directories(clog PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(caps-log PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(clog
+target_link_libraries(caps-log
     ftxui::screen
     ftxui::dom
     ftxui::component 
@@ -48,4 +48,4 @@ target_link_libraries(clog
     OpenSSL::SSL
 )
 
-install(TARGETS clog DESTINATION "bin")
+install(TARGETS caps-log DESTINATION "bin")
