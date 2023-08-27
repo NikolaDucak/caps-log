@@ -55,7 +55,7 @@ target_link_libraries(caps-log
 )
 
 if(CAPS_LOG_SNAP_BUILD) 
-  target_compile_definitions(caps-log PUBLIC CAPS_LOG_SNAP_BUILD)
+    target_compile_definitions(caps-log PUBLIC CAPS_LOG_SNAP_BUILD)
 endif()
 
 install(TARGETS caps-log DESTINATION "bin")
