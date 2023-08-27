@@ -12,7 +12,7 @@
 #include "config.hpp"
 #include "date/date.hpp"
 #include "editor/disabled_editor.hpp"
-#include "editor/env_based_editor.hpp"
+#include "editor/user_set_editor.hpp"
 #include "model/local_log_repository.hpp"
 #include "utils/crypto.hpp"
 

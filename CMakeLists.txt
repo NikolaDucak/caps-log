@@ -29,10 +29,6 @@ endif()
 
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 
-if(NOT Boost_FOUND)
-    message(FATAL_ERROR "Boost Not found")
-endif()
-
 # ------------------------------- OpenSSL -------------------------------- #
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
