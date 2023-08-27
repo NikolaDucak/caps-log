@@ -1,5 +1,5 @@
 name: caps-log 
-base: core20
+base: core22
 
 version: '1.0.0'
 summary: A small TUI journaling tool.
@@ -9,9 +9,10 @@ description: |
   Level 1 headers and list items starting with '*' are interpreted as sections and tags respectively and listed in two menus. 
   Selecting a section/tag in the menu highlight all days that contain entries where they are mentioned. It's a nice way to track your
   activities/habits. Pressing enter on the focused date will open the log entry in your $EDITOR if available.
+contact: nikola.ducak@gmail.com
 
 grade: stable 
-confinement: devmode 
+confinement: classic 
 
 parts:
   caps-log-part:
