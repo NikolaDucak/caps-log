@@ -38,7 +38,7 @@ class EncryptedFileUserSetEditor : public EditorBase {
     void openEditor(const caps_log::model::LogFile &log) override;
 
   private:
-    std::string getTmpFile();
+    std::string getTmpFilePath();
     void copyLogFile(const std::string &src, const std::string &dest);
     void decryptFile(const std::string &path);
     void encryptFile(const std::string &path);
