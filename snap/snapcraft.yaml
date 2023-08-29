@@ -17,6 +17,7 @@ confinement: classic
 parts:
   caps-log-part:
     plugin: cmake
+    source: .
     cmake-parameters:
       - -DCAPS_LOG_SNAP_BUILD=On
     build-packages:

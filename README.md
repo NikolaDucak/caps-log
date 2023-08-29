@@ -18,6 +18,14 @@ this functionality is disabled. This looks pretty cool with terminal based edito
 On a line with an emoji drawn, it shifts all other chars to right by a place.
 - it's not that pretty to use in small terminals, it is usable, but it's best when whole calendar is visible.
 
+# Get it 
+It's available on snap store, you can get it with `snap install caps-log` however the preffered way, for now, is building 
+and installing manualy (see the 'Building & installing' section bellow). 
+That's due to the snap confinement forcing the use of `xdg-open` command which, when opening a 
+log file, always prompts the user to ask if they are sure they want to do that. 
+That can be annoying, manual build uses $EDITOR command by default, it is possible to force it to use 
+`xdg-open` by configuring the CMake build with '-DCAPS_LOG_SNAP_BUILD=On' set. 
+
 ## Keybindings 
 - `tab` or `shift + tab` =  switch focus between calendar and menus
 - `hjkl` or arrow keys = for navigating within calendar or menus
