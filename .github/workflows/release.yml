@@ -65,18 +65,18 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - run: brew install boost openssl
+      - run: arch -arm64 brew install boost openssl
       
       - name: Build for MacOS
         run: |
           mkdir build-macos
           cd build-macos
-          cmake .. 
-          make 
+          arch -arm64 cmake .. 
+          arch -arm64 make 
 
       - name: Archive and Upload MacOS binaries to release
         run: |
-          tar czf caps-log-macos-arm.tar.gz build-macos/source/caps-log
+          tar -C build-macos/source czf caps-log-macos-arm.tar.gz caps-log
           gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos-arm.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
