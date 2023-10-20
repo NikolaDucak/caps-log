@@ -1,0 +1,81 @@
+name: Release
+
+on: workflow_dispatch
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_next_version.outputs.version }}
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Get next version
+        id: get_next_version
+        uses: thenativeweb/get-next-version@main
+      - name: Check if has next version
+        run: |
+          if [[ '${{steps.get_next_version.outputs.hasNextVersion}}' == 'false' ]]; then 
+            echo "Failed to comput next version!"
+            exit 1
+          fi
+
+  create-release:
+    needs: get-version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_output.outputs.version }}
+    steps:
+      - name: Create GitHub Release
+        id: create_release
+        run: |
+          echo "${{ needs.get-version.outputs.version }}"
+
+      - name: Set version output for dependent jobs
+        id: set_output
+        run: echo "version=${{ needs.get-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+
+  build-and-upload-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libssl-dev
+
+      - name: Build 
+        run: |
+          mkdir build && cd build
+          cmake .. && make
+
+      - name: Archive and Upload binaries to release
+        run: |
+          tar czf caps-log-linux.tar.gz build/source/caps-log
+          #gh release upload ${{ needs.create-release.outputs.version }} caps-log-linux.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-upload-mac-arm:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: brew install boost openssl
+      
+      - name: Build for MacOS
+        run: |
+          mkdir build-macos
+          cd build-macos
+          cmake .. 
+          make 
+
+      - name: Archive and Upload MacOS binaries to release
+        run: |
+          tar czf caps-log-macos-arm.tar.gz build-macos/source/caps-log
+          # gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos-arm.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
