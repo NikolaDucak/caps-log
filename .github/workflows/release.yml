@@ -28,15 +28,15 @@ jobs:
   create-release:
     needs: get-version
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.set_output.outputs.version }}
     steps:
       - name: Create GitHub Release
-        uses: gh-actions/github-release@master
+        uses: ncipollo/release-action@v1 
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.get-version.outputs.version }}
-          title: Release ${{ needs.get-version.outputs.version }}
       - name: Set version output for dependent jobs
         id: set_output
         run: echo "version=${{ needs.get-version.outputs.version }}" >> "$GITHUB_OUTPUT"
