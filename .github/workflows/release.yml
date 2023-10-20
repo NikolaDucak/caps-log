@@ -32,10 +32,11 @@ jobs:
       version: ${{ steps.set_output.outputs.version }}
     steps:
       - name: Create GitHub Release
-        id: create_release
-        run: |
-          echo "${{ needs.get-version.outputs.version }}"
-
+        uses: gh-actions/github-release@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.get-version.outputs.version }}
+          title: Release ${{ needs.get-version.outputs.version }}
       - name: Set version output for dependent jobs
         id: set_output
         run: echo "version=${{ needs.get-version.outputs.version }}" >> "$GITHUB_OUTPUT"
@@ -55,7 +56,7 @@ jobs:
       - name: Archive and Upload binaries to release
         run: |
           tar czf caps-log-linux.tar.gz build/source/caps-log
-          #gh release upload ${{ needs.create-release.outputs.version }} caps-log-linux.tar.gz --clobber
+          gh release upload ${{ needs.create-release.outputs.version }} caps-log-linux.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -76,6 +77,6 @@ jobs:
       - name: Archive and Upload MacOS binaries to release
         run: |
           tar czf caps-log-macos-arm.tar.gz build-macos/source/caps-log
-          # gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos-arm.tar.gz --clobber
+          gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos-arm.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
