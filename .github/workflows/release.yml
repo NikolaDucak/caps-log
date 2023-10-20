@@ -1,6 +1,6 @@
 name: Release
 
-on: workflow_dispatch
+on: pull_request
 
 env:
   BUILD_TYPE: Release
@@ -55,24 +55,23 @@ jobs:
 
       - name: Archive and Upload binaries to release
         run: |
-          tar czf caps-log-linux.tar.gz build/source/caps-log
+          cp build/source/caps-log ./caps-log
+          tar -czvf caps-log-linux.tar.gz caps-log
           gh release upload ${{ needs.create-release.outputs.version }} caps-log-linux.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-upload-mac-arm:
-    needs: create-release
+    eeds: create-release
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - run: arch -arm64 brew install boost openssl
-      
+      - run: brew install boost openssl
+
       - name: Build for MacOS
         run: |
-          mkdir build-macos
-          cd build-macos
-          arch -arm64 cmake .. 
-          arch -arm64 make 
+          mkdir build-macos && cd build-macos
+          cmake .. && make 
 
       - name: Archive and Upload MacOS binaries to release
         run: |

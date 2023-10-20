@@ -18,6 +18,9 @@ this functionality is disabled. This looks pretty cool with terminal based edito
 On a line with an emoji drawn, it shifts all other chars to right by a place.
 - it's not that pretty to use in small terminals, it is usable, but it's best when whole calendar is visible.
 
+# Get it 
+Head over to the [releases] page and download a `caps-log-<platform>.tar.gz` file for the release you want (probably the latest).
+
 ## Keybindings 
 - `tab` or `shift + tab` =  switch focus between calendar and menus
 - `hjkl` or arrow keys = for navigating within calendar or menus

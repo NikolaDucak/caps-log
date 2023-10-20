@@ -24,7 +24,7 @@ if(NOT ftxui_POPULATED)
 endif()
 
 # --------------------------------- boost -------------------------------- #
-
+set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 
 if(NOT Boost_FOUND)
