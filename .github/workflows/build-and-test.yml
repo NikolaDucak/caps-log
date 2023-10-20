@@ -1,15 +1,33 @@
-name: main-check
+name: Build and test
 
 on:
-  push:
-    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  paths-ignore:
+    - '.github/*'
+    - '.gitignore'
+    - 'README'
+    - 'LICENCE'
+    - '*.gif'
+    - '*.jpeg'
+    - '*.jpg'
+    - '*.jpg'
 
 env:
   BUILD_TYPE: Release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  commits:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: webiny/action-conventional-commits@v1.1.0
+
   build:
     strategy:
       fail-fast: false
