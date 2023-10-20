@@ -77,6 +77,7 @@ jobs:
       - name: Archive and Upload MacOS binaries to release
         run: |
           tar -C build-macos/source czf caps-log-macos-arm.tar.gz caps-log
+          file build-macos/source/caps-log
           gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos-arm.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
