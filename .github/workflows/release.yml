@@ -37,6 +37,7 @@ jobs:
         uses: ncipollo/release-action@v1 
         with:
           tag: ${{ needs.get-version.outputs.version }}
+
       - name: Set version output for dependent jobs
         id: set_output
         run: echo "version=${{ needs.get-version.outputs.version }}" >> "$GITHUB_OUTPUT"
