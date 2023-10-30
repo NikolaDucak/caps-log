@@ -61,7 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-and-upload-mac-arm:
+  build-and-upload-mac:
     needs: create-release
     runs-on: macos-latest
     steps:
@@ -75,8 +75,8 @@ jobs:
 
       - name: Archive and Upload MacOS binaries to release
         run: |
-          tar -C build-macos/source czf caps-log-macos-arm.tar.gz caps-log
-          file build-macos/source/caps-log
-          gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos-arm.tar.gz --clobber
+          cp build/source/caps-log ./caps-log
+          tar -czvf caps-log-macos.tar.gz caps-log
+          gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos.tar.gz --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
