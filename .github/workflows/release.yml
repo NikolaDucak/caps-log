@@ -75,7 +75,7 @@ jobs:
 
       - name: Archive and Upload MacOS binaries to release
         run: |
-          cp build/source/caps-log ./caps-log
+          cp build-macos/source/caps-log ./caps-log
           tar -czvf caps-log-macos.tar.gz caps-log
           gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos.tar.gz --clobber
         env:
