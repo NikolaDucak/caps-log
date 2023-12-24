@@ -1,9 +1,9 @@
 #include "app.hpp"
 #include "mocks.hpp"
 
-#include "model/log_file.hpp"
-#include "model/log_repository_base.hpp"
-#include "model/year_overview_data.hpp"
+#include "log/log_file.hpp"
+#include "log/log_repository_base.hpp"
+#include "log/year_overview_data.hpp"
 #include "view/input_handler.hpp"
 #include "view/year_view_base.hpp"
 
@@ -125,7 +125,7 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
         // Tags and sections are passed from the view as an index in the section/tagMenuItem vector
         // 0 = '------' aka nothing selected
         capsLog.handleInputEvent(UIEvent{UIEvent::FOCUSED_TAG_CHANGE, "1"});
-        auto dummy_view = &mock_view->getDummyView();
+        auto *dummy_view = &mock_view->getDummyView();
 
         // Tags
         ASSERT_NE(dummy_view->m_highlightedLogsMap, nullptr);

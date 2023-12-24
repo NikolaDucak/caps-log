@@ -1,8 +1,8 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
-#include "model/log_file.hpp"
-#include "model/year_overview_data.hpp"
+#include "log/log_file.hpp"
+#include "log/year_overview_data.hpp"
 
 #include "mocks.hpp"
 

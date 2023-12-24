@@ -28,9 +28,10 @@ add_executable(
 
     ./../source/config.cpp
     ./../source/date/date.cpp
-    ./../source/model/log_file.cpp
-    ./../source/model/local_log_repository.cpp
-    ./../source/model/year_overview_data.cpp
+    ./../source/log/log_file.cpp
+    ./../source/log/log_repository_crypto_applyer.cpp
+    ./../source/log/local_log_repository.cpp
+    ./../source/log/year_overview_data.cpp
     ./../source/utils/crypto.cpp
 )
 

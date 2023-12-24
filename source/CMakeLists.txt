@@ -19,13 +19,15 @@ add_executable(
     ./view/ftxui_ext/extended_containers.cpp
     ./view/ftxui_ext/extended_containers.hpp
 
-    ./model/local_log_repository.cpp
-    ./model/local_log_repository.hpp
-    ./model/log_repository_base.hpp
-    ./model/log_file.cpp
-    ./model/log_file.hpp
-    ./model/year_overview_data.cpp
-    ./model/year_overview_data.hpp
+    ./log/local_log_repository.cpp
+    ./log/local_log_repository.hpp
+    ./log/log_file.cpp
+    ./log/log_file.hpp
+    ./log/log_repository_base.hpp
+    ./log/log_repository_crypto_applyer.cpp
+    ./log/log_repository_crypto_applyer.hpp
+    ./log/year_overview_data.cpp
+    ./log/year_overview_data.hpp
 
     ./date/date.cpp
     ./date/date.hpp

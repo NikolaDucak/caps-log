@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "model/local_log_repository.hpp"
+#include "log/local_log_repository.hpp"
 
 /**
  * An EditorBase implementation is supposed to open any type of editor (or not at all) with the

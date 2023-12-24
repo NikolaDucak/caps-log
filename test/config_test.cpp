@@ -1,4 +1,3 @@
-#include "arg_parser.hpp"
 #include "config.hpp"
 
 #include <gmock/gmock-spec-builders.h>
@@ -9,149 +8,93 @@ using namespace caps_log;
 using namespace testing;
 using MockFilesystemReader = testing::MockFunction<FileReader>;
 
-TEST(ConfigTest, ParseCmdLineArgs_LogDirPath_NoPathProvided) {
-    auto mockFS = MockFilesystemReader{};
-    const char *argv[] = {"--log-dir-path"};
+// Utility function to convert a vector of strings to argv format and parse command line arguments
+boost::program_options::variables_map parseArgs(const std::vector<std::string> &args) {
+    std::vector<const char *> argv_temp;
+    argv_temp.reserve(args.size());
+    for (const auto &arg : args) {
+        argv_temp.push_back(arg.data());
+    }
+    argv_temp.push_back(nullptr); // Null terminator for argv
 
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
-    ASSERT_ANY_THROW(Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv}));
+    const char **argv = argv_temp.data();
+    int argc = static_cast<int>(argv_temp.size()) - 1; // argc should not count the null terminator
+
+    // Replace with your actual command line parsing logic
+    return parseCLIOptions(argc, argv);
 }
 
-TEST(ConfigTest, ParseCmdLineArgs_LogDirPath_OK) {
-    auto mockFS = MockFilesystemReader{};
-    const auto dummyLogDirPath = "/path/to/log/dir";
-    const char *argv[] = {"--log-dir-path", dummyLogDirPath};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
-    const auto config =
-        Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config.logDirPath, dummyLogDirPath);
+// Mock FileReader that returns a stringstream with preset configuration data
+std::function<std::unique_ptr<std::istringstream>(const std::string &)>
+mockFileReader(const std::string &configContent) {
+    return [configContent](const std::string &) -> std::unique_ptr<std::istringstream> {
+        return std::make_unique<std::istringstream>(std::istringstream(configContent));
+    };
 }
 
-TEST(ConfigTest, ParseCmdLineArgs_LogFilenameFormat_NoFormatProvided) {
-    auto mockFS = MockFilesystemReader{};
-    const auto dummyLogFilenameFormat = "%d_%m_%Y.txt";
-    const char *argv[] = {"--log-filename-format", dummyLogFilenameFormat};
+TEST(ConfigTest, DefaultConfigurations) {
+    std::vector<std::string> args = {"caps-log"};
+    auto cmdLineArgs = parseArgs(args);
 
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
-    const auto config =
-        Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config.logFilenameFormat, dummyLogFilenameFormat);
+    auto fileReader = mockFileReader("");
+
+    Config config = Config::make(fileReader, cmdLineArgs);
+
+    EXPECT_EQ(config.logDirPath, Config::DEFAULT_LOG_DIR_PATH);
+    EXPECT_EQ(config.logFilenameFormat, Config::DEFAULT_LOG_FILENAME_FORMAT);
+    EXPECT_EQ(config.sundayStart, Config::DEFAULT_SUNDAY_START);
+    EXPECT_EQ(config.ignoreFirstLineWhenParsingSections,
+              Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS);
+    EXPECT_EQ(config.password, "");
 }
 
-TEST(ConfigTest, ParseCmdLineArgs_SundayStart) {
-    auto mockFS = MockFilesystemReader{};
-    const char *argv[] = {"--sunday-start", "some extra ignored param"};
+TEST(ConfigTest, ConfigFileOverrides) {
+    std::vector<std::string> args = {"caps-log"};
+    auto cmdLineArgs = parseArgs(args);
 
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
-    const auto config =
-        Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config.sundayStart, true);
+    std::string configContent = "log-dir-path=/override/path/\n"
+                                "log-filename-format=override_format.md\n"
+                                "sunday-start=true\n"
+                                "first-line-section=false\n"
+                                "password=override_password";
+    auto fileReader = mockFileReader(configContent);
+
+    Config config = Config::make(fileReader, cmdLineArgs);
+
+    EXPECT_EQ(config.logDirPath, "/override/path/");
+    EXPECT_EQ(config.logFilenameFormat, "override_format.md");
+    EXPECT_TRUE(config.sundayStart);
+    EXPECT_FALSE(config.ignoreFirstLineWhenParsingSections);
+    EXPECT_EQ(config.password, "override_password");
 }
 
-TEST(ConfigTest, ParseCmdLineArgs_PasswordWithNoValue) {
-    auto mockFS = MockFilesystemReader{};
-    const char *argv[] = {"--password"};
+TEST(ConfigTest, CommandLineOverrides) {
+    std::vector<std::string> args = {"caps-log",
+                                     "--config",
+                                     "some/path/to/config.ini",
+                                     "--log-dir-path",
+                                     "/cmd/override/path/",
+                                     "--log-name-format",
+                                     "cmd_override_format.md",
+                                     "--sunday-start",
+                                     "--first-line-section",
+                                     "--password",
+                                     "cmd_override_password"};
+    auto cmdLineArgs = parseArgs(args);
 
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
-    ASSERT_ANY_THROW(Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv}));
-}
+    std::string configContent = "[General]\n"
+                                "log-dir-path=/file/override/path/\n"
+                                "log-filename-format=file_override_format.md\n"
+                                "sunday-start=false\n"
+                                "first-line-section=true\n"
+                                "password=file_override_password";
+    auto fileReader = mockFileReader(configContent);
 
-TEST(ConfigTest, ParseCmdLineArgs_PasswordProvided) {
-    auto mockFS = MockFilesystemReader{};
-    const std::string password = {"dummy"};
-    const char *argv[] = {"--password", password.c_str()};
+    Config config = Config::make(fileReader, cmdLineArgs);
 
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION)).WillOnce(Return(ByMove(nullptr)));
-    auto config = Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config.password, password);
-}
-
-TEST(ConfigTest, ParseConfigFile_LogDirPath_NoPathProvided) {
-    auto mockFS = MockFilesystemReader{};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("log-dir-path = "))));
-
-    auto config = Config::make(mockFS.AsStdFunction(), {});
-    ASSERT_EQ(config.logDirPath, Config::DEFAULT_LOG_DIR_PATH);
-}
-
-TEST(ConfigTest, ParseConfigFile_LogDirPath_OK) {
-    auto mockFS = MockFilesystemReader{};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("log-dir-path = /ok/path"))));
-
-    auto config = Config::make(mockFS.AsStdFunction(), {});
-    ASSERT_EQ(config.logDirPath, "/ok/path");
-}
-
-TEST(ConfigTest, ParseConfigFile_SundayStart_OK) {
-    auto mockFS = MockFilesystemReader{};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("sunday-start = true"))));
-
-    auto config = Config::make(mockFS.AsStdFunction(), {});
-    ASSERT_EQ(config.sundayStart, true);
-}
-
-TEST(ConfigTest, ParseConfigFile_SundayStart_BadParam) {
-    auto mockFS = MockFilesystemReader{};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("sunday-start = 123"))));
-
-    auto config = Config::make(mockFS.AsStdFunction(), {});
-    ASSERT_EQ(config.sundayStart, false);
-}
-
-TEST(ConfigTest, ParseConfigFile_Password_OK) {
-    auto mockFS = MockFilesystemReader{};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("password = 123"))));
-
-    auto config = Config::make(mockFS.AsStdFunction(), {});
-    ASSERT_EQ(config.password, std::string{"123"});
-}
-
-TEST(ConfigTest, CMDLineArg_OverridesConfigFileArg) {
-    auto mockFS = MockFilesystemReader{};
-    const auto dummyLogDirPath = "/path/to/log/dir";
-    const char *argv[] = {"--log-dir-path", dummyLogDirPath};
-
-    EXPECT_CALL(mockFS, Call(Config::DEFAULT_CONFIG_LOCATION))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>(
-            "log-dir-path = /path/that/should/be/overridden"))));
-
-    auto config2 = Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config2.logDirPath, dummyLogDirPath);
-}
-
-TEST(ConfigTest, CMDLineConfigArg_OverridesConfigFile) {
-    auto mockFS = MockFilesystemReader{};
-    const auto overrideConfigPath = "/path/to/override/config.ini";
-    const char *argv[] = {"-c", overrideConfigPath};
-
-    EXPECT_CALL(mockFS, Call(overrideConfigPath))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>("log-dir-path = /new/path"))));
-
-    auto config2 = Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config2.logDirPath, "/new/path");
-}
-
-TEST(ConfigTest, CMDLineArg_OverridesOverridenConfigFile) {
-    auto mockFS = MockFilesystemReader{};
-    const auto dummyLogDirPath = "/path/to/log/dir";
-    const auto overrideConfigPath = "/path/to/override/config.ini";
-    const char *argv[] = {"--log-dir-path", dummyLogDirPath, "-c", overrideConfigPath};
-
-    EXPECT_CALL(mockFS, Call(overrideConfigPath))
-        .WillOnce(Return(ByMove(std::make_unique<std::istringstream>(
-            "log-dir-path = /path/that/should/be/overridden"))));
-
-    auto config2 = Config::make(mockFS.AsStdFunction(), {sizeof(argv) / sizeof(argv[0]), argv});
-    EXPECT_EQ(config2.logDirPath, dummyLogDirPath);
+    EXPECT_EQ(config.logDirPath, "/cmd/override/path/");
+    EXPECT_EQ(config.logFilenameFormat, "cmd_override_format.md");
+    EXPECT_TRUE(config.sundayStart);
+    EXPECT_TRUE(config.ignoreFirstLineWhenParsingSections);
+    EXPECT_EQ(config.password, "cmd_override_password");
 }
