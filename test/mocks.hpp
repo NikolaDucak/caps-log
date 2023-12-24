@@ -1,6 +1,6 @@
 #include "date/date.hpp"
 #include "editor/editor_base.hpp"
-#include "model/log_repository_base.hpp"
+#include "log/log_repository_base.hpp"
 #include "view/calendar_component.hpp"
 #include "view/input_handler.hpp"
 #include "view/year_view_base.hpp"

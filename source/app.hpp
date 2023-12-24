@@ -1,9 +1,9 @@
 #pragma once
 
 #include "editor/editor_base.hpp"
-#include "model/log_file.hpp"
-#include "model/log_repository_base.hpp"
-#include "model/year_overview_data.hpp"
+#include "log/log_file.hpp"
+#include "log/log_repository_base.hpp"
+#include "log/year_overview_data.hpp"
 #include "utils/string.hpp"
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
@@ -20,7 +20,7 @@ using namespace view;
 using namespace model;
 using namespace editor;
 
-inline static std::string LOG_BASE_TEMPLATE{"# %d. %m. %y."};
+inline static const std::string LOG_BASE_TEMPLATE{"# %d. %m. %y."};
 
 class App : public InputHandlerBase {
     unsigned m_displayedYear;

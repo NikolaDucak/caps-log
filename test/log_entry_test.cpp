@@ -7,8 +7,8 @@
 #include <sstream>
 
 #include "fmt/core.h"
-#include "model/log_file.hpp"
-#include "model/year_overview_data.hpp"
+#include "log/log_file.hpp"
+#include "log/year_overview_data.hpp"
 #include "utils/string.hpp"
 
 #include "mocks.hpp"

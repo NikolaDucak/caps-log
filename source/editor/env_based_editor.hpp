@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "editor_base.hpp"
-#include "model/local_log_repository.hpp"
+#include "log/local_log_repository.hpp"
 #include "utils/crypto.hpp"
 
 namespace caps_log::editor {
