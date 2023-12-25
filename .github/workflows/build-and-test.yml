@@ -21,13 +21,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  commits:
-    name: Conventional Commits
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: webiny/action-conventional-commits@v1.1.0
-
   build:
     strategy:
       fail-fast: false
