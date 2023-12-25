@@ -16,17 +16,20 @@ namespace caps_log::view {
 using namespace ftxui;
 
 class WindowedMenu : public ComponentBase {
-    int m_selected;
+    int m_selected = 0;
 
   public:
     WindowedMenu(std::string title, MenuOption option) {
+        // TODO: messy, callers can specify their own 'selected' but get overriden here?
+        option.selected = &m_selected;
         auto menuComponent = Menu(std::move(option));
         auto menuRenderer =
             Renderer(menuComponent, [title = std::move(title), menu = menuComponent]() {
                 auto windowElement =
                     window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
-                if (not menu->Focused())
+                if (not menu->Focused()) {
                     windowElement |= dim;
+                }
                 return windowElement;
             });
         Add(menuRenderer);
