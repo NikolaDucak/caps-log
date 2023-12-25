@@ -31,12 +31,14 @@ class CryptoAlreadyAppliedError : public std::runtime_error {
     CryptoAlreadyAppliedError(const std::string &message) : std::runtime_error(message) {}
 };
 
-class LogRepositoryCrypoApplier {
+class LogRepositoryCryptoApplier {
   public:
+    static constexpr auto encryptetLogRepoMarker = "encryption-marker:";
+    static constexpr auto encryptetLogRepoMarkerFile = ".cle";
     static void apply(const std::string &password, const std::filesystem::path &logDirPath,
                       const std::string &logFilenameFormat, Crypto crypto);
 
   private:
-    LogRepositoryCrypoApplier() {}
+    LogRepositoryCryptoApplier() {}
 };
 } // namespace caps_log

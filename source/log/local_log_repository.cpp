@@ -1,5 +1,6 @@
 #include "local_log_repository.hpp"
 
+#include "log/log_repository_crypto_applyer.hpp"
 #include "utils/string.hpp"
 #include <fstream>
 #include <iostream>
@@ -17,7 +18,23 @@ using namespace date;
 LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider,
                                        std::string password)
     : m_pathProvider(std::move(pathProvider)), m_password{std::move(password)} {
+    // create log directory if it isn't already created
     std::filesystem::create_directories(m_pathProvider.getLogDirPath());
+    // in case that there is an encryption marker file & no password is provided, throw
+    auto clePath =
+        m_pathProvider.getLogDirPath() / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile;
+    if (std::filesystem::exists(clePath) && m_password.empty()) {
+        throw std::runtime_error{"Password is required to open encrypted log repository!"};
+    }
+    // in case that the decrypted contents of the encryptetLogRepoMarkerFile does not start
+    // with encryption marker, throw due to invalid password
+    if (std::filesystem::exists(clePath) && not m_password.empty()) {
+        auto cleStream = std::ifstream{clePath};
+        auto decryptedMarker = utils::decrypt(m_password, cleStream);
+        if (decryptedMarker.find(LogRepositoryCryptoApplier::encryptetLogRepoMarker) != 0) {
+            throw std::runtime_error{"Invalid password provided!"};
+        }
+    }
 }
 
 std::optional<LogFile> LocalLogRepository::read(const Date &date) const {

@@ -22,7 +22,8 @@ class EnvBasedEditor : public EditorBase {
 
     void openEditor(const caps_log::model::LogFile &log) override {
         if (std::getenv("EDITOR") != nullptr) {
-            std::ignore = std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
+            std::ignore =
+                std::system(("$EDITOR " + m_pathProvider.path(log.getDate()).string()).c_str());
         }
     }
 };

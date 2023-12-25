@@ -14,17 +14,18 @@ namespace caps_log::model {
  * path like filesystem
  */
 class LocalFSLogFilePathProvider {
-    std::string m_logDirectory, m_logFilenameFormat;
+    std::filesystem::path m_logDirectory;
+    std::string m_logFilenameFormat;
 
   public:
-    LocalFSLogFilePathProvider(std::string logDir, std::string logFilenameFormat)
-        : m_logDirectory{std::move(logDir)}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
+    LocalFSLogFilePathProvider(const std::filesystem::path &logDir, std::string logFilenameFormat)
+        : m_logDirectory{logDir}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
 
-    inline std::string path(const date::Date &date) const {
-        return {m_logDirectory + "/" + date.formatToString(m_logFilenameFormat)};
+    inline std::filesystem::path path(const date::Date &date) const {
+        return {m_logDirectory / date.formatToString(m_logFilenameFormat)};
     }
 
-    inline std::string getLogDirPath() const { return m_logDirectory; }
+    inline std::filesystem::path getLogDirPath() const { return m_logDirectory; }
     inline std::string getLogFilenameFormat() const { return m_logFilenameFormat; }
 };
 

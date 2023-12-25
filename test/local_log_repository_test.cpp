@@ -146,16 +146,16 @@ TEST_F(LocalLogRepositoryTest, RoundtripCryptoApplier) {
     EXPECT_EQ(logContent, readFile(TMPDirPathProvider.path(date2)));
 
     // encrypt them & verify encription
-    caps_log::LogRepositoryCrypoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
-                                               TMPDirPathProvider.getLogFilenameFormat(),
-                                               caps_log::Crypto::Encrypt);
+    caps_log::LogRepositoryCryptoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
+                                                TMPDirPathProvider.getLogFilenameFormat(),
+                                                caps_log::Crypto::Encrypt);
     EXPECT_EQ(encLogContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(encLogContent, readFile(TMPDirPathProvider.path(date2)));
 
     // decrypt them & verify encription
-    caps_log::LogRepositoryCrypoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
-                                               TMPDirPathProvider.getLogFilenameFormat(),
-                                               caps_log::Crypto::Decrypt);
+    caps_log::LogRepositoryCryptoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
+                                                TMPDirPathProvider.getLogFilenameFormat(),
+                                                caps_log::Crypto::Decrypt);
     EXPECT_EQ(logContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(logContent, readFile(TMPDirPathProvider.path(date2)));
 }
@@ -175,9 +175,9 @@ TEST_F(LocalLogRepositoryTest, CryptoApplier_IgnoresFilesNotMatchingTheLogFilena
     EXPECT_EQ(logContent, readFile(TEST_LOG_DIRECTORY / dummyfileName));
 
     // encrypt them & verify encription
-    caps_log::LogRepositoryCrypoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
-                                               TMPDirPathProvider.getLogFilenameFormat(),
-                                               caps_log::Crypto::Encrypt);
+    caps_log::LogRepositoryCryptoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
+                                                TMPDirPathProvider.getLogFilenameFormat(),
+                                                caps_log::Crypto::Encrypt);
     EXPECT_EQ(encLogContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(logContent, readFile(TEST_LOG_DIRECTORY / dummyfileName));
 }
@@ -190,11 +190,44 @@ TEST_F(LocalLogRepositoryTest, CryptoApplier_DoesNotApplyAnOperationTwice) {
                                       "7\a\x1\xEE\xD2n";
 
     writeDummyLog(date1, logContent);
-    caps_log::LogRepositoryCrypoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
-                                               TMPDirPathProvider.getLogFilenameFormat(),
-                                               caps_log::Crypto::Encrypt);
-    ASSERT_THROW(caps_log::LogRepositoryCrypoApplier::apply(
+    caps_log::LogRepositoryCryptoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
+                                                TMPDirPathProvider.getLogFilenameFormat(),
+                                                caps_log::Crypto::Encrypt);
+    ASSERT_THROW(caps_log::LogRepositoryCryptoApplier::apply(
                      dummyPassword, TMPDirPathProvider.getLogDirPath(),
                      TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt),
                  caps_log::CryptoAlreadyAppliedError);
+}
+
+TEST_F(LocalLogRepositoryTest, ErrorOnEncryptedRepoWithNoPassword) {
+    const auto date = Date{25, 5, 2005};
+    const auto *const dummyPassword = "dummy";
+    const std::string logContent = "Dummy string";
+
+    {
+        writeDummyLog(date, logContent);
+        caps_log::LogRepositoryCryptoApplier::apply(
+            dummyPassword, TMPDirPathProvider.getLogDirPath(),
+            TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt);
+
+        EXPECT_THROW({ const auto repo = LocalLogRepository(TMPDirPathProvider); },
+                     std::runtime_error);
+        EXPECT_NO_THROW(
+            { const auto repo = LocalLogRepository(TMPDirPathProvider, dummyPassword); });
+    }
+}
+
+TEST_F(LocalLogRepositoryTest, ErrorOnEncryptedRepoWithBadPassword) {
+    const auto date = Date{25, 5, 2005};
+    const auto *const dummyPassword = "dummy";
+    const auto *const badPassword = "bad dummy";
+    const std::string logContent = "Dummy string";
+
+    writeDummyLog(date, logContent);
+    caps_log::LogRepositoryCryptoApplier::apply(dummyPassword, TMPDirPathProvider.getLogDirPath(),
+                                                TMPDirPathProvider.getLogFilenameFormat(),
+                                                caps_log::Crypto::Encrypt);
+
+    EXPECT_THROW({ const auto repo = LocalLogRepository(TMPDirPathProvider, badPassword); },
+                 std::runtime_error);
 }
