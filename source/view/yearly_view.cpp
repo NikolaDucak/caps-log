@@ -71,21 +71,24 @@ CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart
     option.transform = [this, today](const auto &date, const auto &state) {
         auto element = text(state.label);
 
-        if (today == date)
+        if (today == date) {
             element = element | color(Color::Red);
-        else if (m_highlightedLogsMap && m_highlightedLogsMap->get(date))
+        } else if (m_highlightedLogsMap && m_highlightedLogsMap->get(date)) {
             element = element | color(Color::Yellow);
-        else if (date.isWeekend())
+        } else if (date.isWeekend()) {
             element = element | color(Color::Blue);
+        }
 
-        if (state.focused)
+        if (state.focused) {
             element = element | inverted;
+        }
 
         if (m_availabeLogsMap) {
-            if (m_availabeLogsMap->get(date))
+            if (m_availabeLogsMap->get(date)) {
                 element = element | underlined;
-            else
+            } else {
                 element = element | dim;
+            }
         }
 
         return element | center;
