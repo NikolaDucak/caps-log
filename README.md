@@ -1,107 +1,157 @@
-# Captain's Log - or `caps-log` for short
-`caps-log` is a small terminal based journaling tool. 
+# Captain's Log - or `Caps-Log` for Short
 
-![caps-log screenshot](./caps-log.gif)
+`Caps-Log` is a small, terminal-based journaling tool.
 
-## What it does
-Daily entires are saved locally as markdown files. Level 1 headers are interpreted as 'sections' and unordered lists
-starting with '*' character are interpreted as 'tags'. Titles of those two are then shown in two menus, selecting 
-an item in that menu, highlights the dates with mentions of that tag/title in the calendar. This is a nice way
-to visualise how (in)consistent your habits & activities are.
+![Caps-Log Screenshot](./caps-log.gif)
 
-Clicking on a date or pressing enter when a date is focused will (maybe) open that log file in an editor.
-Currently `caps-log` uses your `$EDITOR` environment variable to start the editor, if that environment variable is set. Otherwise
-this functionality is disabled. This looks pretty cool with terminal based editors.
+## What It Does
+
+Daily entries are saved locally as Markdown files. Level 1 headers are
+interpreted as 'sections', and unordered lists beginning with the '*' character
+are interpreted as 'tags'. Titles of these sections and tags are then displayed
+in two menus. Selecting an item in these menus highlights the dates with
+mentions of that tag or title in the calendar. This feature provides a visual
+representation of how (in)consistent your habits and activities are.
+
+Clicking on a date or pressing enter when a date is focused will open that log
+file in an editor, if possible. Currently, `Caps-Log` uses your `$EDITOR`
+environment variable to start the editor, if set. Otherwise, this functionality
+is disabled. This integration looks particularly impressive with terminal-based
+editors.
 
 **Note**
-- it's kinda weird with emojis, maybe FTXUI issue or I'm just using FTXUI wrong, maybe an issue with my font/terminal emulator. 
-On a line with an emoji drawn, it shifts all other chars to right by a place.
-- it's not that pretty to use in small terminals, it is usable, but it's best when whole calendar is visible.
 
-# Get it 
-Head over to the [releases] page and download a `caps-log-<platform>.tar.gz` file for the release you want (probably the latest).
+- Emoji handling is somewhat erratic, potentially due to an FTXUI issue or
+  misuse on my part. This could also be an issue with my font or terminal
+  emulator. When an emoji is drawn, it shifts all other characters to the right
+  by one place.
+- The tool is not optimal for use in small terminals. While still functional, it
+  performs best when the entire calendar is visible.
 
-## Keybindings 
-- `tab` or `shift + tab` =  switch focus between calendar and menus
-- `hjkl` or arrow keys = for navigating within calendar or menus
-- `enter` = highlight logs that contain tag/section or open log entry in `$EDITOR` for date under the cursor
-- `d` = delete log under the cursor if calendar is focused
-- `+` / `-` = show calendar for next / previous year
+# Getting It
 
-## Log entry tags and sections
-`caps-log` stores all logs as simple markdown files purely to give your editor some syntax highlighting when editing. 
-This 'syntax' was chosen with little thought based on personal preference. If you find flaws, do open an issue.
-It is up to you to choose what would be a section and what would be a tag.
+Visit the [releases page](https://github.com/nikoladucak/caps-log/releases) and
+download a `caps-log-<platform>.tar.gz` file for the desired release (usually
+the latest).
 
-*Sections*
+## Keybindings
 
-To mark a section just do: `# section name`. All text below until the next section is considered part of it, although 
-`caps-log` currently does not care about that text, just the section title. By default, the first line of the file is ignored when
-looking up section titles, as I like to use that line for a section with the date of the current line, this is configurable via 
-command line arguments or config file.
+- `Tab` or `Shift + Tab` = Switch focus between the calendar and menus.
+- `h` or arrow keys = Navigate within the calendar or menus.
+- `Enter` = Highlight logs containing a specific tag/section or open the log
+  entry in `$EDITOR` for the date under the cursor.
+- `D` = Delete the log under the cursor if the calendar is focused.
+- `+` / `-` = Navigate to the next / previous year's calendar.
 
-*Tags*
+## Log Entry Tags and Sections
 
-The tags do not apply to a specific section but to the whole log entry file. 
-- `* tag name`
-- `* tag name (some other optional info)`
-- `* tag name (some other optional info): a multiline body that is ignored by caps-log`
-For examples of valid and invalid sections and tags see [./test/log_entry_test.cpp](./test/log_entry_test.cpp)
+`Caps-Log` stores all logs as simple Markdown files to enable syntax
+highlighting in your editor. This 'syntax' was chosen based on personal
+preference. If you find flaws, please open an issue. It's up to you to decide
+what constitutes a section and what a tag.
 
-## Configuration & command line options
-Currently caps-log silently ignores unknown options or bad arguments, so watch out. This will probably be changed in the future.
+_Sections_
 
-*Command line options*
+To mark a section, use: `# Section Name`. All text below until the next section
+is considered part of it, although `Caps-Log` currently does not process that
+text, focusing only on the section title. By default, the first line of the file
+is ignored when identifying section titles, as it's commonly used for the date
+of the entry. This behavior can be configured via command line arguments or a
+config file.
+
+_Tags_
+
+Tags apply to the entire log entry file, not specific sections.
+
+- `* Tag Name`
+- `* Tag Name (Additional Information)`
+- `* Tag Name (Additional Information): A multiline body that is ignored by Caps-Log`
+  For examples of valid and invalid sections and tags, see
+  [./test/log_entry_test.cpp](./test/log_entry_test.cpp)
+
+## Encrypting Logs
+
+`Caps-Log` can encrypt your logs using the AES encryption algorithm. If no
+password is provided at startup, the logs will be unreadable. If you edit or
+create new logs for an encrypted repository, the final log will be encrypted. To
+encrypt/decrypt a repository:
+
 ```
-caps-log (Captains Log)
-A small TUI journaling tool.
-
- -h --help                     - show this message
- -c --config <path>            - override the default config file path (~/.caps-log/config.ini)
- --log-dir-path <path>         - path where log files are stored (default: ~/.caps-log/day/)
- --log-name-format <format>    - format in which log entry markdown files are saved (default: d%Y_%m_%d.md)
- --sunday-start                - have the calendar display sunday as first day of the week)"};
- --first-line-section          - if a section mark is placed on the first line, 
-                                 by default it is ignored as it's left for log title, this overrides this behaviour
+# Note: Caps-Log will ignore files not matching the log filename format.
+# You can also provide --log-dir-path and --log-filename-format to control behavior.
+# Encrypt
+caps-log --encrypt --password <your password>
+# Decrypt
+caps-log --decrypt --password <your password>
 ```
 
-*Config file*
+## Configuration & Command Line Options
+
+_Command Line Options_
+
+```
+Allowed options:
+  -h [ --help ]                         Show this message.
+  -c [ --config ] arg                   Override the default config file path
+                                        (~/.caps-log/config.ini).
+  --log-dir-path arg (=~/.caps-log/day/)
+                                        Path where log files are stored.
+  --log-name-format arg (=d%y_%m_%d.md) Format in which log entry markdown
+                                        files are saved.
+  --sunday-start                        Display Sunday as the first day of the
+                                        week in the calendar.
+  --first-line-section                  If a section mark is placed on the
+                                        first line, override the default
+                                        behavior of ignoring it.
+  --password arg                        Password for encrypted log repositories
+                                        or to be used with --encrypt/--decrypt.
+  --encrypt                             Apply encryption to all logs in the log
+                                        directory path (requires --password).
+  --decrypt                             Apply decryption to all logs in the log
+                                        directory path (requires --password).
+```
+
+_Config File_
 
 Here is an example with all supported options:
+
 ```
 log-dir-path = /path/to/log/dir
-log-name-format = %Y_%d_%m.txt
+log-name-format = %y_%d_%m.txt
 sunday-start = true
 first-line-section = true
+password = your-password
 ```
 
-## Building & installing
+## Building & Installing
+
 **Dependencies**
 
-`caps-log` fetches it's dependencies from github, except from boost, you should have boost program options installed.
+`Caps-Log` fetches its dependencies from GitHub, except for Boost. You should
+have Boost program options installed. This typically involves:
 
-
-To build the `caps-log` executable, run:
-```sh
-mkdir build && cd build && cmake ..
-make 
+```shell
+# Linux
+sudo apt-get install -y libboost-program-options-dev
+# Mac
+brew install boost
 ```
-After a successful build, to install the executable where it most likely will be visible with your current `$PATH` Run: `sudo make install`.
-Then you can just run the app by typing `caps-log` in your terminal.
 
-If you want to build and run the tests do:
-```sh
+To build the `Caps-Log` executable, run:
+
+```shell
+mkdir build && cd build && cmake ..
+make
+```
+
+After a successful build, to install the executable in a common `$PATH`
+location, run: `sudo make install`. Then, you can simply start the application
+by typing `caps-log` in your terminal.
+
+If you wish to build and run the tests, execute:
+
+```shell
 mkdir build && cd build && cmake .. -DBUILD_TESTS=ON
 make 
 ctest
 ```
-
-## Planned work ideas
-**Note: These are not that high of a priority, also I might just give up on these. They should be converted to an actual github issues.**
-- [ ] feat: preview window focuses parts of the text that matches the currently highlighted tag or task.
-- [ ] feat: on small terminals, figure out how to keep the portion of the calendar where focused that is shown when calendar is unfocused.
-- [ ] feat: add ability to toggle tags from caps-log directly instead of opening the editor.
-- [ ] feat: repeat events, forgettable things like birthdays and anniversaries are highlighted in the calendar
-- [ ] feat: shift + j/k while navigating the calendar jumps a whole month.
-- [ ] fix: mouse support for custom containers in `caps_log::view::ftxui_ext`
-- [ ] fix: maybe FTXUI issue, entire lines spanning multiple components in the terminal might be highlighted when they should not be.
