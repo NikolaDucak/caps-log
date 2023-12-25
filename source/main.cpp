@@ -51,13 +51,13 @@ int main(int argc, const char **argv) try {
         [](const auto &path) { return std::make_unique<std::ifstream>(path); }, cliOpts);
 
     if (cliOpts.count("--encrypt") != 0U) {
-        caps_log::LogRepositoryCrypoApplier::apply(config.password, config.logDirPath,
-                                                   config.logFilenameFormat,
-                                                   caps_log::Crypto::Encrypt);
+        caps_log::LogRepositoryCryptoApplier::apply(config.password, config.logDirPath,
+                                                    config.logFilenameFormat,
+                                                    caps_log::Crypto::Encrypt);
     } else if (cliOpts.count("--decrypt") != 0U) {
-        caps_log::LogRepositoryCrypoApplier::apply(config.password, config.logDirPath,
-                                                   config.logFilenameFormat,
-                                                   caps_log::Crypto::Decrypt);
+        caps_log::LogRepositoryCryptoApplier::apply(config.password, config.logDirPath,
+                                                    config.logFilenameFormat,
+                                                    caps_log::Crypto::Decrypt);
     } else {
         makeCapsLog(config).run();
     }

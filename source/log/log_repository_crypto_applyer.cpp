@@ -2,13 +2,22 @@
 namespace caps_log {
 
 namespace {
-constexpr auto encryptetLogRepoMarkerFile = ".cle";
-void updateEncryptionMarkerfile(Crypto crypto, const std::filesystem::path &logDirPath) {
+void updateEncryptionMarkerfile(Crypto crypto, const std::filesystem::path &logDirPath,
+                                const std::string &password) {
+    const auto markerFilePath = logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile;
     if (crypto == Crypto::Encrypt) {
-        std::ofstream cle((logDirPath / encryptetLogRepoMarkerFile));
+        std::ofstream cle(markerFilePath);
+        if (not cle.is_open()) {
+            // This would be an unfortuane situation, the repo has already been encrypted
+            // but the encryption marker file is not added.
+            // TODO: figure something out
+            throw std::runtime_error{"Failed writing encryption marker file"};
+        }
+        std::istringstream oss{LogRepositoryCryptoApplier::encryptetLogRepoMarker};
+        cle << utils::encrypt(password, oss);
     }
     if (crypto == Crypto::Decrypt) {
-        std::filesystem::remove((logDirPath / encryptetLogRepoMarkerFile));
+        std::filesystem::remove(markerFilePath);
     }
 }
 
@@ -56,9 +65,9 @@ bool cryptoAlreadyApplied(const std::filesystem::path &logDirPath, Crypto crypto
 }
 } // namespace
 
-void LogRepositoryCrypoApplier::apply(const std::string &password,
-                                      const std::filesystem::path &logDirPath,
-                                      const std::string &logFilenameFormat, Crypto crypto) {
+void LogRepositoryCryptoApplier::apply(const std::string &password,
+                                       const std::filesystem::path &logDirPath,
+                                       const std::string &logFilenameFormat, Crypto crypto) {
     if (cryptoAlreadyApplied(logDirPath, crypto)) {
         throw CryptoAlreadyAppliedError{"Already applied"};
     }
@@ -112,7 +121,7 @@ void LogRepositoryCrypoApplier::apply(const std::string &password,
         throw std::runtime_error(errorMessage);
     }
 
-    updateEncryptionMarkerfile(crypto, logDirPath);
+    updateEncryptionMarkerfile(crypto, logDirPath, password);
 }
 
 } // namespace caps_log
