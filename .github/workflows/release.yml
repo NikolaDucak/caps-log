@@ -51,7 +51,7 @@ jobs:
       - name: Build 
         run: |
           mkdir build && cd build
-          cmake .. && make
+          cmake -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" .. && make
 
       - name: Archive and Upload binaries to release
         run: |
@@ -71,7 +71,7 @@ jobs:
       - name: Build for MacOS
         run: |
           mkdir build-macos && cd build-macos
-          cmake .. && make 
+          cmake -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" .. && make
 
       - name: Archive and Upload MacOS binaries to release
         run: |

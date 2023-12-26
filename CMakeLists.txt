@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 
+# If version number is not provided, just use a dummy
+if(NOT CAPS_LOG_VERSION)
+    set(CAPS_LOG_VERSION "development")
+endif()
+
+# Project setup
 project(caps-log
     LANGUAGES CXX
-    VERSION 1.0.0
 )
 
 set(CMAKE_CXX_STANDARD 17)
