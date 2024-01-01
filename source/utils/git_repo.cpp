@@ -1,13 +1,12 @@
-#include "git_log_repo.hpp"
+#include "git_repo.hpp"
 #include <fmt/format.h>
 #include <string>
 
+#include <algorithm>
 #include <iostream>
 #include <utility>
 
-using namespace caps_log::log;
-
-namespace caps_log::log {
+namespace caps_log::utils {
 
 void checkGitError(int code, int line, const char *file) {
     if (code < 0) {
@@ -18,7 +17,7 @@ void checkGitError(int code, int line, const char *file) {
 }
 
 // NOLINTNEXTLINE
-#define CHECK_GIT_ERROR(error_code) ::caps_log::log::checkGitError(error_code, __LINE__, __FILE__)
+#define CHECK_GIT_ERROR(error_code) ::caps_log::utils::checkGitError(error_code, __LINE__, __FILE__)
 
 bool validateStr(const std::string &str) {
     return std::all_of(str.begin(), str.end(), [](auto chr) { return std::isprint(chr) != 0; });
@@ -84,11 +83,31 @@ GitRepo::GitRepo(const std::filesystem::path &path, std::string sshKeyPath,
     CHECK_GIT_ERROR(git_repository_open(&m_repo, path.c_str()));
 }
 
+GitRepo::GitRepo(GitRepo &&other) noexcept
+    : m_repo(other.m_repo), m_mainBranchName(std::move(other.m_mainBranchName)),
+      m_remoteName{std::move(other.m_remoteName)}, m_sshKeyPath{std::move(other.m_sshKeyPath)},
+      m_sshPubKeyPath{std::move(other.m_sshPubKeyPath)} {
+    other.m_repo = nullptr;
+}
+
+GitRepo &GitRepo::operator=(GitRepo &&other) noexcept {
+    this->m_repo = other.m_repo;
+    this->m_sshPubKeyPath = std::move(other.m_sshPubKeyPath);
+    this->m_sshKeyPath = std::move(other.m_sshKeyPath);
+    this->m_remoteName = std::move(other.m_remoteName);
+    this->m_mainBranchName = std::move(other.m_mainBranchName);
+
+    other.m_repo = nullptr;
+
+    return *this;
+}
+
 GitRepo::~GitRepo() {
     if (m_repo != nullptr) {
         git_repository_free(m_repo);
+        // TODO: not every repo should do this...
+        git_libgit2_shutdown();
     }
-    git_libgit2_shutdown();
 }
 
 int GitRepo::credentialsCallback(git_cred **cred, const char *url, const char *username_from_url,
@@ -236,24 +255,4 @@ void GitRepo::pull() {
     git_remote_free(remote);
 }
 
-GitLogRepository::GitLogRepository(std::string root, const LocalFSLogFilePathProvider &pathProvider,
-                                   std::string pass, const GitLogRepositoryConfig &config)
-    : repo{std::move(root), config.sshKeyPath, config.sshPubKeyPath, config.remoteName,
-           config.mainBranchName},
-      logRepo{pathProvider, std::move(pass)}, config{config} {
-    repo.pull();
-}
-
-GitLogRepository::~GitLogRepository() {
-    if (repo.commitAll()) {
-        repo.push();
-    }
-}
-
-std::optional<LogFile> GitLogRepository::read(const date::Date &date) const {
-    return logRepo.read(date);
-}
-
-void GitLogRepository::remove(const date::Date &date) { logRepo.remove(date); }
-void GitLogRepository::write(const LogFile &log) { logRepo.write(log); }
-} // namespace caps_log::log
+} // namespace caps_log::utils

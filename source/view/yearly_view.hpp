@@ -12,6 +12,7 @@
 #include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/component/task.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <sstream>
 
@@ -44,11 +45,14 @@ class YearView : public YearViewBase {
     void run() override;
     void stop() override;
 
-    void showCalendarForYear(unsigned year) override;
+    void post(Task task) override;
 
-    void prompt(std::string message, std::function<void()> onYesCallback) override {
-        m_rootComponent->prompt(message, onYesCallback);
-    }
+    void prompt(std::string message, std::function<void()> onYesCallback) override;
+    void promptOk(std::string message, std::function<void()> callback) override;
+    void loadingScreen(const std::string &message) override;
+    void loadingScreenOff() override;
+
+    void showCalendarForYear(unsigned year) override;
 
     int &selectedTag() override { return m_tagsMenu->selected(); }
     int &selectedSection() override { return m_sectionsMenu->selected(); }

@@ -4,14 +4,19 @@
 #include "log/log_file.hpp"
 #include "log/log_repository_base.hpp"
 #include "log/year_overview_data.hpp"
+#include "utils/git_repo.hpp"
 #include "utils/string.hpp"
+#include "utils/task_executor.hpp"
 #include "view/input_handler.hpp"
 #include "view/yearly_view.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace caps_log {
@@ -19,8 +24,43 @@ namespace caps_log {
 using namespace editor;
 using namespace log;
 using namespace view;
+using namespace utils;
 
 inline static const std::string LOG_BASE_TEMPLATE{"# %d. %m. %y."};
+
+/**
+ * A class that has the interface of GitRepo but extends each method to provide callback
+ * functionality while executing real git log repo stuff on ThreadedTaskExecutor.
+ * It ensures that only one thread is touching the repo.
+ */
+class AsyncGitRepo {
+    GitRepo m_repo;
+    utils::ThreadedTaskExecutor m_taskExec;
+
+  public:
+    AsyncGitRepo(GitRepo repo) : m_repo{std::move(repo)} {}
+
+    void pull(std::function<void()> acallback) {
+        m_taskExec.Post([this, callback = std::move(acallback)] {
+            m_repo.pull();
+            callback();
+        });
+    }
+
+    void push(std::function<void()> acallback) {
+        m_taskExec.Post([this, callback = std::move(acallback)]() {
+            m_repo.push();
+            callback();
+        });
+    }
+
+    void commitAll(std::function<void(bool)> acallback) {
+        m_taskExec.Post([this, callback = std::move(acallback)]() {
+            auto somethingCommited = m_repo.commitAll();
+            callback(somethingCommited);
+        });
+    }
+};
 
 class App : public InputHandlerBase {
     unsigned m_displayedYear;
@@ -32,6 +72,8 @@ class App : public InputHandlerBase {
     std::vector<const YearMap<bool> *> m_tagMaps;
     std::vector<const YearMap<bool> *> m_sectionMaps;
     bool m_skipFirstLine;
+
+    std::optional<AsyncGitRepo> m_gitRepo;
 
     void updateViewSectionsAndTagsAfterLogChange(const Date &dateOfChangedLog) {
         m_data.collect(m_repo, dateOfChangedLog, m_skipFirstLine);
@@ -51,14 +93,20 @@ class App : public InputHandlerBase {
 
   public:
     App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-        std::shared_ptr<EditorBase> editor, bool skipFirstLine = true)
+        std::shared_ptr<EditorBase> editor, bool skipFirstLine = true,
+        std::optional<GitRepo> gitRepo = std::nullopt)
         : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
           m_editor{std::move(editor)},
           m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year, skipFirstLine)},
           m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
+        // if pass not prowided and repo is encrypted
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
+
+        if (gitRepo) {
+            m_gitRepo.emplace(std::move(*gitRepo));
+        }
     }
 
     void run() { m_view->run(); }
@@ -67,6 +115,9 @@ class App : public InputHandlerBase {
         switch (event.type) {
         case UIEvent::ROOT_EVENT:
             return handleRootEvent(event.input);
+        case UIEvent::UI_STARTED:
+            handleUiStarted();
+            break;
         case UIEvent::FOCUSED_DATE_CHANGE:
             handleFocusedDateChange(event.input);
             break;
@@ -120,7 +171,27 @@ class App : public InputHandlerBase {
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
-    void quit() { m_view->stop(); }
+    void handleUiStarted() {
+        if (m_gitRepo) {
+            m_view->loadingScreen("Pulling from remote...");
+            m_gitRepo->pull([this] { m_view->post([this] { m_view->loadingScreenOff(); }); });
+        }
+    }
+
+    void quit() {
+        if (m_gitRepo) {
+            m_view->loadingScreen("Commiting & pushing...");
+            m_gitRepo->commitAll([this](bool somethingCommited) {
+                if (somethingCommited) {
+                    m_gitRepo->push([this] { m_view->stop(); });
+                } else {
+                    m_view->stop();
+                }
+            });
+        } else {
+            m_view->stop();
+        }
+    }
 
     void deleteFocusedLog() {
         auto date = m_view->getFocusedDate();
@@ -155,14 +226,14 @@ class App : public InputHandlerBase {
 
             // check that after editing still exists
             log = m_repo->read(date);
-            if (log && noMeningfullContent(log->getContent(), date)) {
+            if (log && noMeaningfullContent(log->getContent(), date)) {
                 m_repo->remove(date);
             }
             updateViewSectionsAndTagsAfterLogChange(date);
         });
     }
 
-    static bool noMeningfullContent(const std::string &content, const Date &date) {
+    static bool noMeaningfullContent(const std::string &content, const Date &date) {
         return content == date.formatToString(LOG_BASE_TEMPLATE) || content.empty();
     }
 

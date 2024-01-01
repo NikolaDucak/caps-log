@@ -1,20 +1,10 @@
 #pragma once
 
-#include "local_log_repository.hpp"
-#include "log_repository_base.hpp"
-
 #include <filesystem>
 #include <git2.h>
 #include <optional>
 
-namespace caps_log::log {
-
-struct GitLogRepositoryConfig {
-    std::filesystem::path sshKeyPath;
-    std::filesystem::path sshPubKeyPath;
-    std::string remoteName;
-    std::string mainBranchName;
-};
+namespace caps_log::utils {
 
 /**
  * A utility class that manages the initialization of libgit2 and other required interactions with
@@ -33,9 +23,9 @@ class GitRepo {
             std::string remoteName = "origin", std::string mainBranchName = "master");
 
     GitRepo(const GitRepo &) = delete;
-    GitRepo(GitRepo &&) = default;
+    GitRepo(GitRepo &&) noexcept;
     GitRepo &operator=(const GitRepo &) = delete;
-    GitRepo &operator=(GitRepo &&) = default;
+    GitRepo &operator=(GitRepo &&) noexcept;
     ~GitRepo();
     void push();
     bool commitAll();
@@ -49,24 +39,4 @@ class GitRepo {
                                   unsigned int allowed_types, void *payload);
 };
 
-class GitLogRepository final : public LogRepositoryBase {
-    GitRepo repo;
-    LocalLogRepository logRepo;
-    GitLogRepositoryConfig config;
-
-  public:
-    GitLogRepository(std::string root, const LocalFSLogFilePathProvider &pathProvider,
-                     std::string pass, const GitLogRepositoryConfig &conf);
-
-    GitLogRepository(const GitLogRepository &) = delete;
-    GitLogRepository(GitLogRepository &&) = default;
-    GitLogRepository &operator=(const GitLogRepository &) = delete;
-    GitLogRepository &operator=(GitLogRepository &&) = default;
-
-    ~GitLogRepository() override;
-    std::optional<LogFile> read(const date::Date &date) const override;
-    void remove(const date::Date &date) override;
-    void write(const LogFile &log) override;
-};
-
-} // namespace caps_log::log
+} // namespace caps_log::utils

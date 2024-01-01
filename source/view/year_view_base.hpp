@@ -2,6 +2,7 @@
 
 #include "input_handler.hpp"
 
+#include <ftxui/component/task.hpp>
 #include <functional>
 #include <string>
 #include <vector>
@@ -20,15 +21,22 @@ inline std::string makeMenuItemTitle(const std::string &title, unsigned count) {
 
 class YearViewBase {
   public:
+    virtual ~YearViewBase() = default;
+
     virtual void run() = 0;
     virtual void stop() = 0;
 
     virtual void setInputHandler(InputHandlerBase *handler) = 0;
 
     virtual Date getFocusedDate() const = 0;
-
     virtual void showCalendarForYear(unsigned year) = 0;
+
+    virtual void post(ftxui::Task) = 0;
+
     virtual void prompt(std::string message, std::function<void()> callback) = 0;
+    virtual void promptOk(std::string message, std::function<void()> callback) = 0;
+    virtual void loadingScreen(const std::string &str) = 0;
+    virtual void loadingScreenOff() = 0;
 
     // passing only a pointer and having a view have no ownership of
     // the map allows for having precoputed maps and switching

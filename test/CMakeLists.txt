@@ -33,6 +33,7 @@ add_executable(
     ./../source/log/local_log_repository.cpp
     ./../source/log/year_overview_data.cpp
     ./../source/utils/crypto.cpp
+    ./../source/utils/git_repo.cpp
 )
 
 target_link_libraries(
@@ -46,6 +47,7 @@ target_link_libraries(
     Boost::program_options
     OpenSSL::Crypto
     OpenSSL::SSL
+    ${LIBGIT2_LIBRARIES}
 )
 
 target_include_directories(
