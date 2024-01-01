@@ -36,20 +36,24 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
         },
         Event::Tab, Event::TabReverse);
 
-    auto whole_ui_renderer = Renderer(container, [this, container] {
+    auto whole_ui_renderer = Renderer(container, [this, container, firstRender = true]() mutable {
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
         // them centered while the preview window changes and stretches this vbox container than to
         // keep the preview window size fixed
         const auto dateStr = date::Date::getToday().formatToString("%d. %m. %Y.");
         const auto titleText =
             fmt::format("Today is: {} -- There are {} log entries for year {}.", dateStr,
-                        m_availabeLogsMap ? m_availabeLogsMap->daysSet() : 0,
+                        m_availabeLogsMap != nullptr ? m_availabeLogsMap->daysSet() : 0,
                         m_calendarButtons->getFocusedDate().year);
         const auto main_section =
             hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
 
         static const auto helpString = std::string{"hjkl/arrow keys - navigation | d - delete log "
                                                    "| tab - move focus between menus and calendar"};
+        if (firstRender) {
+            firstRender = false;
+            m_screen.Post([this]() { m_handler->handleInputEvent(UIEvent{UIEvent::UI_STARTED}); });
+        }
         return vbox(text(titleText) | center, main_section | center, m_preview->Render(),
                     text(helpString) | dim | center) |
                center;
@@ -129,4 +133,20 @@ std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
     };
     return WindowedMenu::make("Sections", option);
 }
+
+void YearView::post(Task task) {
+    m_screen.Post([task, this]() { std::get<Closure>(task)(); });
+    m_screen.Post(Event::Custom);
+}
+void YearView::prompt(std::string message, std::function<void()> onYesCallback) {
+    m_rootComponent->prompt(message, onYesCallback);
+}
+void YearView::promptOk(std::string message, std::function<void()> callback) {
+    m_rootComponent->promptOk(message, callback);
+}
+void YearView::loadingScreen(const std::string &message) {
+    m_rootComponent->loadingScreen(message);
+}
+void YearView::loadingScreenOff() { m_rootComponent->resetToMain(); }
+
 } // namespace caps_log::view

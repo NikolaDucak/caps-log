@@ -23,6 +23,11 @@ class DummyYearView : public caps_log::view::YearViewBase {
 
     void run() override {}
     void stop() override {}
+    void post(ftxui::Task /*unused*/) override {}
+
+    void promptOk(std::string message, std::function<void()> callback) override {}
+    void loadingScreen(const std::string &str) override {}
+    void loadingScreenOff() override {}
 
     void setInputHandler(caps_log::view::InputHandlerBase *handler) override {
         m_inputHandler = handler;
@@ -85,6 +90,12 @@ class DMockYearView : public caps_log::view::YearViewBase {
     }
 
     auto &getDummyView() { return view; }
+
+    MOCK_METHOD(void, post, (ftxui::Task), (override));
+
+    MOCK_METHOD(void, promptOk, (std::string message, std::function<void()> callback), (override));
+    MOCK_METHOD(void, loadingScreen, (const std::string &str), (override));
+    MOCK_METHOD(void, loadingScreenOff, (), (override));
 
     MOCK_METHOD(void, run, (), (override));
     MOCK_METHOD(void, stop, (), (override));

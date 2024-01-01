@@ -7,6 +7,7 @@ namespace caps_log::view {
 
 struct UIEvent {
     enum Type {
+        UI_STARTED,
         ROOT_EVENT,
         FOCUSED_DATE_CHANGE,
         FOCUSED_SECTION_CHANGE,

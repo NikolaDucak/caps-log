@@ -10,8 +10,6 @@ add_executable(
     ./date/date.cpp
     ./date/date.hpp
 
-    ./log/git_log_repo.cpp
-    ./log/git_log_repo.hpp
     ./log/local_log_repository.cpp
     ./log/local_log_repository.hpp
     ./log/log_file.cpp
@@ -26,6 +24,9 @@ add_executable(
     ./utils/crypto.hpp
     ./utils/map.hpp
     ./utils/string.hpp
+    ./utils/task_executor.hpp
+    ./utils/git_repo.cpp
+    ./utils/git_repo.hpp
 
     ./view/calendar_component.cpp
     ./view/calendar_component.hpp

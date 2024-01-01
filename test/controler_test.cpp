@@ -65,7 +65,7 @@ TEST_F(ControllerTest, SpecialCharsDontQuit) {
 
 TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
     mock_repo->write(LogFile{selectedDate, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
     selectedDate = mock_view->getFocusedDate();
 
     // Expect dummy data has been propagated to view
@@ -99,7 +99,7 @@ TEST_F(ControllerTest, OnFocusedDateChange_UpdatePreviewString) {
     auto dummyLog2 = LogFile{{10, 10, 2005}, "dummy content 2"};
     mock_repo->write(dummyLog1);
     mock_repo->write(dummyLog2);
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
     ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog1.getContent());
     ASSERT_EQ(mock_view->getDummyView().m_focusedDate, dummyLog1.getDate());
 
@@ -118,7 +118,7 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
     auto dummyLog2 = LogFile{dayAfterSelectedDate, "\n# secttwo \n* tagtwo"};
     mock_repo->getDummyRepo().write(dummyLog1);
     mock_repo->getDummyRepo().write(dummyLog2);
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&]() {
@@ -152,7 +152,7 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
 }
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
     // +1 for '-----' aka no section
     ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
@@ -183,7 +183,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
 }
 
 TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -199,7 +199,7 @@ TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
 }
 
 TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -225,10 +225,10 @@ TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
 }
 
 TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
-    auto capsLog = caps_log::App{mock_view, mock_repo, mock_editor, true};
+    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
     mock_repo->write(LogFile{selectedDate, "# Dummy section"});
-    capsLog = caps_log::App{mock_view, mock_repo, mock_editor, false};
+    auto capsLog2 = caps_log::App{mock_view, mock_repo, mock_editor, false};
     // +1 for '-----' aka no section
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
 }

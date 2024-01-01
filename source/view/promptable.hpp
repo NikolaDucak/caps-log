@@ -14,14 +14,17 @@ using namespace ftxui;
  */
 class Promptable : public ComponentBase {
     int m_depth = 0;
-    Component m_main;
-    Component m_prompt;
+    Component m_main = nullptr;
+    Component m_prompt = nullptr;
     std::string m_message;
-    std::function<void()> m_callback;
+    std::function<void()> m_callback = nullptr;
 
   public:
     Promptable(Component main);
     void prompt(std::string message, std::function<void()> callback);
+    void promptOk(std::string message, std::function<void()> callback);
+    void loadingScreen(std::string message);
+    void resetToMain() { m_depth = 0; }
 
     Element Render() override;
 };
