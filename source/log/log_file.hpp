@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace caps_log::model {
+namespace caps_log::log {
 
 class LogFile {
     std::string m_content;
@@ -22,13 +22,13 @@ class LogFile {
     caps_log::date::Date getDate() const { return m_date; }
 
     std::vector<std::string> readTagTitles() {
-        std::stringstream ss{m_content};
-        return readTagTitles(ss);
+        std::stringstream sstream{m_content};
+        return readTagTitles(sstream);
     }
 
     std::vector<std::string> readSectionTitles(bool skipFirstLine = true) {
-        std::stringstream ss{m_content};
-        return readSectionTitles(ss, skipFirstLine);
+        std::stringstream sstream{m_content};
+        return readSectionTitles(sstream, skipFirstLine);
     }
 
     bool hasMeaningfullContent();
@@ -39,15 +39,15 @@ class LogFile {
                                                       bool skipFirstLine = true);
 
     static std::vector<std::string> readTagTitles(const std::string &input) {
-        std::stringstream ss{input};
-        return readTagTitles(ss);
+        std::stringstream sstream{input};
+        return readTagTitles(sstream);
     }
 
     static std::vector<std::string> readSectionTitles(const std::string &input,
                                                       bool skipFirstLine = true) {
-        std::stringstream ss{input};
-        return readSectionTitles(ss, skipFirstLine);
+        std::stringstream sstream{input};
+        return readSectionTitles(sstream, skipFirstLine);
     }
 };
 
-} // namespace caps_log::model
+} // namespace caps_log::log

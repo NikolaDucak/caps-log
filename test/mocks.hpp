@@ -108,13 +108,13 @@ class DMockYearView : public caps_log::view::YearViewBase {
     MOCK_METHOD(int &, selectedSection, (), (override));
 };
 
-class DummyRepository : public caps_log::model::LogRepositoryBase {
+class DummyRepository : public caps_log::log::LogRepositoryBase {
     std::map<caps_log::date::Date, std::string> m_data;
 
   public:
-    std::optional<caps_log::model::LogFile> read(const caps_log::date::Date &date) const override {
+    std::optional<caps_log::log::LogFile> read(const caps_log::date::Date &date) const override {
         if (auto it = m_data.find(date); it != m_data.end()) {
-            return caps_log::model::LogFile{it->first, it->second};
+            return caps_log::log::LogFile{it->first, it->second};
         }
         return {};
     }
@@ -125,12 +125,12 @@ class DummyRepository : public caps_log::model::LogRepositoryBase {
         }
     }
 
-    void write(const caps_log::model::LogFile &file) override {
+    void write(const caps_log::log::LogFile &file) override {
         m_data[file.getDate()] = file.getContent();
     }
 };
 
-class DMockRepo : public caps_log::model::LogRepositoryBase {
+class DMockRepo : public caps_log::log::LogRepositoryBase {
     DummyRepository m_repo;
 
   public:
@@ -144,13 +144,13 @@ class DMockRepo : public caps_log::model::LogRepositoryBase {
 
     auto &getDummyRepo() { return m_repo; }
 
-    MOCK_METHOD(std::optional<caps_log::model::LogFile>, read, (const caps_log::date::Date &date),
+    MOCK_METHOD(std::optional<caps_log::log::LogFile>, read, (const caps_log::date::Date &date),
                 (const override));
     MOCK_METHOD(void, remove, (const caps_log::date::Date &date), (override));
-    MOCK_METHOD(void, write, (const caps_log::model::LogFile &file), (override));
+    MOCK_METHOD(void, write, (const caps_log::log::LogFile &file), (override));
 };
 
 class MockEditor : public caps_log::editor::EditorBase {
   public:
-    MOCK_METHOD(void, openEditor, (const caps_log::model::LogFile &), (override));
+    MOCK_METHOD(void, openEditor, (const caps_log::log::LogFile &), (override));
 };

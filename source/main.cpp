@@ -21,8 +21,8 @@
 auto makeCapsLog(const caps_log::Config &conf) {
     using namespace caps_log;
 
-    auto pathProvider = model::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
-    auto repo = std::make_shared<model::LocalLogRepository>(pathProvider, conf.password);
+    auto pathProvider = log::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
+    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, conf.password);
     auto view = std::make_shared<view::YearView>(date::Date::getToday(), conf.sundayStart);
     std::shared_ptr<editor::EditorBase> editor;
     if (conf.password.empty()) {

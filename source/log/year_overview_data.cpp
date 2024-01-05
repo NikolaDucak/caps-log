@@ -2,7 +2,7 @@
 #include "date/date.hpp"
 #include <regex>
 
-namespace caps_log::model {
+namespace caps_log::log {
 
 YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
                                            unsigned year, bool skipFirstLine) {
@@ -51,4 +51,4 @@ void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
     }
 }
 
-} // namespace caps_log::model
+} // namespace caps_log::log

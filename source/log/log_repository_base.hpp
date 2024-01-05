@@ -14,18 +14,18 @@
 #include <regex>
 #include <sstream>
 
-namespace caps_log::model {
+namespace caps_log::log {
 
 /*
  * Only class that actualy interacts with physical files on the drive
  */
 class LogRepositoryBase {
   public:
-    virtual ~LogRepositoryBase(){};
+    virtual ~LogRepositoryBase() = default;
 
     virtual std::optional<LogFile> read(const date::Date &date) const = 0;
     virtual void write(const LogFile &log) = 0;
     virtual void remove(const date::Date &date) = 0;
 };
 
-} // namespace caps_log::model
+} // namespace caps_log::log
