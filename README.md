@@ -127,14 +127,14 @@ password = your-password
 
 **Dependencies**
 
-`Caps-Log` fetches its dependencies from GitHub, except for Boost. You should
+`Caps-Log` fetches its dependencies from GitHub, except for Boost and `libgit2`. You should
 have Boost program options installed. This typically involves:
 
 ```shell
 # Linux
-sudo apt-get install -y libboost-program-options-dev
+sudo apt-get install -y libboost-program-options-dev libgit2-dev
 # Mac
-brew install boost
+brew install boost libgit2
 ```
 
 To build the `Caps-Log` executable, run:

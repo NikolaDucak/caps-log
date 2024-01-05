@@ -81,7 +81,7 @@ jobs:
 
     - name: Get boost
       if: matrix.os != 'windows-latest'
-      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev
+      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libgit2-dev
 
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
@@ -105,7 +105,7 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Prepare environment
-      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev clang-tidy
+      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libgit2-dev clang-tidy
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off

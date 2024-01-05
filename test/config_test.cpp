@@ -8,7 +8,6 @@ using namespace caps_log;
 using namespace testing;
 using MockFilesystemReader = testing::MockFunction<FileReader>;
 
-// Utility function to convert a vector of strings to argv format and parse command line arguments
 boost::program_options::variables_map parseArgs(const std::vector<std::string> &args) {
     std::vector<const char *> argv_temp;
     argv_temp.reserve(args.size());
@@ -20,11 +19,9 @@ boost::program_options::variables_map parseArgs(const std::vector<std::string> &
     const char **argv = argv_temp.data();
     int argc = static_cast<int>(argv_temp.size()) - 1; // argc should not count the null terminator
 
-    // Replace with your actual command line parsing logic
     return parseCLIOptions(argc, argv);
 }
 
-// Mock FileReader that returns a stringstream with preset configuration data
 std::function<std::unique_ptr<std::istringstream>(const std::string &)>
 mockFileReader(const std::string &configContent) {
     return [configContent](const std::string &) -> std::unique_ptr<std::istringstream> {
@@ -46,6 +43,7 @@ TEST(ConfigTest, DefaultConfigurations) {
     EXPECT_EQ(config.ignoreFirstLineWhenParsingSections,
               Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS);
     EXPECT_EQ(config.password, "");
+    EXPECT_FALSE(config.repoConfig.has_value());
 }
 
 TEST(ConfigTest, ConfigFileOverrides) {
@@ -66,6 +64,7 @@ TEST(ConfigTest, ConfigFileOverrides) {
     EXPECT_TRUE(config.sundayStart);
     EXPECT_FALSE(config.ignoreFirstLineWhenParsingSections);
     EXPECT_EQ(config.password, "override_password");
+    EXPECT_FALSE(config.repoConfig.has_value());
 }
 
 TEST(ConfigTest, CommandLineOverrides) {
@@ -82,8 +81,7 @@ TEST(ConfigTest, CommandLineOverrides) {
                                      "cmd_override_password"};
     auto cmdLineArgs = parseArgs(args);
 
-    std::string configContent = "[General]\n"
-                                "log-dir-path=/file/override/path/\n"
+    std::string configContent = "log-dir-path=/file/override/path/\n"
                                 "log-filename-format=file_override_format.md\n"
                                 "sunday-start=false\n"
                                 "first-line-section=true\n"
@@ -97,4 +95,85 @@ TEST(ConfigTest, CommandLineOverrides) {
     EXPECT_TRUE(config.sundayStart);
     EXPECT_TRUE(config.ignoreFirstLineWhenParsingSections);
     EXPECT_EQ(config.password, "cmd_override_password");
+    EXPECT_FALSE(config.repoConfig.has_value());
+}
+
+TEST(ConfigTest, GitConfigWorks) {
+    std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
+                                "[git]\n"
+                                "enable-git-log-repo=true\n"
+                                "repo-root=/path/to/repo/\n"
+                                "ssh-key-path=/path/to/key\n"
+                                "ssh-pub-key-path=/path/to/pub-key\n"
+                                "main-branch-name=main-name\n"
+                                "remote-name=remote-name";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    Config config = Config::make(fileReader, cmdLineArgs);
+
+    ASSERT_TRUE(config.repoConfig.has_value());
+    EXPECT_EQ(config.repoConfig->root, "/path/to/repo/");
+    EXPECT_EQ(config.repoConfig->sshKeyPath, "/path/to/key");
+    EXPECT_EQ(config.repoConfig->sshPubKeyPath, "/path/to/pub-key");
+    EXPECT_EQ(config.repoConfig->mainBranchName, "main-name");
+    EXPECT_EQ(config.repoConfig->remoteName, "remote-name");
+}
+
+TEST(ConfigTest, GitConfigDisabledIfUnset) {
+    std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
+                                "[git]\n"
+                                "repo-root=/path/to/repo/\n"
+                                "ssh-key-path=/path/to/key\n"
+                                "ssh-pub-key-path=/path/to/pub-key\n"
+                                "main-branch-name=main-name\n"
+                                "remote-name=remote-name";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    Config config = Config::make(fileReader, cmdLineArgs);
+
+    ASSERT_FALSE(config.repoConfig.has_value());
+}
+
+TEST(ConfigTest, GitConfigDisabled) {
+    std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
+                                "[git]\n"
+                                "enable-git-log-repo=false\n"
+                                "repo-root=/path/to/repo/\n"
+                                "ssh-key-path=/path/to/key\n"
+                                "ssh-pub-key-path=/path/to/pub-key\n"
+                                "main-branch-name=main-name\n"
+                                "remote-name=remote-name";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    Config config = Config::make(fileReader, cmdLineArgs);
+
+    ASSERT_FALSE(config.repoConfig.has_value());
+}
+
+TEST(ConfigTest, GitConfigThrowsIfLogDirIsNotInsideRepoRoot) {
+    std::string configContent = "log-dir-path=/different/path/to/repo/log-dir\n"
+                                "[git]\n"
+                                "enable-git-log-repo=true\n"
+                                "repo-root=/path/to/repo/\n"
+                                "ssh-key-path=/path/to/key\n"
+                                "ssh-pub-key-path=/path/to/pub-key\n"
+                                "main-branch-name=main-name\n"
+                                "remote-name=remote-name";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    ASSERT_THROW(Config::make(fileReader, cmdLineArgs), std::invalid_argument);
+}
+
+TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
+    std::string configContent = "log-dir-path=/path/to/repo/\n"
+                                "[git]\n"
+                                "enable-git-log-repo=true\n"
+                                "repo-root=/path/to/repo/\n"
+                                "ssh-key-path=/path/to/key\n"
+                                "ssh-pub-key-path=/path/to/pub-key\n"
+                                "main-branch-name=main-name\n"
+                                "remote-name=remote-name";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    ASSERT_NO_THROW(Config::make(fileReader, cmdLineArgs));
 }

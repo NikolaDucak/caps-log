@@ -12,6 +12,7 @@ project(caps-log
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 include(FetchContent)
 
@@ -40,6 +41,11 @@ endif()
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
+
+# ------------------------------- LibGit2 -------------------------------- #
+
+set(BUILD_SHARED_LIBS OFF)
+find_package(LibGit2 3 REQUIRED)
 
 # ------------------------------- Fetch FMT ------------------------------ #
  
