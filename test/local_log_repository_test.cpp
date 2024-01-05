@@ -15,7 +15,7 @@
 #include <string>
 
 using namespace caps_log::date;
-using namespace caps_log::model;
+using namespace caps_log::log;
 using namespace ::testing;
 
 namespace {

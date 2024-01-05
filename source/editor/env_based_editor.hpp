@@ -14,13 +14,13 @@
 namespace caps_log::editor {
 
 class EnvBasedEditor : public EditorBase {
-    caps_log::model::LocalFSLogFilePathProvider m_pathProvider;
+    caps_log::log::LocalFSLogFilePathProvider m_pathProvider;
 
   public:
-    EnvBasedEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider)
+    EnvBasedEditor(caps_log::log::LocalFSLogFilePathProvider pathProvider)
         : m_pathProvider{std::move(pathProvider)} {}
 
-    void openEditor(const caps_log::model::LogFile &log) override {
+    void openEditor(const caps_log::log::LogFile &log) override {
         if (std::getenv("EDITOR") != nullptr) {
             std::ignore = std::system(("$EDITOR " + m_pathProvider.path(log.getDate())).c_str());
         }
@@ -28,15 +28,15 @@ class EnvBasedEditor : public EditorBase {
 };
 
 class EncryptedFileEditor : public EditorBase {
-    caps_log::model::LocalFSLogFilePathProvider m_pathProvider;
+    caps_log::log::LocalFSLogFilePathProvider m_pathProvider;
     std::string m_password;
 
   public:
-    EncryptedFileEditor(caps_log::model::LocalFSLogFilePathProvider pathProvider,
+    EncryptedFileEditor(caps_log::log::LocalFSLogFilePathProvider pathProvider,
                         std::string password)
         : m_pathProvider{std::move(pathProvider)}, m_password{std::move(password)} {}
 
-    void openEditor(const caps_log::model::LogFile &log) override {
+    void openEditor(const caps_log::log::LogFile &log) override {
         const auto tmp = getTmpFile();
         const auto originalLogPath = m_pathProvider.path(log.getDate());
         copyLogFile(originalLogPath, tmp);
@@ -47,16 +47,16 @@ class EncryptedFileEditor : public EditorBase {
     }
 
   private:
-    std::string getTmpFile() {
-        std::random_device rd;
-        std::mt19937 gen(rd());
+    static std::string getTmpFile() {
+        std::random_device randDevice;
+        std::mt19937 gen(randDevice());
         std::uniform_int_distribution<> dis(100000, 999999);
 
         std::string random_filename = "caps-log-edit-" + std::to_string(dis(gen)) + ".md";
         return (std::filesystem::temp_directory_path() / random_filename).string();
     }
 
-    void copyLogFile(const std::string &src, const std::string &dest) {
+    static void copyLogFile(const std::string &src, const std::string &dest) {
         // Implementation here...
         std::ifstream source(src, std::ios::binary);
         std::ofstream destination(dest, std::ios::binary);
@@ -87,7 +87,7 @@ class EncryptedFileEditor : public EditorBase {
         }
     }
 
-    void openEnvEditor(const std::string &path) {
+    static void openEnvEditor(const std::string &path) {
         if (std::getenv("EDITOR") != nullptr) {
             std::ignore = std::system(("$EDITOR " + path).c_str());
         }

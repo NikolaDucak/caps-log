@@ -6,7 +6,7 @@
 #include <regex>
 #include <set>
 
-namespace caps_log::model {
+namespace caps_log::log {
 
 namespace {
 
@@ -34,11 +34,13 @@ void forEachLogLine(std::istream &input, const std::function<void(const std::str
     while (getline(input, line)) {
         line = utils::lowercase(utils::trim(line));
 
-        if (line.substr(0, 3) == "```")
+        if (line.substr(0, 3) == "```") {
             isInsideCodeBlock = !isInsideCodeBlock;
+        }
 
-        if (isInsideCodeBlock)
+        if (isInsideCodeBlock) {
             continue;
+        }
 
         func(line);
     }
@@ -55,8 +57,8 @@ std::vector<std::string> LogFile::readTagTitles(std::istream &input) {
     std::vector<std::string> result;
 
     forEachLogLine(input, [&](const auto &line) {
-        if (std::smatch sm; std::regex_match(line, sm, TAG_REGEX)) {
-            result.push_back(utils::trim(sm[TAG_TITLE_MATCH]));
+        if (std::smatch smatch; std::regex_match(line, smatch, TAG_REGEX)) {
+            result.push_back(utils::trim(smatch[TAG_TITLE_MATCH]));
         }
     });
 
@@ -68,16 +70,17 @@ std::vector<std::string> LogFile::readSectionTitles(std::istream &input, bool sk
 
     std::string line;
 
-    if (skipFirstLine)
+    if (skipFirstLine) {
         getline(input, line);
+    }
 
     forEachLogLine(input, [&](const auto &line) {
-        if (std::smatch sm; std::regex_match(line, sm, SECTION_TITLE_REGEX)) {
-            result.push_back(utils::trim(sm[SECTION_TITLE_MATCH]));
+        if (std::smatch smatch; std::regex_match(line, smatch, SECTION_TITLE_REGEX)) {
+            result.push_back(utils::trim(smatch[SECTION_TITLE_MATCH]));
         }
     });
 
     return result;
 }
 
-} // namespace caps_log::model
+} // namespace caps_log::log

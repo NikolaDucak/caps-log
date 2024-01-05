@@ -14,7 +14,8 @@ namespace caps_log::editor {
 
 class EditorBase {
   public:
-    virtual void openEditor(const caps_log::model::LogFile &log) = 0;
+    virtual ~EditorBase() = default;
+    virtual void openEditor(const caps_log::log::LogFile &log) = 0;
 };
 
 } // namespace caps_log::editor

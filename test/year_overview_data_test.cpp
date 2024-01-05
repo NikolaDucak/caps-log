@@ -10,7 +10,7 @@ TEST(YearOverviewDataTest, Collect) {
     auto dummyDate = caps_log::date::Date{10, 10, 2020};
     auto dummyRepo = std::make_shared<DummyRepository>();
     dummyRepo->write({dummyDate, "\n# dummy section\n * dummy tag"});
-    auto data = caps_log::model::YearOverviewData::collect(dummyRepo, dummyDate.year);
+    auto data = caps_log::log::YearOverviewData::collect(dummyRepo, dummyDate.year);
 
     // inital collection
     ASSERT_EQ(data.tagMap.size(), 1);

@@ -10,7 +10,7 @@
 #include <utility>
 #include <utils/crypto.hpp>
 
-namespace caps_log::model {
+namespace caps_log::log {
 
 using namespace date;
 
@@ -21,18 +21,18 @@ LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider,
 }
 
 std::optional<LogFile> LocalLogRepository::read(const Date &date) const {
-    std::ifstream t{m_pathProvider.path(date)};
+    std::ifstream ifs{m_pathProvider.path(date)};
 
-    if (not t.is_open()) {
+    if (not ifs.is_open()) {
         return std::nullopt;
     }
 
     if (not m_password.empty()) {
-        return LogFile{date, utils::decrypt(m_password, t)};
+        return LogFile{date, utils::decrypt(m_password, ifs)};
     }
 
     std::stringstream buffer;
-    buffer << t.rdbuf();
+    buffer << ifs.rdbuf();
     return LogFile{date, std::string{buffer.str()}};
 }
 
@@ -49,4 +49,4 @@ void LocalLogRepository::remove(const Date &date) {
     std::ignore = std::remove(m_pathProvider.path(date).c_str());
 }
 
-} // namespace caps_log::model
+} // namespace caps_log::log

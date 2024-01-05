@@ -6,7 +6,7 @@
 #include <map>
 #include <optional>
 
-namespace caps_log::model {
+namespace caps_log::log {
 
 /**
  * Helps to have a one place for getting paths for both LocalLogRepository and any other editor that
@@ -49,4 +49,4 @@ class LocalLogRepository : public LogRepositoryBase {
     std::string m_password;
 };
 
-} // namespace caps_log::model
+} // namespace caps_log::log

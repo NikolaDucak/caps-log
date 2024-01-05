@@ -16,9 +16,9 @@
 
 namespace caps_log {
 
-using namespace view;
-using namespace model;
 using namespace editor;
+using namespace log;
+using namespace view;
 
 inline static const std::string LOG_BASE_TEMPLATE{"# %d. %m. %y."};
 

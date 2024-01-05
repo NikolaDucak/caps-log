@@ -18,7 +18,7 @@ inline std::string trim(const std::string &str, const std::string &whitespace = 
 
 inline std::string lowercase(std::string data) {
     std::transform(data.begin(), data.end(), data.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
+                   [](unsigned char letter) { return std::tolower(letter); });
     return data;
 }
 
