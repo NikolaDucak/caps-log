@@ -3,22 +3,15 @@ configure_file(version.hpp.in version.hpp)
 add_executable(
     caps-log
 
-    main.cpp
     config.cpp
     config.hpp
+    main.cpp
 
-    ./view/calendar_component.cpp
-    ./view/calendar_component.hpp
-    ./view/input_handler.hpp
-    ./view/promptable.cpp
-    ./view/promptable.hpp
-    ./view/preview.cpp
-    ./view/preview.hpp
-    ./view/yearly_view.cpp
-    ./view/yearly_view.hpp
-    ./view/ftxui_ext/extended_containers.cpp
-    ./view/ftxui_ext/extended_containers.hpp
+    ./date/date.cpp
+    ./date/date.hpp
 
+    ./log/git_log_repo.cpp
+    ./log/git_log_repo.hpp
     ./log/local_log_repository.cpp
     ./log/local_log_repository.hpp
     ./log/log_file.cpp
@@ -29,13 +22,22 @@ add_executable(
     ./log/year_overview_data.cpp
     ./log/year_overview_data.hpp
 
-    ./date/date.cpp
-    ./date/date.hpp
-
     ./utils/crypto.cpp
     ./utils/crypto.hpp
-    ./utils/string.hpp
     ./utils/map.hpp
+    ./utils/string.hpp
+
+    ./view/calendar_component.cpp
+    ./view/calendar_component.hpp
+    ./view/ftxui_ext/extended_containers.cpp
+    ./view/ftxui_ext/extended_containers.hpp
+    ./view/input_handler.hpp
+    ./view/preview.cpp
+    ./view/preview.hpp
+    ./view/promptable.cpp
+    ./view/promptable.hpp
+    ./view/yearly_view.cpp
+    ./view/yearly_view.hpp
 )
 
 target_include_directories(caps-log PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
@@ -48,6 +50,7 @@ target_link_libraries(caps-log
     Boost::program_options
     OpenSSL::Crypto
     OpenSSL::SSL
+    ${LIBGIT2_LIBRARIES}
 )
 
 install(TARGETS caps-log DESTINATION "bin")

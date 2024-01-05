@@ -18,6 +18,39 @@ const bool Config::DEFAULT_SUNDAY_START = false;
 const bool Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS = true;
 
 namespace {
+
+std::filesystem::path removeTrailingSlash(const std::filesystem::path &path) {
+    std::string pathStr = path.string();
+    if (!pathStr.empty() && pathStr.back() == '/') {
+        pathStr.pop_back(); // Remove the last character if it's a slash
+    }
+    return pathStr;
+}
+
+template <class T, class U>
+void setIfValue(boost::property_tree::ptree &ptree, const std::string &key, U &destination) {
+    if (auto value = ptree.get_optional<T>(key)) {
+        destination = value.get();
+    }
+}
+
+bool isParentOf(const std::filesystem::path &parent, const std::filesystem::path &child) {
+    auto nParent = removeTrailingSlash(parent.lexically_normal());
+    auto nChild = removeTrailingSlash(child.lexically_normal());
+    auto parentIter = nParent.begin();
+    auto childIter = nChild.begin();
+
+    while (parentIter != nParent.end() && childIter != nChild.end()) {
+        if (*parentIter != *childIter) {
+            return false;
+        }
+        ++parentIter;
+        ++childIter;
+    }
+
+    return parentIter == nParent.end() && childIter != nChild.end();
+}
+
 // Your existing function with modifications to use Boost Program Options' variables_map
 void applyCommandlineOverrides(Config &config,
                                const boost::program_options::variables_map &commandLineArgs) {
@@ -40,10 +73,7 @@ void applyCommandlineOverrides(Config &config,
 }
 
 // Refactored function that modifies the passed config reference
-void applyConfigFileOverrides(Config &config, std::istream &istream) {
-    boost::property_tree::ptree ptree;
-    boost::property_tree::ini_parser::read_ini(istream, ptree);
-
+void applyConfigFileOverrides(Config &config, boost::property_tree::ptree &ptree) {
     // Update the config object with values from the file if they are present
     auto logDirPathOpt = ptree.get_optional<std::string>("log-dir-path");
     if (logDirPathOpt) {
@@ -70,6 +100,24 @@ void applyConfigFileOverrides(Config &config, std::istream &istream) {
         config.password = passwordOpt.get();
     }
 }
+void applyGitConfigIfEnabled(Config &config, boost::property_tree::ptree &ptree) {
+    if (ptree.get_optional<bool>("git.enable-git-log-repo").value_or(false)) {
+        GitRepoConfig gitConf;
+        setIfValue<std::string>(ptree, "git.ssh-pub-key-path", gitConf.sshPubKeyPath);
+        setIfValue<std::string>(ptree, "git.ssh-key-path", gitConf.sshKeyPath);
+        setIfValue<std::string>(ptree, "git.main-branch-name", gitConf.mainBranchName);
+        setIfValue<std::string>(ptree, "git.remote-name", gitConf.remoteName);
+        setIfValue<std::string>(ptree, "git.repo-root", gitConf.root);
+
+        if (not isParentOf(gitConf.root, config.logDirPath) && gitConf.root != config.logDirPath) {
+            throw std::invalid_argument{"Error! Git repo root (" + gitConf.root.string() +
+                                        ") is not parent of log dir (" +
+                                        config.logDirPath.string() + ")!"};
+        }
+
+        config.repoConfig = gitConf;
+    }
+}
 
 } // namespace
 
@@ -82,7 +130,11 @@ Config Config::make(const FileReader &fileReader,
     auto config = Config{};
 
     if (auto configFile = fileReader(selectedConfigFilePath)) {
-        applyConfigFileOverrides(config, *configFile);
+        boost::property_tree::ptree ptree;
+        boost::property_tree::ini_parser::read_ini(*configFile, ptree);
+
+        applyConfigFileOverrides(config, ptree);
+        applyGitConfigIfEnabled(config, ptree);
     }
 
     applyCommandlineOverrides(config, cmdLineArgs);

@@ -13,6 +13,14 @@ namespace caps_log {
 
 using FileReader = std::function<std::unique_ptr<std::istream>(std::string)>;
 
+struct GitRepoConfig {
+    std::filesystem::path root;
+    std::filesystem::path sshKeyPath;
+    std::filesystem::path sshPubKeyPath;
+    std::string mainBranchName = "master";
+    std::string remoteName = "origin";
+};
+
 struct Config {
     static Config make(const FileReader &fileReader,
                        const boost::program_options::variables_map &cmdLineArgs);
@@ -28,6 +36,8 @@ struct Config {
     bool sundayStart = DEFAULT_SUNDAY_START;
     bool ignoreFirstLineWhenParsingSections = DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS;
     std::string password;
+
+    std::optional<GitRepoConfig> repoConfig;
 };
 
 // NOLINTNEXTLINE
