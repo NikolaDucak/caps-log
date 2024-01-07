@@ -19,6 +19,11 @@ environment variable to start the editor, if set. Otherwise, this functionality
 is disabled. This integration looks particularly impressive with terminal-based
 editors.
 
+Additionaly, `caps-log` also has a primitive 'remote storage' feture in the form
+of using a git repository with a remote to push and pull data. (See
+[Configuration & Command Line Options](##Configuration & Command Line Options)
+section below)
+
 **Note**
 
 - Emoji handling is somewhat erratic, potentially due to an FTXUI issue or
@@ -113,7 +118,7 @@ Allowed options:
 
 _Config File_
 
-Here is an example with all supported options:
+most of the command line flags can be set through a config file.
 
 ```
 log-dir-path = /path/to/log/dir
@@ -123,12 +128,34 @@ first-line-section = true
 password = your-password
 ```
 
+Config file also allows configuring caps-log to treat the directory where logs
+are stored as a git repository with a remote set-up. Upon exiting, `caps-log`
+will commit and push all changes to the remote. Note that currently, only the
+remotes with ssh authentication are supported. Here is an example of a config
+file for git remote log repository.
+
+```ini
+# NOTE: this must be a path to a directory that is 
+# inside the git.repo-root, otherwise `caps-log` will fail to start.
+log-dir-path=/Users/me/.caps-log/clog-entries/days
+
+[git]
+# setting it to false, or not setting it at all is the 
+# same as not having the below options defined
+enable-git-log-repo=true 
+ssh-key-path=/Users/me/.ssh/id_rsa # required
+ssh-pub-key-path=/Users/me/.ssh/id_rsa.pub # required
+repo-root=/Users/me/.caps-log/clog-entries/
+remote-name=something # 'origin' is the default
+main-branch-name=main # 'master' is the default
+```
+
 ## Building & Installing
 
 **Dependencies**
 
-`Caps-Log` fetches its dependencies from GitHub, except for Boost and `libgit2`. You should
-have Boost program options installed. This typically involves:
+`Caps-Log` fetches its dependencies from GitHub, except for Boost and `libgit2`.
+You should have Boost program options installed. This typically involves:
 
 ```shell
 # Linux
