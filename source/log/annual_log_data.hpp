@@ -9,7 +9,7 @@ namespace caps_log::log {
  * It contains data like which dates have log entries, what tags/sections/tasks were
  * mentioned in which log entries but not actual log contents.
  */
-class YearOverviewData {
+class AnnualLogData {
   public:
     date::YearMap<bool> logAvailabilityMap;
     date::StringYearMap sectionMap, tagMap;
@@ -17,8 +17,8 @@ class YearOverviewData {
     /**
      * Constructs YearOverviewData from logs in a given year.
      */
-    static YearOverviewData collect(const std::shared_ptr<LogRepositoryBase> &repo, unsigned year,
-                                    bool skipFirstLine = true);
+    static AnnualLogData collect(const std::shared_ptr<LogRepositoryBase> &repo, unsigned year,
+                                 bool skipFirstLine = true);
 
     /**
      * Injects/updates the current object with information parsed from a log entry form a specified

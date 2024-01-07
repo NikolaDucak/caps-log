@@ -8,7 +8,6 @@
 
 #include "fmt/core.h"
 #include "log/log_file.hpp"
-#include "log/year_overview_data.hpp"
 #include "utils/string.hpp"
 
 #include "mocks.hpp"

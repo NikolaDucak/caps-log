@@ -10,6 +10,8 @@ add_executable(
     ./date/date.cpp
     ./date/date.hpp
 
+    ./log/annual_log_data.cpp
+    ./log/annual_log_data.hpp
     ./log/local_log_repository.cpp
     ./log/local_log_repository.hpp
     ./log/log_file.cpp
@@ -17,8 +19,6 @@ add_executable(
     ./log/log_repository_base.hpp
     ./log/log_repository_crypto_applyer.cpp
     ./log/log_repository_crypto_applyer.hpp
-    ./log/year_overview_data.cpp
-    ./log/year_overview_data.hpp
 
     ./utils/crypto.cpp
     ./utils/crypto.hpp
@@ -28,6 +28,9 @@ add_executable(
     ./utils/git_repo.cpp
     ./utils/git_repo.hpp
 
+    ./view/annual_view.cpp
+    ./view/annual_view.hpp
+    ./view/annual_view_base.hpp
     ./view/calendar_component.cpp
     ./view/calendar_component.hpp
     ./view/ftxui_ext/extended_containers.cpp
@@ -37,9 +40,8 @@ add_executable(
     ./view/preview.hpp
     ./view/promptable.cpp
     ./view/promptable.hpp
-    ./view/yearly_view.cpp
-    ./view/yearly_view.hpp
 )
+
 
 target_include_directories(caps-log PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
 

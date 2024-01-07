@@ -4,7 +4,6 @@
 #include "log/log_file.hpp"
 #include "log/log_repository_base.hpp"
 #include "log/log_repository_crypto_applyer.hpp"
-#include "log/year_overview_data.hpp"
 #include "mocks.hpp"
 #include <filesystem>
 #include <fstream>

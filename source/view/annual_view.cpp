@@ -1,4 +1,4 @@
-#include "yearly_view.hpp"
+#include "annual_view.hpp"
 
 #include "calendar_component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
@@ -14,19 +14,19 @@
 
 namespace caps_log::view {
 
-YearView::YearView(const date::Date &today, bool sundayStart)
+AnnualView::AnnualView(const date::Date &today, bool sundayStart)
     : m_screen{ScreenInteractive::Fullscreen()},
       m_calendarButtons{Calendar::make(today, makeCalendarOptions(today, sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
       m_rootComponent{makeFullUIComponent()} {}
 
-void YearView::run() { m_screen.Loop(m_rootComponent); }
+void AnnualView::run() { m_screen.Loop(m_rootComponent); }
 
-void YearView::stop() { m_screen.ExitLoopClosure()(); }
+void AnnualView::stop() { m_screen.ExitLoopClosure()(); }
 
-void YearView::showCalendarForYear(unsigned year) { m_calendarButtons->displayYear(year); }
+void AnnualView::showCalendarForYear(unsigned year) { m_calendarButtons->displayYear(year); }
 
-std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
+std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
     auto container = ftxui_ext::CustomContainer(
         {
             m_tagsMenu,
@@ -70,7 +70,7 @@ std::shared_ptr<Promptable> YearView::makeFullUIComponent() {
     return std::make_shared<Promptable>(event_handler);
 }
 
-CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart) {
+CalendarOption AnnualView::makeCalendarOptions(const Date &today, bool sundayStart) {
     CalendarOption option;
     option.transform = [this, today](const auto &date, const auto &state) {
         auto element = text(state.label);
@@ -110,7 +110,7 @@ CalendarOption YearView::makeCalendarOptions(const Date &today, bool sundayStart
     return std::move(option);
 }
 
-std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
+std::shared_ptr<WindowedMenu> AnnualView::makeTagsMenu() {
     MenuOption option{
         .entries = &m_tagMenuItems,
         .on_change =
@@ -122,7 +122,7 @@ std::shared_ptr<WindowedMenu> YearView::makeTagsMenu() {
     return WindowedMenu::make("Tags", option);
 }
 
-std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
+std::shared_ptr<WindowedMenu> AnnualView::makeSectionsMenu() {
     MenuOption option = {
         .entries = &m_sectionMenuItems,
         .on_change =
@@ -134,19 +134,19 @@ std::shared_ptr<WindowedMenu> YearView::makeSectionsMenu() {
     return WindowedMenu::make("Sections", option);
 }
 
-void YearView::post(Task task) {
+void AnnualView::post(Task task) {
     m_screen.Post([task, this]() { std::get<Closure>(task)(); });
     m_screen.Post(Event::Custom);
 }
-void YearView::prompt(std::string message, std::function<void()> onYesCallback) {
+void AnnualView::prompt(std::string message, std::function<void()> onYesCallback) {
     m_rootComponent->prompt(message, onYesCallback);
 }
-void YearView::promptOk(std::string message, std::function<void()> callback) {
+void AnnualView::promptOk(std::string message, std::function<void()> callback) {
     m_rootComponent->promptOk(message, callback);
 }
-void YearView::loadingScreen(const std::string &message) {
+void AnnualView::loadingScreen(const std::string &message) {
     m_rootComponent->loadingScreen(message);
 }
-void YearView::loadingScreenOff() { m_rootComponent->resetToMain(); }
+void AnnualView::loadingScreenOff() { m_rootComponent->resetToMain(); }
 
 } // namespace caps_log::view

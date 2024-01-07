@@ -1,9 +1,9 @@
 #include "date/date.hpp"
 #include "editor/editor_base.hpp"
 #include "log/log_repository_base.hpp"
+#include "view/annual_view_base.hpp"
 #include "view/calendar_component.hpp"
 #include "view/input_handler.hpp"
-#include "view/year_view_base.hpp"
 #include <gmock/gmock-actions.h>
 #include <gmock/gmock-more-actions.h>
 #include <gmock/gmock-nice-strict.h>
@@ -11,7 +11,7 @@
 #include <gtest/gtest.h>
 #include <sstream>
 
-class DummyYearView : public caps_log::view::YearViewBase {
+class DummyYearView : public caps_log::view::AnnualViewBase {
   public:
     caps_log::view::InputHandlerBase *m_inputHandler = nullptr;
     int m_displayedYear;
@@ -59,7 +59,7 @@ class DummyYearView : public caps_log::view::YearViewBase {
     int &selectedSection() override { return m_selectedSection; }
 };
 
-class DMockYearView : public caps_log::view::YearViewBase {
+class DMockYearView : public caps_log::view::AnnualViewBase {
     DummyYearView view;
 
   public:
