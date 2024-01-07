@@ -24,14 +24,14 @@ add_executable(
     ./date_test.cpp
     ./local_log_repository_test.cpp
     ./log_entry_test.cpp
-    ./year_overview_data_test.cpp
+    ./annual_log_data_test.cpp
 
     ./../source/config.cpp
     ./../source/date/date.cpp
     ./../source/log/log_file.cpp
     ./../source/log/log_repository_crypto_applyer.cpp
     ./../source/log/local_log_repository.cpp
-    ./../source/log/year_overview_data.cpp
+    ./../source/log/annual_log_data.cpp
     ./../source/utils/crypto.cpp
     ./../source/utils/git_repo.cpp
 )

@@ -1,11 +1,10 @@
 #include "app.hpp"
 #include "mocks.hpp"
 
+#include "log/annual_log_data.hpp"
 #include "log/log_file.hpp"
 #include "log/log_repository_base.hpp"
-#include "log/year_overview_data.hpp"
 #include "view/input_handler.hpp"
-#include "view/year_view_base.hpp"
 
 #include <fstream>
 #include <ftxui/component/event.hpp>

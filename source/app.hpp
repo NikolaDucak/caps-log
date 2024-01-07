@@ -1,14 +1,14 @@
 #pragma once
 
 #include "editor/editor_base.hpp"
+#include "log/annual_log_data.hpp"
 #include "log/log_file.hpp"
 #include "log/log_repository_base.hpp"
-#include "log/year_overview_data.hpp"
 #include "utils/git_repo.hpp"
 #include "utils/string.hpp"
 #include "utils/task_executor.hpp"
+#include "view/annual_view.hpp"
 #include "view/input_handler.hpp"
-#include "view/yearly_view.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -64,10 +64,10 @@ class AsyncGitRepo {
 
 class App : public InputHandlerBase {
     unsigned m_displayedYear;
-    std::shared_ptr<YearViewBase> m_view;
+    std::shared_ptr<AnnualViewBase> m_view;
     std::shared_ptr<LogRepositoryBase> m_repo;
     std::shared_ptr<EditorBase> m_editor;
-    YearOverviewData m_data;
+    AnnualLogData m_data;
 
     std::vector<const YearMap<bool> *> m_tagMaps;
     std::vector<const YearMap<bool> *> m_sectionMaps;
@@ -92,12 +92,12 @@ class App : public InputHandlerBase {
     }
 
   public:
-    App(std::shared_ptr<YearViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
+    App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor, bool skipFirstLine = true,
         std::optional<GitRepo> gitRepo = std::nullopt)
         : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
           m_editor{std::move(editor)},
-          m_data{YearOverviewData::collect(m_repo, date::Date::getToday().year, skipFirstLine)},
+          m_data{AnnualLogData::collect(m_repo, date::Date::getToday().year, skipFirstLine)},
           m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
         // if pass not prowided and repo is encrypted
@@ -205,7 +205,7 @@ class App : public InputHandlerBase {
 
     void displayYear(int diff) {
         m_displayedYear += diff;
-        m_data = YearOverviewData::collect(m_repo, m_displayedYear, m_skipFirstLine);
+        m_data = AnnualLogData::collect(m_repo, m_displayedYear, m_skipFirstLine);
         m_view->showCalendarForYear(m_displayedYear);
         m_view->setHighlightedLogsMap(nullptr);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());

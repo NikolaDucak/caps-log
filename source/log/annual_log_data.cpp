@@ -1,12 +1,12 @@
-#include "year_overview_data.hpp"
+#include "annual_log_data.hpp"
 #include "date/date.hpp"
 #include <regex>
 
 namespace caps_log::log {
 
-YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
-                                           unsigned year, bool skipFirstLine) {
-    YearOverviewData data;
+AnnualLogData AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &repo, unsigned year,
+                                     bool skipFirstLine) {
+    AnnualLogData data;
 
     for (unsigned month = date::Month::JANUARY; month <= date::Month::DECEMBER; month++) {
         for (unsigned day = 1; day <= date::getNumberOfDaysForMonth(month, year); day++) {
@@ -17,8 +17,8 @@ YearOverviewData YearOverviewData::collect(const std::shared_ptr<LogRepositoryBa
     return std::move(data);
 }
 
-void YearOverviewData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
-                               const date::Date &date, bool skipFirstLine) {
+void AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &repo, const date::Date &date,
+                            bool skipFirstLine) {
     // first remove all set mentions
     utils::mapRemoveIf(tagMap, [date](auto &tag) {
         tag.second.set(date, false);

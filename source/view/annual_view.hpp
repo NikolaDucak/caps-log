@@ -1,12 +1,12 @@
 #pragma once
 
+#include "annual_view_base.hpp"
 #include "calendar_component.hpp"
 #include "date/date.hpp"
 #include "input_handler.hpp"
 #include "preview.hpp"
 #include "promptable.hpp"
 #include "windowed_menu.hpp"
-#include "year_view_base.hpp"
 
 #include <array>
 #include <ftxui/component/captured_mouse.hpp>
@@ -22,7 +22,7 @@ using namespace ftxui;
 
 using namespace date;
 
-class YearView : public YearViewBase {
+class AnnualView : public AnnualViewBase {
     InputHandlerBase *m_handler;
     ScreenInteractive m_screen;
 
@@ -40,7 +40,7 @@ class YearView : public YearViewBase {
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
   public:
-    YearView(const Date &today, bool sundayStart);
+    AnnualView(const Date &today, bool sundayStart);
 
     void run() override;
     void stop() override;

@@ -19,9 +19,9 @@ inline std::string makeMenuItemTitle(const std::string &title, unsigned count) {
     return std::string{"("} + std::to_string(count) + ") - " + title;
 }
 
-class YearViewBase {
+class AnnualViewBase {
   public:
-    virtual ~YearViewBase() = default;
+    virtual ~AnnualViewBase() = default;
 
     virtual void run() = 0;
     virtual void stop() = 0;
