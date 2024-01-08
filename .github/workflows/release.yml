@@ -66,7 +66,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - run: brew install boost openssl
+      - run: brew install boost openssl libgit2
 
       - name: Build for MacOS
         run: |
