@@ -21,7 +21,7 @@ editors.
 
 Additionaly, `caps-log` also has a primitive 'remote storage' feture in the form
 of using a git repository with a remote to push and pull data. (See
-[Configuration & Command Line Options](##Configuration & Command Line Options)
+[Configuration & Command Line Options](#configuration--command-line-options)
 section below)
 
 **Note**
