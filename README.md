@@ -120,12 +120,12 @@ _Config File_
 
 most of the command line flags can be set through a config file.
 
-```
-log-dir-path = /path/to/log/dir
-log-name-format = %y_%d_%m.txt
-sunday-start = true
-first-line-section = true
-password = your-password
+```ini
+log-dir-path=/path/to/log/dir
+log-name-format=%y_%d_%m.txt
+sunday-start=true
+first-line-section=true
+password=your-password
 ```
 
 Config file also allows configuring caps-log to treat the directory where logs
