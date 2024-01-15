@@ -85,11 +85,19 @@ jobs:
 
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      run: > 
+        cmake -B ${{github.workspace}}/build 
+        -DCMAKE_BUILD_TYPE=Release 
+        -DCAPS_LOG_BUILD_TESTS=On 
+        -DCAPS_LOG_ADDRESS_SANITIZER=On 
+        -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
     - name: Configure CMake (Windows)
       if: matrix.os != 'windows-latest'
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=On
+      run: > cmake -B ${{github.workspace}}/build 
+        -DCMAKE_BUILD_TYPE=Release 
+        -DCAPS_LOG_BUILD_TESTS=On 
+        -DCAPS_LOG_ADDRESS_SANITIZER=On
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release
@@ -108,7 +116,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libgit2-dev clang-tidy
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCAPS_LOG_BUILD_TESTS=Off
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config Release

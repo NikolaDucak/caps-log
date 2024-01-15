@@ -13,7 +13,7 @@ FetchContent_MakeAvailable(googletest)
 
 # --------------------------------- tests -------------------------------- #
 
-# It sucks that this needs to be done, the cmake files are not that gread but
+# It sucks that this needs to be done, the cmake files are not that great but
 # they do the trick so lets leave it like this for now.
 configure_file(../source/version.hpp.in version.hpp)
 
@@ -56,6 +56,12 @@ target_include_directories(
     ../source/
     ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+if (${CAPS_LOG_ADDRESS_SANITIZER})
+  set(CMAKE_BUILD_TYPE "Debug")
+  target_compile_options(tests PRIVATE -fsanitize=address)
+  target_link_options(tests PRIVATE -fsanitize=address)
+endif()
 
 include(GoogleTest)
 gtest_discover_tests(tests)

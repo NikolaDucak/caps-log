@@ -61,7 +61,7 @@ endif()
 
 # --------------------------------- tests -------------------------------- #
 
-if(${BUILD_TESTS})
+if(${CAPS_LOG_BUILD_TESTS})
     message("Tests will be built")
     include(CTest)
     add_subdirectory(./test)
