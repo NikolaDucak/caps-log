@@ -19,8 +19,9 @@ class GitRepo {
     std::string m_sshKeyPath;
 
   public:
-    GitRepo(const std::filesystem::path &path, std::string sshKeyPath, std::string sshPubKeyPath,
-            std::string remoteName = "origin", std::string mainBranchName = "master");
+    GitRepo(const std::filesystem::path &path, const std::filesystem::path &sshKeyPath,
+            const std::filesystem::path &sshPubKeyPath, std::string remoteName = "origin",
+            std::string mainBranchName = "master");
 
     GitRepo(const GitRepo &) = delete;
     GitRepo(GitRepo &&) noexcept;
