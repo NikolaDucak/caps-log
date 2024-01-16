@@ -66,12 +66,20 @@ bool hasChangedFiles(git_repository *repo) {
 
     return status_count > 0;
 }
-GitRepo::GitRepo(const std::filesystem::path &path, std::string sshKeyPath,
-                 std::string sshPubKeyPath, std::string remoteName, std::string mainBranchName)
+GitRepo::GitRepo(const std::filesystem::path &path, const std::filesystem::path &sshKeyPath,
+                 const std::filesystem::path &sshPubKeyPath, std::string remoteName,
+                 std::string mainBranchName)
     : m_remoteName{std::move(remoteName)}, m_mainBranchName{std::move(mainBranchName)},
-      m_sshKeyPath{std::move(sshKeyPath)}, m_sshPubKeyPath{std::move(sshPubKeyPath)} {
+      m_sshKeyPath{sshKeyPath}, m_sshPubKeyPath{sshPubKeyPath} {
     if (m_sshKeyPath.empty() || m_sshPubKeyPath.empty()) {
         throw std::invalid_argument{"SSH keys are not set!"};
+    }
+    if (not std::filesystem::exists(m_sshKeyPath)) {
+        throw std::invalid_argument{"SSH key does not exist: " + m_sshKeyPath};
+    }
+    if (not std::filesystem::exists(m_sshPubKeyPath)) {
+        throw std::invalid_argument{std::string{"SSH public key does not exist: "} +
+                                    m_sshPubKeyPath};
     }
     if (m_remoteName.empty()) {
         throw std::invalid_argument{"Remote name can not be empty!"};
