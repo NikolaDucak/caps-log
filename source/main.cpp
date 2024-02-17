@@ -1,6 +1,11 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/component_options.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/dom/node.hpp>
 #include <iomanip>
 #include <iostream>
 #include <optional>
@@ -19,17 +24,45 @@
 #include "version.hpp"
 #include <boost/program_options.hpp>
 
+std::string promptPassword(const caps_log::Config &config) {
+    using namespace ftxui;
+    auto screen = ScreenInteractive::Fullscreen();
+    std::string password;
+    const auto input = Input(InputOption{.content = &password,
+                                         .password = true,
+                                         .multiline = false,
+                                         .on_enter = screen.ExitLoopClosure()});
+    const auto button_submit = Button("Submit", screen.ExitLoopClosure(), ButtonOption::Ascii());
+    const auto button_quit = Button("Quit", screen.ExitLoopClosure(), ButtonOption::Ascii());
+    const auto container = Container::Vertical({input, button_submit, button_quit});
+
+    const Component renderer = Renderer(container, [container]() {
+        return window(text("Pasword required!"), container->Render()) | center;
+    });
+
+    screen.Loop(renderer);
+    return password;
+}
+
+std::string getPassword(const caps_log::Config &conf) {
+    std::string pass = conf.password;
+    if (caps_log::LogRepositoryCryptoApplier::isEncrypted(conf.logDirPath) && pass.empty()) {
+        pass = promptPassword(conf);
+    }
+    return pass;
+}
+
 auto makeCapsLog(const caps_log::Config &conf) {
     using namespace caps_log;
-
+    const auto pass = getPassword(conf);
     auto pathProvider = log::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
     auto view = std::make_shared<view::AnnualView>(date::Date::getToday(), conf.sundayStart);
-    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, conf.password);
+    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, pass);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
-        if (conf.password.empty()) {
+        if (pass.empty()) {
             return std::make_shared<editor::EnvBasedEditor>(pathProvider);
         }
-        return std::make_shared<editor::EncryptedFileEditor>(pathProvider, conf.password);
+        return std::make_shared<editor::EncryptedFileEditor>(pathProvider, pass);
     }();
     auto gitRepo = [&]() -> std::optional<utils::GitRepo> {
         if (conf.repoConfig) {
