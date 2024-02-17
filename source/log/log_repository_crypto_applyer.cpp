@@ -6,7 +6,7 @@ void updateEncryptionMarkerfile(Crypto crypto, const std::filesystem::path &logD
                                 const std::string &password) {
     const auto markerFilePath = logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile;
     if (crypto == Crypto::Encrypt) {
-        std::ofstream cle(markerFilePath);
+        std::ofstream cle{markerFilePath, std::ios::binary};
         if (not cle.is_open()) {
             // This would be an unfortuane situation, the repo has already been encrypted
             // but the encryption marker file is not added.
@@ -103,7 +103,6 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
             try {
                 processLogFile(entry);
             } catch (const std::exception &e) {
-                // Handle exceptions here or rethrow them if necessary
                 // Do not throw here, accumulate errors instead
                 errors.push_back(e);
             }
@@ -122,6 +121,21 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
     }
 
     updateEncryptionMarkerfile(crypto, logDirPath, password);
+}
+
+bool LogRepositoryCryptoApplier::isEncrypted(const std::filesystem::path &logDirPath) {
+    bool encryptionMarkerfilePresent = std::filesystem::exists(
+        logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile);
+    return encryptionMarkerfilePresent;
+}
+
+bool LogRepositoryCryptoApplier::isDecryptionPasswordValid(const std::filesystem::path &logDirPath,
+                                                           const std::string &password) {
+    const auto encryptionMarkerfile =
+        logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile;
+    auto cleStream = std::ifstream{encryptionMarkerfile};
+    auto decryptedMarker = utils::decrypt(password, cleStream);
+    return decryptedMarker.find(LogRepositoryCryptoApplier::encryptetLogRepoMarker) == 0;
 }
 
 } // namespace caps_log

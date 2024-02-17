@@ -37,6 +37,9 @@ class LogRepositoryCryptoApplier {
     static constexpr auto encryptetLogRepoMarkerFile = ".cle";
     static void apply(const std::string &password, const std::filesystem::path &logDirPath,
                       const std::string &logFilenameFormat, Crypto crypto);
+    static bool isEncrypted(const std::filesystem::path &logDirPath);
+    static bool isDecryptionPasswordValid(const std::filesystem::path &logDirPath,
+                                          const std::string &password);
 
   private:
     LogRepositoryCryptoApplier() {}
