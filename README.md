@@ -80,10 +80,10 @@ Tags apply to the entire log entry file, not specific sections.
 
 ## Encrypting Logs
 
-`Caps-Log` can encrypt your logs using the AES encryption algorithm. If no
-password is provided at startup, the logs will be unreadable. If you edit or
-create new logs for an encrypted repository, the final log will be encrypted. To
-encrypt/decrypt a repository:
+`Caps-Log` can encrypt your logs using the AES encryption algorithm. 
+If you open an encrypted log repo, you will be prompted to enter a password. 
+In case you enter a wrong password, caps-log will notify you end exit.
+Same if you provide a password for a non encrypted log repository.
 
 ```
 # Note: Caps-Log will ignore files not matching the log filename format.
