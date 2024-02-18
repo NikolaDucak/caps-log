@@ -1,16 +1,7 @@
 #pragma once
 
-#include "utils/crypto.hpp"
-#include <exception>
 #include <filesystem>
-#include <fstream>
-
-#include <functional>
-#include <iostream>
-#include <optional>
-#include <sstream>
 #include <string>
-#include <vector>
 
 namespace caps_log {
 
@@ -33,8 +24,8 @@ class CryptoAlreadyAppliedError : public std::runtime_error {
 
 class LogRepositoryCryptoApplier {
   public:
-    static constexpr auto encryptetLogRepoMarker = "encryption-marker:";
-    static constexpr auto encryptetLogRepoMarkerFile = ".cle";
+    static constexpr auto kEncryptetLogRepoMarker = "encryption-marker:";
+    static constexpr auto kEncryptetLogRepoMarkerFile = ".cle";
     static void apply(const std::string &password, const std::filesystem::path &logDirPath,
                       const std::string &logFilenameFormat, Crypto crypto);
     static bool isEncrypted(const std::filesystem::path &logDirPath);

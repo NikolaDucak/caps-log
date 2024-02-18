@@ -15,7 +15,7 @@ class ContainerBase : public ComponentBase {
   public:
     ContainerBase(Components children, int *selector)
         : selector_(selector != 0 ? selector : &selected_) {
-        for (Component &child : children) {
+        for (auto &child : children) {
             Add(std::move(child));
         }
     }
@@ -46,7 +46,7 @@ class ContainerBase : public ComponentBase {
     }
 
     void SetActiveChild(ComponentBase *child) override {
-        for (size_t i = 0; i < children_.size(); ++i) {
+        for (std::size_t i = 0; i < children_.size(); ++i) {
             if (children_[i].get() == child) {
                 *selector_ = (int)i;
                 return;
@@ -141,10 +141,12 @@ class GridContainer : public ContainerBase {
             return false;
         }
 
-        if (event.mouse().button == Mouse::WheelUp)
+        if (event.mouse().button == Mouse::WheelUp) {
             MoveSelector(-1);
-        if (event.mouse().button == Mouse::WheelDown)
+        }
+        if (event.mouse().button == Mouse::WheelDown) {
             MoveSelector(+1);
+        }
         *selector_ = std::max(0, std::min(int(children_.size()) - 1, *selector_));
 
         return true;
@@ -154,8 +156,6 @@ class GridContainer : public ContainerBase {
     Box box_;
 };
 
-// just a vertical container that takes all 4 directions of input
-// its supposed to hold
 class AnyDirContainer : public ContainerBase {
   public:
     using ContainerBase::ContainerBase;
@@ -164,8 +164,9 @@ class AnyDirContainer : public ContainerBase {
         Elements elements;
         for (auto &it : children_)
             elements.push_back(it->Render());
-        if (elements.size() == 0)
+        if (elements.empty()) {
             return text("Empty container") | reflect(box_);
+        }
         return vbox(std::move(elements)) | reflect(box_);
     }
 
@@ -176,7 +177,7 @@ class AnyDirContainer : public ContainerBase {
             (event == Event::ArrowUp || event == Event::Character('k')))
             MoveSelector(-1);
         if (event == Event::ArrowRight || event == Event::Character('l') ||
-            (event == Event::ArrowUp || event == Event::Character('j')))
+            (event == Event::ArrowDown || event == Event::Character('j')))
             MoveSelector(+1);
 
         if (event == Event::Home) {
@@ -239,7 +240,7 @@ class CustomInputContainer : public ContainerBase {
         Elements elements;
         for (auto &it : children_)
             elements.push_back(it->Render());
-        if (elements.size() == 0)
+        if (elements.empty())
             return text("Empty container") | reflect(box_);
         return hbox(std::move(elements)) | reflect(box_);
     }

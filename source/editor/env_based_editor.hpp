@@ -40,28 +40,25 @@ class EncryptedFileEditor : public EditorBase {
     void openEditor(const caps_log::log::LogFile &log) override {
         const auto tmp = getTmpFile();
         const auto originalLogPath = m_pathProvider.path(log.getDate());
-        copyLogFile(originalLogPath, tmp);
+        std::filesystem::copy_file(originalLogPath, tmp,
+                                   std::filesystem::copy_options::overwrite_existing);
         decryptFile(tmp);
         openEnvEditor(tmp);
         encryptFile(tmp);
-        copyLogFile(tmp, originalLogPath);
+        std::filesystem::copy_file(tmp, originalLogPath,
+                                   std::filesystem::copy_options::overwrite_existing);
     }
 
   private:
     static std::string getTmpFile() {
+        constexpr auto kMinRandomDistribution = 100000;
+        constexpr auto kMaxRandomDistribution = 999999;
         std::random_device randDevice;
         std::mt19937 gen(randDevice());
-        std::uniform_int_distribution<> dis(100000, 999999);
+        std::uniform_int_distribution<> dis(kMinRandomDistribution, kMaxRandomDistribution);
 
         std::string random_filename = "caps-log-edit-" + std::to_string(dis(gen)) + ".md";
         return (std::filesystem::temp_directory_path() / random_filename).string();
-    }
-
-    static void copyLogFile(const std::string &src, const std::string &dest) {
-        // Implementation here...
-        std::ifstream source(src, std::ios::binary);
-        std::ofstream destination(dest, std::ios::binary);
-        destination << source.rdbuf();
     }
 
     void decryptFile(const std::string &path) {

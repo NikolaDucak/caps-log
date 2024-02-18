@@ -2,7 +2,6 @@
 
 #include <condition_variable>
 #include <functional>
-#include <future>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -11,49 +10,49 @@ namespace caps_log::utils {
 
 class ThreadedTaskExecutor {
   public:
-    ThreadedTaskExecutor() : done(false), worker(&ThreadedTaskExecutor::Worker, this) {}
-    ~ThreadedTaskExecutor() { JoinAll(); }
+    ThreadedTaskExecutor() : m_worker(&ThreadedTaskExecutor::worker, this) {}
+    ~ThreadedTaskExecutor() { joinAll(); }
 
     ThreadedTaskExecutor(ThreadedTaskExecutor &&) = delete;
     ThreadedTaskExecutor &operator=(ThreadedTaskExecutor &&) = delete;
     ThreadedTaskExecutor(const ThreadedTaskExecutor &) = delete;
     ThreadedTaskExecutor &operator=(const ThreadedTaskExecutor &) = delete;
 
-    void Post(std::function<void()> task) {
+    void post(std::function<void()> task) {
         {
-            std::unique_lock<std::mutex> lock(mutex);
-            tasks.push(std::move(task));
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_tasks.push(std::move(task));
         }
-        condition.notify_one();
+        m_condition.notify_one();
     }
 
-    void JoinAll() {
+    void joinAll() {
         {
-            std::unique_lock<std::mutex> lock(mutex);
-            done = true;
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_done = true;
         }
-        condition.notify_one();
-        worker.join();
+        m_condition.notify_one();
+        m_worker.join();
     }
 
   private:
-    std::thread worker;
-    std::queue<std::function<void()>> tasks;
-    std::mutex mutex;
-    std::condition_variable condition;
-    bool done;
+    std::thread m_worker;
+    std::queue<std::function<void()>> m_tasks;
+    std::mutex m_mutex;
+    std::condition_variable m_condition;
+    bool m_done{};
 
-    void Worker() {
+    void worker() {
         while (true) {
             std::function<void()> task;
             {
-                std::unique_lock<std::mutex> lock(mutex);
-                condition.wait(lock, [this] { return done || !tasks.empty(); });
-                if (done && tasks.empty()) {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                m_condition.wait(lock, [this] { return m_done || !m_tasks.empty(); });
+                if (m_done && m_tasks.empty()) {
                     break;
                 }
-                task = std::move(tasks.front());
-                tasks.pop();
+                task = std::move(m_tasks.front());
+                m_tasks.pop();
             }
             try {
                 task();

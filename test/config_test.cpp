@@ -9,15 +9,15 @@ using namespace testing;
 using MockFilesystemReader = testing::MockFunction<FileReader>;
 
 boost::program_options::variables_map parseArgs(const std::vector<std::string> &args) {
-    std::vector<const char *> argv_temp;
-    argv_temp.reserve(args.size());
+    std::vector<const char *> argvTemp;
+    argvTemp.reserve(args.size());
     for (const auto &arg : args) {
-        argv_temp.push_back(arg.data());
+        argvTemp.push_back(arg.data());
     }
-    argv_temp.push_back(nullptr); // Null terminator for argv
+    argvTemp.push_back(nullptr); // Null terminator for argv
 
-    const char **argv = argv_temp.data();
-    int argc = static_cast<int>(argv_temp.size()) - 1; // argc should not count the null terminator
+    const char **argv = argvTemp.data();
+    int argc = static_cast<int>(argvTemp.size()) - 1; // argc should not count the null terminator
 
     return parseCLIOptions(argc, argv);
 }
@@ -37,11 +37,11 @@ TEST(ConfigTest, DefaultConfigurations) {
 
     Config config = Config::make(fileReader, cmdLineArgs);
 
-    EXPECT_EQ(config.logDirPath, Config::DEFAULT_LOG_DIR_PATH);
-    EXPECT_EQ(config.logFilenameFormat, Config::DEFAULT_LOG_FILENAME_FORMAT);
-    EXPECT_EQ(config.sundayStart, Config::DEFAULT_SUNDAY_START);
+    EXPECT_EQ(config.logDirPath, Config::kDefaultLogDirPath);
+    EXPECT_EQ(config.logFilenameFormat, Config::kDefaultLogFilenameFormat);
+    EXPECT_EQ(config.sundayStart, Config::kDefaultSundayStart);
     EXPECT_EQ(config.ignoreFirstLineWhenParsingSections,
-              Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS);
+              Config::kDefaultIgnoreFirstLineWhenParsingSections);
     EXPECT_EQ(config.password, "");
     EXPECT_FALSE(config.repoConfig.has_value());
 }

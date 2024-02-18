@@ -3,10 +3,11 @@
 #include <string>
 
 #include <algorithm>
-#include <iostream>
 #include <utility>
 
 namespace caps_log::utils {
+
+namespace {
 
 void checkGitError(int code, int line, const char *file) {
     if (code < 0) {
@@ -66,6 +67,9 @@ bool hasChangedFiles(git_repository *repo) {
 
     return status_count > 0;
 }
+
+} // namespace
+
 GitRepo::GitRepo(const std::filesystem::path &path, const std::filesystem::path &sshKeyPath,
                  const std::filesystem::path &sshPubKeyPath, std::string remoteName,
                  std::string mainBranchName)

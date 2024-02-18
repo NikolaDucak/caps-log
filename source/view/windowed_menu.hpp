@@ -1,15 +1,12 @@
 #pragma once
 
-#include "calendar_component.hpp"
 #include "ftxui/util/ref.hpp"
 
 #include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
-#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace caps_log::view {
 
@@ -21,12 +18,13 @@ class WindowedMenu : public ComponentBase {
   public:
     WindowedMenu(std::string title, MenuOption option) {
         // TODO: messy, callers can specify their own 'selected' but get overriden here?
+        constexpr auto kWidth = 25;
         option.selected = &m_selected;
         auto menuComponent = Menu(std::move(option));
         auto menuRenderer =
             Renderer(menuComponent, [title = std::move(title), menu = menuComponent]() {
                 auto windowElement =
-                    window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, 25);
+                    window(text(title), menu->Render() | frame) | size(WIDTH, LESS_THAN, kWidth);
                 if (not menu->Focused()) {
                     windowElement |= dim;
                 }

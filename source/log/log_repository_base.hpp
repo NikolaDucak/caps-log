@@ -1,18 +1,9 @@
 #pragma once
 
-#include "date/date.hpp"
 #include "log_file.hpp"
 
-#include "utils/map.hpp"
-#include "utils/string.hpp"
-#include <algorithm>
-#include <array>
-#include <map>
-#include <memory>
-#include <numeric>
+#include <chrono>
 #include <optional>
-#include <regex>
-#include <sstream>
 
 namespace caps_log::log {
 
@@ -23,9 +14,9 @@ class LogRepositoryBase {
   public:
     virtual ~LogRepositoryBase() = default;
 
-    virtual std::optional<LogFile> read(const date::Date &date) const = 0;
+    virtual std::optional<LogFile> read(const std::chrono::year_month_day &date) const = 0;
     virtual void write(const LogFile &log) = 0;
-    virtual void remove(const date::Date &date) = 0;
+    virtual void remove(const std::chrono::year_month_day &date) = 0;
 };
 
 } // namespace caps_log::log

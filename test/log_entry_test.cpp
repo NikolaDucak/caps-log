@@ -1,16 +1,9 @@
 #include <fmt/format.h>
-#include <gmock/gmock-actions.h>
-#include <gmock/gmock-more-actions.h>
-#include <gmock/gmock-nice-strict.h>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sstream>
 
-#include "fmt/core.h"
 #include "log/log_file.hpp"
 #include "utils/string.hpp"
-
-#include "mocks.hpp"
 
 struct ParsingTestData {
     std::string text;
@@ -18,12 +11,12 @@ struct ParsingTestData {
 };
 
 inline ParsingTestData makeTagParsingData(const std::string &base, std::string title) {
-    return {fmt::format(base, title), {caps_log::utils::lowercase(title)}};
+    return {fmt::format(fmt::runtime(base), title), {caps_log::utils::lowercase(title)}};
 }
 
 inline ParsingTestData makeSectionParsingData(const std::string &base, std::string title) {
     // prepend a newline since first line is ignored when it comes to parsing sections
-    return {fmt::format(std::string{"\n"} + base, title), {caps_log::utils::lowercase(title)}};
+    return {fmt::format(fmt::runtime("\n" + base), title), {caps_log::utils::lowercase(title)}};
 }
 
 namespace {
@@ -69,8 +62,8 @@ const std::vector<ParsingTestData> invalidSectionsTestData{
 
 TEST(LogEntry, ParseTagTitles_Valid) {
     for (auto [text, expectedTagTitles] : validTagsTestData) {
-        auto ss = std::stringstream{text};
-        auto parsedTagTitles = caps_log::log::LogFile::readTagTitles(ss);
+        auto strstream = std::stringstream{text};
+        auto parsedTagTitles = caps_log::log::LogFile::readTagTitles(strstream);
         EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
     }
 }
@@ -97,14 +90,14 @@ TEST(LogEntry, ParseSectionTitles_Invalid) {
 }
 
 TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
-    auto sectionInCodeBlock = R"(
+    const auto *sectionInCodeBlock = R"(
 ```
 # section title
   # section title 2
 ```
     )";
 
-    auto sectionInCodeBlock2 = R"(
+    const auto *sectionInCodeBlock2 = R"(
 ```sh
 # section title
   # section title 2
@@ -118,14 +111,14 @@ TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
 }
 
 TEST(LogEntry, ParseTagTitels_IgnoreTagInCodeBlocks) {
-    const auto sectionInCodeBlock = R"(
+    const auto *const sectionInCodeBlock = R"(
 ```
 * tag title
  * tag title 2
 *   tag title 3
 ```
     )";
-    const auto sectionInCodeBlock2 = R"(
+    const auto *const sectionInCodeBlock2 = R"(
 ```sh
 * tag title
  * tag title 2

@@ -1,15 +1,15 @@
 #pragma once
 
 #include "input_handler.hpp"
+#include "utils/date.hpp"
 
+#include <chrono>
 #include <ftxui/component/task.hpp>
 #include <functional>
 #include <string>
 #include <vector>
 
 namespace caps_log::view {
-
-using namespace date;
 
 /**
  * A utility function that formats a string for a section or tag menu with a title
@@ -19,7 +19,7 @@ inline std::string makeMenuItemTitle(const std::string &title, unsigned count) {
     return std::string{"("} + std::to_string(count) + ") - " + title;
 }
 
-class AnnualViewBase {
+class AnnualViewBase { // NOLINT
   public:
     virtual ~AnnualViewBase() = default;
 
@@ -28,8 +28,8 @@ class AnnualViewBase {
 
     virtual void setInputHandler(InputHandlerBase *handler) = 0;
 
-    virtual Date getFocusedDate() const = 0;
-    virtual void showCalendarForYear(unsigned year) = 0;
+    virtual std::chrono::year_month_day getFocusedDate() const = 0;
+    virtual void showCalendarForYear(std::chrono::year year) = 0;
 
     virtual void post(ftxui::Task) = 0;
 
@@ -40,8 +40,8 @@ class AnnualViewBase {
 
     // passing only a pointer and having a view have no ownership of
     // the map allows for having precoputed maps and switching
-    virtual void setAvailableLogsMap(const YearMap<bool> *map) = 0;
-    virtual void setHighlightedLogsMap(const YearMap<bool> *map) = 0;
+    virtual void setAvailableLogsMap(const utils::date::AnnualMap<bool> *map) = 0;
+    virtual void setHighlightedLogsMap(const utils::date::AnnualMap<bool> *map) = 0;
     // can't use a pointer here because some FTXUI menu limitations
     virtual void setTagMenuItems(std::vector<std::string> items) = 0;
     virtual void setSectionMenuItems(std::vector<std::string> items) = 0;
