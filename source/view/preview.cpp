@@ -1,4 +1,5 @@
 #include "preview.hpp"
+#include <sstream>
 
 namespace caps_log::view {
 
@@ -9,27 +10,31 @@ ftxui::Element Preview::Render() {
         visibleLines.push_back(m_lines[i]);
     }
 
-    if (Focused())
-        return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, 14);
-    else
-        return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, 14) | dim;
+    constexpr auto kHeight = 14;
+    if (Focused()) {
+        return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, kHeight);
+    }
+    return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, kHeight) | dim;
 }
 
 bool Preview::Focusable() const { return true; }
 
-bool Preview::OnEvent(ftxui::Event e) {
+bool Preview::OnEvent(ftxui::Event event) {
     using namespace ftxui;
     if (!Focused()) {
         return false;
     }
 
-    if (e == Event::ArrowDown || e == Event::Character('j')) {
-        if (m_topLineIndex + 1 < m_lines.size() - 1)
+    if (event == Event::ArrowDown || event == Event::Character('j')) {
+        if (m_topLineIndex + 1 < m_lines.size() - 1) {
             m_topLineIndex++;
+        }
         return true;
-    } else if (e == Event::ArrowUp || e == Event::Character('k')) {
-        if (m_topLineIndex - 1 >= 0)
+    }
+    if (event == Event::ArrowUp || event == Event::Character('k')) {
+        if (m_topLineIndex - 1 >= 0) {
             m_topLineIndex--;
+        }
         return true;
     }
 

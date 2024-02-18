@@ -2,28 +2,23 @@
 
 #include "annual_view_base.hpp"
 #include "calendar_component.hpp"
-#include "date/date.hpp"
 #include "input_handler.hpp"
 #include "preview.hpp"
 #include "promptable.hpp"
+#include "utils/date.hpp"
 #include "windowed_menu.hpp"
 
-#include <array>
+#include <chrono>
 #include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/component/task.hpp>
 #include <ftxui/dom/elements.hpp>
-#include <sstream>
 
 namespace caps_log::view {
 
-using namespace ftxui;
-
-using namespace date;
-
 class AnnualView : public AnnualViewBase {
-    InputHandlerBase *m_handler;
+    InputHandlerBase *m_handler{nullptr};
     ScreenInteractive m_screen;
 
     // UI compontents visible to the user
@@ -33,14 +28,14 @@ class AnnualView : public AnnualViewBase {
     std::shared_ptr<Promptable> m_rootComponent;
 
     // Maps that help m_calendarButtons highlight certain logs.
-    const YearMap<bool> *m_highlightedLogsMap = nullptr;
-    const YearMap<bool> *m_availabeLogsMap = nullptr;
+    const utils::date::AnnualMap<bool> *m_highlightedLogsMap = nullptr;
+    const utils::date::AnnualMap<bool> *m_availabeLogsMap = nullptr;
 
     // Menu items for m_tagsMenu & m_sectionsMenu
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
   public:
-    AnnualView(const Date &today, bool sundayStart);
+    AnnualView(const std::chrono::year_month_day &today, bool sundayStart);
 
     void run() override;
     void stop() override;
@@ -52,15 +47,19 @@ class AnnualView : public AnnualViewBase {
     void loadingScreen(const std::string &message) override;
     void loadingScreenOff() override;
 
-    void showCalendarForYear(unsigned year) override;
+    void showCalendarForYear(std::chrono::year year) override;
 
     int &selectedTag() override { return m_tagsMenu->selected(); }
     int &selectedSection() override { return m_sectionsMenu->selected(); }
 
     void setInputHandler(InputHandlerBase *handler) override { m_handler = handler; }
 
-    void setAvailableLogsMap(const YearMap<bool> *map) override { m_availabeLogsMap = map; }
-    void setHighlightedLogsMap(const YearMap<bool> *map) override { m_highlightedLogsMap = map; }
+    void setAvailableLogsMap(const utils::date::AnnualMap<bool> *map) override {
+        m_availabeLogsMap = map;
+    }
+    void setHighlightedLogsMap(const utils::date::AnnualMap<bool> *map) override {
+        m_highlightedLogsMap = map;
+    }
 
     void setTagMenuItems(std::vector<std::string> items) override {
         m_tagMenuItems = std::move(items);
@@ -73,13 +72,15 @@ class AnnualView : public AnnualViewBase {
 
     void withRestoredIO(std::function<void()> func) override { m_screen.WithRestoredIO(func)(); }
 
-    Date getFocusedDate() const override { return m_calendarButtons->getFocusedDate(); }
+    std::chrono::year_month_day getFocusedDate() const override {
+        return m_calendarButtons->getFocusedDate();
+    }
 
   private:
     std::shared_ptr<Promptable> makeFullUIComponent();
     std::shared_ptr<WindowedMenu> makeTagsMenu();
     std::shared_ptr<WindowedMenu> makeSectionsMenu();
-    CalendarOption makeCalendarOptions(const Date &today, bool sundayStart);
+    CalendarOption makeCalendarOptions(const std::chrono::year_month_day &today, bool sundayStart);
 };
 
 } // namespace caps_log::view

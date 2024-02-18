@@ -1,9 +1,10 @@
-#include "date/date.hpp"
 #include "editor/editor_base.hpp"
 #include "log/log_repository_base.hpp"
+#include "utils/date.hpp"
 #include "view/annual_view_base.hpp"
 #include "view/calendar_component.hpp"
 #include "view/input_handler.hpp"
+#include <chrono>
 #include <gmock/gmock-actions.h>
 #include <gmock/gmock-more-actions.h>
 #include <gmock/gmock-nice-strict.h>
@@ -14,11 +15,12 @@
 class DummyYearView : public caps_log::view::AnnualViewBase {
   public:
     caps_log::view::InputHandlerBase *m_inputHandler = nullptr;
-    int m_displayedYear;
+    std::chrono::year m_displayedYear;
     int m_selectedTag, m_selectedSection;
-    caps_log::date::Date m_focusedDate{5, 5, 2005};
+    std::chrono::year_month_day m_focusedDate{std::chrono::year{2005}, std::chrono::month{1},
+                                              std::chrono::day{1}};
     std::string m_previewString;
-    const caps_log::date::YearMap<bool> *m_availableLogsMap, *m_highlightedLogsMap;
+    const caps_log::utils::date::AnnualMap<bool> *m_availableLogsMap, *m_highlightedLogsMap;
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
 
     void run() override {}
@@ -32,18 +34,18 @@ class DummyYearView : public caps_log::view::AnnualViewBase {
     void setInputHandler(caps_log::view::InputHandlerBase *handler) override {
         m_inputHandler = handler;
     }
-    caps_log::date::Date getFocusedDate() const override { return m_focusedDate; }
-    void showCalendarForYear(unsigned year) override { m_displayedYear = year; }
+    std::chrono::year_month_day getFocusedDate() const override { return m_focusedDate; }
+    void showCalendarForYear(std::chrono::year year) override { m_displayedYear = year; }
 
     std::function<void()> promptCallback = nullptr;
     void prompt(std::string message, std::function<void()> callback) override {
         promptCallback = callback;
     }
 
-    void setAvailableLogsMap(const caps_log::date::YearMap<bool> *map) override {
+    void setAvailableLogsMap(const caps_log::utils::date::AnnualMap<bool> *map) override {
         m_availableLogsMap = map;
     }
-    void setHighlightedLogsMap(const caps_log::date::YearMap<bool> *map) override {
+    void setHighlightedLogsMap(const caps_log::utils::date::AnnualMap<bool> *map) override {
         m_highlightedLogsMap = map;
     }
 
@@ -64,23 +66,29 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
 
   public:
     DMockYearView() {
-        ON_CALL(*this, setInputHandler).WillByDefault([&](auto h) { view.setInputHandler(h); });
+        ON_CALL(*this, setInputHandler).WillByDefault([&](auto handler) {
+            view.setInputHandler(handler);
+        });
         ON_CALL(*this, getFocusedDate).WillByDefault([&]() { return view.getFocusedDate(); });
-        ON_CALL(*this, setAvailableLogsMap).WillByDefault([&](auto m) {
-            view.setAvailableLogsMap(m);
+        ON_CALL(*this, setAvailableLogsMap).WillByDefault([&](auto map) {
+            view.setAvailableLogsMap(map);
         });
-        ON_CALL(*this, setHighlightedLogsMap).WillByDefault([&](auto m) {
-            view.setHighlightedLogsMap(m);
+        ON_CALL(*this, setHighlightedLogsMap).WillByDefault([&](auto map) {
+            view.setHighlightedLogsMap(map);
         });
-        ON_CALL(*this, showCalendarForYear).WillByDefault([&](auto y) {
-            view.showCalendarForYear(y);
+        ON_CALL(*this, showCalendarForYear).WillByDefault([&](auto year) {
+            view.showCalendarForYear(year);
         });
-        ON_CALL(*this, setTagMenuItems).WillByDefault([&](auto m) { view.setTagMenuItems(m); });
-        ON_CALL(*this, setSectionMenuItems).WillByDefault([&](auto m) {
-            view.setSectionMenuItems(m);
+        ON_CALL(*this, setTagMenuItems).WillByDefault([&](auto items) {
+            view.setTagMenuItems(items);
+        });
+        ON_CALL(*this, setSectionMenuItems).WillByDefault([&](auto items) {
+            view.setSectionMenuItems(items);
         });
         ON_CALL(*this, withRestoredIO).WillByDefault([&](auto func) { func(); });
-        ON_CALL(*this, prompt).WillByDefault([&](auto msg, auto cb) { view.prompt(msg, cb); });
+        ON_CALL(*this, prompt).WillByDefault([&](auto msg, auto callback) {
+            view.prompt(msg, callback);
+        });
         ON_CALL(*this, setPreviewString).WillByDefault([&](auto str) {
             view.setPreviewString(str);
         });
@@ -101,12 +109,13 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
     MOCK_METHOD(void, stop, (), (override));
 
     MOCK_METHOD(void, setInputHandler, (caps_log::view::InputHandlerBase * handler), (override));
-    MOCK_METHOD(caps_log::date::Date, getFocusedDate, (), (const override));
-    MOCK_METHOD(void, showCalendarForYear, (unsigned year), (override));
+    MOCK_METHOD(std::chrono::year_month_day, getFocusedDate, (), (const override));
+    MOCK_METHOD(void, showCalendarForYear, (std::chrono::year), (override));
     MOCK_METHOD(void, prompt, (std::string message, std::function<void()> callback), (override));
 
-    MOCK_METHOD(void, setAvailableLogsMap, (const caps_log::date::YearMap<bool> *map), (override));
-    MOCK_METHOD(void, setHighlightedLogsMap, (const caps_log::date::YearMap<bool> *map),
+    MOCK_METHOD(void, setAvailableLogsMap, (const caps_log::utils::date::AnnualMap<bool> *map),
+                (override));
+    MOCK_METHOD(void, setHighlightedLogsMap, (const caps_log::utils::date::AnnualMap<bool> *map),
                 (override));
 
     MOCK_METHOD(void, setTagMenuItems, (std::vector<std::string> items), (override));
@@ -120,21 +129,18 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
 };
 
 class DummyRepository : public caps_log::log::LogRepositoryBase {
-    std::map<caps_log::date::Date, std::string> m_data;
+    std::map<std::chrono::year_month_day, std::string> m_data;
 
   public:
-    std::optional<caps_log::log::LogFile> read(const caps_log::date::Date &date) const override {
+    std::optional<caps_log::log::LogFile>
+    read(const std::chrono::year_month_day &date) const override {
         if (auto it = m_data.find(date); it != m_data.end()) {
             return caps_log::log::LogFile{it->first, it->second};
         }
         return {};
     }
 
-    void remove(const caps_log::date::Date &date) override {
-        if (auto it = m_data.find(date); it != m_data.end()) {
-            m_data.erase(it);
-        }
-    }
+    void remove(const std::chrono::year_month_day &date) override { m_data.erase(date); }
 
     void write(const caps_log::log::LogFile &file) override {
         m_data[file.getDate()] = file.getContent();
@@ -155,9 +161,9 @@ class DMockRepo : public caps_log::log::LogRepositoryBase {
 
     auto &getDummyRepo() { return m_repo; }
 
-    MOCK_METHOD(std::optional<caps_log::log::LogFile>, read, (const caps_log::date::Date &date),
-                (const override));
-    MOCK_METHOD(void, remove, (const caps_log::date::Date &date), (override));
+    MOCK_METHOD(std::optional<caps_log::log::LogFile>, read,
+                (const std::chrono::year_month_day &date), (const override));
+    MOCK_METHOD(void, remove, (const std::chrono::year_month_day &date), (override));
     MOCK_METHOD(void, write, (const caps_log::log::LogFile &file), (override));
 };
 

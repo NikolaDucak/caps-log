@@ -1,14 +1,9 @@
-configure_file(version.hpp.in version.hpp)
-
 add_executable(
     caps-log
 
     config.cpp
     config.hpp
     main.cpp
-
-    ./date/date.cpp
-    ./date/date.hpp
 
     ./log/annual_log_data.cpp
     ./log/annual_log_data.hpp
@@ -22,7 +17,7 @@ add_executable(
 
     ./utils/crypto.cpp
     ./utils/crypto.hpp
-    ./utils/map.hpp
+    ./utils/date.hpp
     ./utils/string.hpp
     ./utils/task_executor.hpp
     ./utils/git_repo.cpp
@@ -42,8 +37,8 @@ add_executable(
     ./view/promptable.hpp
 )
 
-
 target_include_directories(caps-log PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
+
 
 target_link_libraries(caps-log
     ftxui::screen
@@ -55,5 +50,7 @@ target_link_libraries(caps-log
     OpenSSL::SSL
     ${LIBGIT2_LIBRARIES}
 )
+
+target_compile_definitions(caps-log PRIVATE CAPS_LOG_VERSION_STRING="${CAPS_LOG_VERSION}")
 
 install(TARGETS caps-log DESTINATION "bin")

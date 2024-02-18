@@ -182,7 +182,7 @@ by typing `caps-log` in your terminal.
 If you wish to build and run the tests, execute:
 
 ```shell
-mkdir build && cd build && cmake .. -DBUILD_TESTS=ON
+mkdir build && cd build && cmake .. -DCAPS_LOG_BUILD_TESTS=ON
 make 
 ctest
 ```

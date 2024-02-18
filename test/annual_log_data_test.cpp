@@ -1,4 +1,3 @@
-#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "log/annual_log_data.hpp"
@@ -7,27 +6,28 @@
 #include "mocks.hpp"
 
 TEST(YearOverviewDataTest, Collect) {
-    auto dummyDate = caps_log::date::Date{10, 10, 2020};
+    const auto dummyDate = std::chrono::year_month_day{std::chrono::year{2020},
+                                                       std::chrono::month{2}, std::chrono::day{3}};
     auto dummyRepo = std::make_shared<DummyRepository>();
     dummyRepo->write({dummyDate, "\n# dummy section\n * dummy tag"});
-    auto data = caps_log::log::AnnualLogData::collect(dummyRepo, dummyDate.year);
+    auto data = caps_log::log::AnnualLogData::collect(dummyRepo, dummyDate.year());
 
     // inital collection
-    ASSERT_EQ(data.tagMap.size(), 1);
-    ASSERT_EQ(data.sectionMap.size(), 1);
-    ASSERT_EQ(data.logAvailabilityMap.daysSet(), 1);
-    ASSERT_EQ(data.logAvailabilityMap.get(dummyDate), true);
+    EXPECT_EQ(data.tagMap.size(), 1);
+    EXPECT_EQ(data.sectionMap.size(), 1);
+    EXPECT_EQ(data.logAvailabilityMap.daysSet(), 1);
+    EXPECT_EQ(data.logAvailabilityMap.get(dummyDate), true);
 
-    ASSERT_EQ(data.tagMap["dummy tag"].daysSet(), 1);
-    ASSERT_EQ(data.sectionMap["dummy section"].daysSet(), 1);
-    ASSERT_EQ(data.tagMap["dummy tag"].get(dummyDate), true);
-    ASSERT_EQ(data.sectionMap["dummy section"].get(dummyDate), true);
+    EXPECT_EQ(data.tagMap["dummy tag"].daysSet(), 1);
+    EXPECT_EQ(data.sectionMap["dummy section"].daysSet(), 1);
+    EXPECT_EQ(data.tagMap["dummy tag"].get(dummyDate), true);
+    EXPECT_EQ(data.sectionMap["dummy section"].get(dummyDate), true);
 
     // collection after removal of a log entry
     dummyRepo->remove(dummyDate);
     data.collect(dummyRepo, dummyDate);
 
-    ASSERT_EQ(data.tagMap.size(), 0);
-    ASSERT_EQ(data.sectionMap.size(), 0);
-    ASSERT_EQ(data.logAvailabilityMap.daysSet(), 0);
+    EXPECT_EQ(data.tagMap.size(), 0);
+    EXPECT_EQ(data.sectionMap.size(), 0);
+    EXPECT_EQ(data.logAvailabilityMap.daysSet(), 0);
 }

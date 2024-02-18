@@ -1,32 +1,28 @@
 #include "local_log_repository.hpp"
 
 #include "log/log_repository_crypto_applyer.hpp"
-#include "utils/string.hpp"
 #include <fstream>
 #include <iostream>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-#include <regex>
 #include <sstream>
 #include <utility>
 #include <utils/crypto.hpp>
 
 namespace caps_log::log {
 
-using namespace date;
-
 LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider,
                                        std::string password)
     : m_pathProvider(std::move(pathProvider)), m_password{std::move(password)} {
     std::filesystem::create_directories(m_pathProvider.getLogDirPath());
-    const auto isEncrypted =
+    const auto kisEncrypted =
         LogRepositoryCryptoApplier::isEncrypted(m_pathProvider.getLogDirPath());
     if (m_password.empty()) {
-        if (isEncrypted) {
+        if (kisEncrypted) {
             throw std::runtime_error{"Password is required to open encrypted log repository!"};
         }
     } else {
-        if (not isEncrypted) {
+        if (not kisEncrypted) {
             throw std::runtime_error{"Password provided for a non encrypted repository!"};
         }
         if (not LogRepositoryCryptoApplier::isDecryptionPasswordValid(
@@ -36,7 +32,7 @@ LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider,
     }
 }
 
-std::optional<LogFile> LocalLogRepository::read(const Date &date) const {
+std::optional<LogFile> LocalLogRepository::read(const std::chrono::year_month_day &date) const {
     std::ifstream ifs{m_pathProvider.path(date)};
 
     if (not ifs.is_open()) {
@@ -61,7 +57,7 @@ void LocalLogRepository::write(const LogFile &log) {
     }
 }
 
-void LocalLogRepository::remove(const Date &date) {
+void LocalLogRepository::remove(const std::chrono::year_month_day &date) {
     std::ignore = std::remove(m_pathProvider.path(date).c_str());
 }
 

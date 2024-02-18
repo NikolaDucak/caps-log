@@ -1,7 +1,0 @@
-#pragma once
-
-// Propagating PROJECT_VERSION cmake variable to caps log source code to be used where needed
-#ifndef CAPS_LOG_VERSION
-#  undef CAPS_LOG_VERSION
-#  define CAPS_LOG_VERSION "@CAPS_LOG_VERSION@"
-#endif

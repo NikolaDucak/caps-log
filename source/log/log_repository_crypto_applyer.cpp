@@ -1,10 +1,18 @@
 #include "log_repository_crypto_applyer.hpp"
+#include "utils/crypto.hpp"
+
+#include <fstream>
+#include <optional>
+#include <sstream>
+#include <vector>
+
 namespace caps_log {
 
 namespace {
 void updateEncryptionMarkerfile(Crypto crypto, const std::filesystem::path &logDirPath,
                                 const std::string &password) {
-    const auto markerFilePath = logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile;
+    const auto markerFilePath =
+        logDirPath / LogRepositoryCryptoApplier::kEncryptetLogRepoMarkerFile;
     if (crypto == Crypto::Encrypt) {
         std::ofstream cle{markerFilePath, std::ios::binary};
         if (not cle.is_open()) {
@@ -13,7 +21,7 @@ void updateEncryptionMarkerfile(Crypto crypto, const std::filesystem::path &logD
             // TODO: figure something out
             throw std::runtime_error{"Failed writing encryption marker file"};
         }
-        std::istringstream oss{LogRepositoryCryptoApplier::encryptetLogRepoMarker};
+        std::istringstream oss{LogRepositoryCryptoApplier::kEncryptetLogRepoMarker};
         cle << utils::encrypt(password, oss);
     }
     if (crypto == Crypto::Decrypt) {
@@ -125,17 +133,17 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
 
 bool LogRepositoryCryptoApplier::isEncrypted(const std::filesystem::path &logDirPath) {
     bool encryptionMarkerfilePresent = std::filesystem::exists(
-        logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile);
+        logDirPath / LogRepositoryCryptoApplier::kEncryptetLogRepoMarkerFile);
     return encryptionMarkerfilePresent;
 }
 
 bool LogRepositoryCryptoApplier::isDecryptionPasswordValid(const std::filesystem::path &logDirPath,
                                                            const std::string &password) {
     const auto encryptionMarkerfile =
-        logDirPath / LogRepositoryCryptoApplier::encryptetLogRepoMarkerFile;
+        logDirPath / LogRepositoryCryptoApplier::kEncryptetLogRepoMarkerFile;
     auto cleStream = std::ifstream{encryptionMarkerfile};
     auto decryptedMarker = utils::decrypt(password, cleStream);
-    return decryptedMarker.find(LogRepositoryCryptoApplier::encryptetLogRepoMarker) == 0;
+    return decryptedMarker.find(LogRepositoryCryptoApplier::kEncryptetLogRepoMarker) == 0;
 }
 
 } // namespace caps_log

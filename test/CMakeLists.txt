@@ -13,25 +13,23 @@ FetchContent_MakeAvailable(googletest)
 
 # --------------------------------- tests -------------------------------- #
 
-# It sucks that this needs to be done, the cmake files are not that gread but
-# they do the trick so lets leave it like this for now.
-configure_file(../source/version.hpp.in version.hpp)
 
 add_executable(
     tests
     ./config_test.cpp
     ./controler_test.cpp
-    ./date_test.cpp
     ./local_log_repository_test.cpp
     ./log_entry_test.cpp
     ./annual_log_data_test.cpp
+    ./calendar_component_test.cpp
 
     ./../source/config.cpp
-    ./../source/date/date.cpp
     ./../source/log/log_file.cpp
     ./../source/log/log_repository_crypto_applyer.cpp
     ./../source/log/local_log_repository.cpp
     ./../source/log/annual_log_data.cpp
+    ./../source/view/calendar_component.cpp
+    ./../source/view/ftxui_ext/extended_containers.cpp
     ./../source/utils/crypto.cpp
     ./../source/utils/git_repo.cpp
 )
@@ -56,6 +54,9 @@ target_include_directories(
     ../source/
     ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+target_compile_definitions(tests PRIVATE CAPS_LOG_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/test/data")
+target_compile_definitions(tests PRIVATE CAPS_LOG_VERSION_STRING="${CAPS_LOG_VERSION}")
 
 include(GoogleTest)
 gtest_discover_tests(tests)

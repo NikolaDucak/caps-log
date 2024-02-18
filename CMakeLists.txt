@@ -10,7 +10,8 @@ project(caps-log
     LANGUAGES CXX
 )
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -40,7 +41,7 @@ endif()
 # ------------------------------- OpenSSL -------------------------------- #
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 # ------------------------------- LibGit2 -------------------------------- #
 
@@ -61,7 +62,7 @@ endif()
 
 # --------------------------------- tests -------------------------------- #
 
-if(${BUILD_TESTS})
+if(${CAPS_LOG_BUILD_TESTS})
     message("Tests will be built")
     include(CTest)
     add_subdirectory(./test)

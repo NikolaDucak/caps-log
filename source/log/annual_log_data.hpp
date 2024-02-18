@@ -1,6 +1,7 @@
 #pragma once
 
 #include "log_repository_base.hpp"
+#include "utils/date.hpp"
 
 namespace caps_log::log {
 
@@ -11,21 +12,22 @@ namespace caps_log::log {
  */
 class AnnualLogData {
   public:
-    date::YearMap<bool> logAvailabilityMap;
-    date::StringYearMap sectionMap, tagMap;
+    utils::date::AnnualMap<bool> logAvailabilityMap;
+    utils::date::StringYearMap sectionMap;
+    utils::date::StringYearMap tagMap;
 
     /**
      * Constructs YearOverviewData from logs in a given year.
      */
-    static AnnualLogData collect(const std::shared_ptr<LogRepositoryBase> &repo, unsigned year,
-                                 bool skipFirstLine = true);
+    static AnnualLogData collect(const std::shared_ptr<LogRepositoryBase> &repo,
+                                 std::chrono::year year, bool skipFirstLine = true);
 
     /**
      * Injects/updates the current object with information parsed from a log entry form a specified
      * date. It will remove/add it to logAvailabilityMap if deleted/written etc.
      */
-    void collect(const std::shared_ptr<LogRepositoryBase> &repo, const date::Date &date,
-                 bool skipFirstLine = true);
+    void collect(const std::shared_ptr<LogRepositoryBase> &repo,
+                 const std::chrono::year_month_day &date, bool skipFirstLine = true);
 };
 
 } // namespace caps_log::log

@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <git2.h>
-#include <optional>
 
 namespace caps_log::utils {
 

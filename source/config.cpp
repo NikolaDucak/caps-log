@@ -4,25 +4,23 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 
 namespace caps_log {
 
-const std::string Config::DEFAULT_CONFIG_LOCATION =
+const std::string Config::kDefaultConfigLocation =
     std::getenv("HOME") + std::string{"/.caps-log/config.ini"};
-const std::string Config::DEFAULT_LOG_DIR_PATH =
-    std::getenv("HOME") + std::string{"/.caps-log/day"};
-const std::string Config::DEFAULT_LOG_FILENAME_FORMAT = "d%Y_%m_%d.md";
-const bool Config::DEFAULT_SUNDAY_START = false;
-const bool Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS = true;
+const std::string Config::kDefaultLogDirPath = std::getenv("HOME") + std::string{"/.caps-log/day"};
+const std::string Config::kDefaultLogFilenameFormat = "d%Y_%m_%d.md";
+const bool Config::kDefaultSundayStart = false;
+const bool Config::kDefaultIgnoreFirstLineWhenParsingSections = true;
 
 namespace {
 
 std::filesystem::path removeTrailingSlash(const std::filesystem::path &path) {
     std::string pathStr = path.string();
     if (!pathStr.empty() && pathStr.back() == '/') {
-        pathStr.pop_back(); // Remove the last character if it's a slash
+        pathStr.pop_back();
     }
     return pathStr;
 }
@@ -125,7 +123,7 @@ Config Config::make(const FileReader &fileReader,
                     const boost::program_options::variables_map &cmdLineArgs) {
     auto selectedConfigFilePath = cmdLineArgs.count("config") != 0U
                                       ? cmdLineArgs["config"].as<std::string>()
-                                      : Config::DEFAULT_CONFIG_LOCATION;
+                                      : Config::kDefaultConfigLocation;
 
     auto config = Config{};
 
@@ -164,9 +162,10 @@ boost::program_options::variables_map parseCLIOptions(int argc, const char **arg
     po::notify(vmap);
 
     if (vmap.count("help") != 0U) {
-        std::cout << "Capstains Log (caps-log)! A CLI journalig tool." << std::endl;
-        std::cout << "Version: " << CAPS_LOG_VERSION << std::endl;
+        std::cout << "Capstains Log (caps-log)! A CLI journalig tool." << '\n';
+        std::cout << "Version: " << CAPS_LOG_VERSION_STRING << std::endl;
         std::cout << desc;
+        std::cout.flush();
         exit(0);
     }
 

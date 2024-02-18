@@ -1,10 +1,8 @@
 #include "log_file.hpp"
 
 #include "utils/string.hpp"
-#include <filesystem>
-#include <fstream>
+#include <functional>
 #include <regex>
-#include <set>
 
 namespace caps_log::log {
 
@@ -13,16 +11,16 @@ namespace {
 /**
  * A bunch of regexes and group indexes for matching sections and tags.
  */
-const auto SECTION_TITLE_REGEX = std::regex{"^# \\s*(.*?)\\s*$"};
-const auto TAG_REGEX =
+const auto kSectionTitleRegex = std::regex{"^# \\s*(.*?)\\s*$"};
+const auto kTagRegex =
     std::regex{R"(^( +)?\*( +)([a-z A-Z 0-9]+)(\(.+\))?(:.*)?)", std::regex_constants::extended};
 
-const auto TASK_REGEX =
+const auto kTaskRegex =
     std::regex{R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))",
                std::regex_constants::extended};
-const auto TASK_TITLE_MATCH{5};
-const auto TAG_TITLE_MATCH{3};
-const auto SECTION_TITLE_MATCH{1};
+const auto kTaskTitleMatch{5};
+const auto kTagTitleMatch{3};
+const auto kSectionTitleMatch{1};
 
 /**
  * A function that goes through a log file and calls a function for each line that is
@@ -57,8 +55,8 @@ std::vector<std::string> LogFile::readTagTitles(std::istream &input) {
     std::vector<std::string> result;
 
     forEachLogLine(input, [&](const auto &line) {
-        if (std::smatch smatch; std::regex_match(line, smatch, TAG_REGEX)) {
-            result.push_back(utils::trim(smatch[TAG_TITLE_MATCH]));
+        if (std::smatch smatch; std::regex_match(line, smatch, kTagRegex)) {
+            result.push_back(utils::trim(smatch[kTagTitleMatch]));
         }
     });
 
@@ -75,8 +73,8 @@ std::vector<std::string> LogFile::readSectionTitles(std::istream &input, bool sk
     }
 
     forEachLogLine(input, [&](const auto &line) {
-        if (std::smatch smatch; std::regex_match(line, smatch, SECTION_TITLE_REGEX)) {
-            result.push_back(utils::trim(smatch[SECTION_TITLE_MATCH]));
+        if (std::smatch smatch; std::regex_match(line, smatch, kSectionTitleRegex)) {
+            result.push_back(utils::trim(smatch[kSectionTitleMatch]));
         }
     });
 

@@ -5,6 +5,7 @@
 
 namespace caps_log::utils {
 
+// NOLINTBEGIN
 std::string encrypt(const std::string &password, std::istream &file) {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
@@ -108,4 +109,5 @@ std::string decrypt(const std::string &password, std::istream &file) {
 
     return output;
 }
+// NOLINTEND
 } // namespace caps_log::utils

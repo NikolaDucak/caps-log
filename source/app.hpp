@@ -2,21 +2,15 @@
 
 #include "editor/editor_base.hpp"
 #include "log/annual_log_data.hpp"
-#include "log/log_file.hpp"
 #include "log/log_repository_base.hpp"
 #include "utils/git_repo.hpp"
-#include "utils/string.hpp"
 #include "utils/task_executor.hpp"
-#include "view/annual_view.hpp"
+#include "view/annual_view_base.hpp"
 #include "view/input_handler.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <functional>
-#include <iostream>
 #include <memory>
-#include <string_view>
-#include <thread>
 #include <vector>
 
 namespace caps_log {
@@ -26,7 +20,7 @@ using namespace log;
 using namespace view;
 using namespace utils;
 
-inline static const std::string LOG_BASE_TEMPLATE{"# %d. %m. %y."};
+static const std::string kLogBaseTemplate{"# %d. %m. %y."};
 
 /**
  * A class that has the interface of GitRepo but extends each method to provide callback
@@ -38,24 +32,24 @@ class AsyncGitRepo {
     utils::ThreadedTaskExecutor m_taskExec;
 
   public:
-    AsyncGitRepo(GitRepo repo) : m_repo{std::move(repo)} {}
+    explicit AsyncGitRepo(GitRepo repo) : m_repo{std::move(repo)} {}
 
     void pull(std::function<void()> acallback) {
-        m_taskExec.Post([this, callback = std::move(acallback)] {
+        m_taskExec.post([this, callback = std::move(acallback)] {
             m_repo.pull();
             callback();
         });
     }
 
     void push(std::function<void()> acallback) {
-        m_taskExec.Post([this, callback = std::move(acallback)]() {
+        m_taskExec.post([this, callback = std::move(acallback)]() {
             m_repo.push();
             callback();
         });
     }
 
     void commitAll(std::function<void(bool)> acallback) {
-        m_taskExec.Post([this, callback = std::move(acallback)]() {
+        m_taskExec.post([this, callback = std::move(acallback)]() {
             auto somethingCommited = m_repo.commitAll();
             callback(somethingCommited);
         });
@@ -63,19 +57,20 @@ class AsyncGitRepo {
 };
 
 class App : public InputHandlerBase {
-    unsigned m_displayedYear;
+    std::chrono::year m_displayedYear;
     std::shared_ptr<AnnualViewBase> m_view;
     std::shared_ptr<LogRepositoryBase> m_repo;
     std::shared_ptr<EditorBase> m_editor;
     AnnualLogData m_data;
 
-    std::vector<const YearMap<bool> *> m_tagMaps;
-    std::vector<const YearMap<bool> *> m_sectionMaps;
+    std::vector<const date::AnnualMap<bool> *> m_tagMaps;
+    std::vector<const date::AnnualMap<bool> *> m_sectionMaps;
     bool m_skipFirstLine;
 
     std::optional<AsyncGitRepo> m_gitRepo;
 
-    void updateViewSectionsAndTagsAfterLogChange(const Date &dateOfChangedLog) {
+    void
+    updateViewSectionsAndTagsAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {
         m_data.collect(m_repo, dateOfChangedLog, m_skipFirstLine);
         m_view->setTagMenuItems(makeMenuTitles(m_data.tagMap));
         m_view->setSectionMenuItems(makeMenuTitles(m_data.sectionMap));
@@ -95,9 +90,9 @@ class App : public InputHandlerBase {
     App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor, bool skipFirstLine = true,
         std::optional<GitRepo> gitRepo = std::nullopt)
-        : m_displayedYear(Date::getToday().year), m_view{std::move(view)}, m_repo{std::move(repo)},
-          m_editor{std::move(editor)},
-          m_data{AnnualLogData::collect(m_repo, date::Date::getToday().year, skipFirstLine)},
+        : m_displayedYear(date::getToday().year()), m_view{std::move(view)},
+          m_repo{std::move(repo)}, m_editor{std::move(editor)},
+          m_data{AnnualLogData::collect(m_repo, date::getToday().year(), skipFirstLine)},
           m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
         // if pass not prowided and repo is encrypted
@@ -113,21 +108,21 @@ class App : public InputHandlerBase {
 
     bool handleInputEvent(const UIEvent &event) override {
         switch (event.type) {
-        case UIEvent::ROOT_EVENT:
+        case UIEvent::RootEvent:
             return handleRootEvent(event.input);
-        case UIEvent::UI_STARTED:
+        case UIEvent::UiStarted:
             handleUiStarted();
             break;
-        case UIEvent::FOCUSED_DATE_CHANGE:
+        case UIEvent::FocusedDateChange:
             handleFocusedDateChange(event.input);
             break;
-        case UIEvent::FOCUSED_TAG_CHANGE:
+        case UIEvent::FocusedTagChange:
             handleFocusedTagChange(event.input);
             break;
-        case UIEvent::FOCUSED_SECTION_CHANGE:
+        case UIEvent::FocusedSectionChange:
             handleFocusedSectionChange(event.input);
             break;
-        case UIEvent::CALENDAR_BUTTON_CLICK:
+        case UIEvent::CalendarButtonClick:
             handleCalendarButtonClick();
             break;
         };
@@ -204,7 +199,7 @@ class App : public InputHandlerBase {
     }
 
     void displayYear(int diff) {
-        m_displayedYear += diff;
+        m_displayedYear = std::chrono::year{(int)m_displayedYear + diff};
         m_data = AnnualLogData::collect(m_repo, m_displayedYear, m_skipFirstLine);
         m_view->showCalendarForYear(m_displayedYear);
         m_view->setHighlightedLogsMap(nullptr);
@@ -216,7 +211,7 @@ class App : public InputHandlerBase {
             auto date = m_view->getFocusedDate();
             auto log = m_repo->read(date);
             if (not log.has_value()) {
-                m_repo->write({date, date.formatToString(LOG_BASE_TEMPLATE)});
+                m_repo->write({date, date::formatToString(date, kLogBaseTemplate)});
                 // this looks a little awkward, it's easy to forget to reread after write
                 log = m_repo->read(date);
             }
@@ -233,11 +228,13 @@ class App : public InputHandlerBase {
         });
     }
 
-    static bool noMeaningfullContent(const std::string &content, const Date &date) {
-        return content == date.formatToString(LOG_BASE_TEMPLATE) || content.empty();
+    static bool noMeaningfullContent(const std::string &content,
+                                     const std::chrono::year_month_day &date) {
+        return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
     }
 
-    static const YearMap<bool> *findOrNull(const StringYearMap &map, const std::string &key) {
+    static const date::AnnualMap<bool> *findOrNull(const date::StringYearMap &map,
+                                                   const std::string &key) {
         auto result = map.find(key);
         if (result == map.end()) {
             return nullptr;
@@ -251,13 +248,13 @@ class App : public InputHandlerBase {
      * map for said menu item is appropriate. Alternative would getting the string and looking up
      * in the map.
      */
-    static void updatePointersForHighlightMaps(std::vector<const YearMap<bool> *> &vec,
-                                               const StringYearMap &map) {
+    static void updatePointersForHighlightMaps(std::vector<const date::AnnualMap<bool> *> &vec,
+                                               const date::StringYearMap &map) {
         vec.clear();
         vec.reserve(map.size());
         vec.push_back(nullptr); // 0 index = no highlighted days
-        for (auto const &imap : map) {
-            vec.emplace_back(&imap.second);
+        for (auto const &[_, annual_map] : map) {
+            vec.emplace_back(&annual_map);
         }
     }
 
@@ -266,13 +263,12 @@ class App : public InputHandlerBase {
      * title will be made of a key in the @p map and the number of days it has been
      * mantioned (days set).
      */
-    static std::vector<std::string> makeMenuTitles(const StringYearMap &map) {
+    static std::vector<std::string> makeMenuTitles(const date::StringYearMap &map) {
         std::vector<std::string> strs;
         strs.reserve(map.size());
         strs.push_back(" ----- ");
-        for (auto const &imap : map) {
-            strs.push_back(std::string{"("} + std::to_string(imap.second.daysSet()) + ") - " +
-                           imap.first);
+        for (auto const &[str, annual_map] : map) {
+            strs.push_back(std::string{"("} + std::to_string(annual_map.daysSet()) + ") - " + str);
         }
         return std::move(strs);
     }

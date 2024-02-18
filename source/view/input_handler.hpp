@@ -1,21 +1,20 @@
 #pragma once
 
-#include "date/date.hpp"
-#include <variant>
+#include <string>
 
 namespace caps_log::view {
 
 struct UIEvent {
     enum Type {
-        UI_STARTED,
-        ROOT_EVENT,
-        FOCUSED_DATE_CHANGE,
-        FOCUSED_SECTION_CHANGE,
-        FOCUSED_TAG_CHANGE,
-        CALENDAR_BUTTON_CLICK
+        UiStarted,
+        RootEvent,
+        FocusedDateChange,
+        FocusedSectionChange,
+        FocusedTagChange,
+        CalendarButtonClick
     };
-    const Type type;
-    const std::string input;
+    Type type;
+    std::string input;
 
     UIEvent(Type type, std::string input = "") : type{type}, input{std::move(input)} {}
 };
@@ -24,9 +23,9 @@ struct UIEvent {
 // std::variant<OpenLogEvent, FocusedDateChange, FocusedSectionChange, FocusedTagChange,
 // FocusedTagChange, DisplayedYearChange, ToggleTag>
 
-class InputHandlerBase {
+class InputHandlerBase { // NOLINT
   public:
-    virtual ~InputHandlerBase(){};
+    virtual ~InputHandlerBase() = default;
     virtual bool handleInputEvent(const UIEvent &event) = 0;
 };
 

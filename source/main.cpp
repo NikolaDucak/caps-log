@@ -1,27 +1,21 @@
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/node.hpp>
-#include <iomanip>
 #include <iostream>
 #include <optional>
-#include <sstream>
 #include <string>
 
 #include "app.hpp"
 #include "config.hpp"
-#include "date/date.hpp"
-#include "editor/disabled_editor.hpp"
 #include "editor/env_based_editor.hpp"
 #include "log/local_log_repository.hpp"
 #include "log/log_repository_crypto_applyer.hpp"
-#include "utils/crypto.hpp"
 #include "utils/git_repo.hpp"
-#include "version.hpp"
+#include "view/annual_view.hpp"
 #include <boost/program_options.hpp>
 
 std::string promptPassword(const caps_log::Config &config) {
@@ -32,9 +26,9 @@ std::string promptPassword(const caps_log::Config &config) {
                                          .password = true,
                                          .multiline = false,
                                          .on_enter = screen.ExitLoopClosure()});
-    const auto button_submit = Button("Submit", screen.ExitLoopClosure(), ButtonOption::Ascii());
-    const auto button_quit = Button("Quit", screen.ExitLoopClosure(), ButtonOption::Ascii());
-    const auto container = Container::Vertical({input, button_submit, button_quit});
+    const auto buttonSubmit = Button("Submit", screen.ExitLoopClosure(), ButtonOption::Ascii());
+    const auto buttonQuit = Button("Quit", screen.ExitLoopClosure(), ButtonOption::Ascii());
+    const auto container = Container::Vertical({input, buttonSubmit, buttonQuit});
 
     const Component renderer = Renderer(container, [container]() {
         return window(text("Pasword required!"), container->Render()) | center;
@@ -56,8 +50,8 @@ auto makeCapsLog(const caps_log::Config &conf) {
     using namespace caps_log;
     const auto pass = getPassword(conf);
     auto pathProvider = log::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
-    auto view = std::make_shared<view::AnnualView>(date::Date::getToday(), conf.sundayStart);
-    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, pass);
+    auto view = std::make_shared<view::AnnualView>(utils::date::getToday(), conf.sundayStart);
+    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, conf.password);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
         if (pass.empty()) {
             return std::make_shared<editor::EnvBasedEditor>(pathProvider);
@@ -97,6 +91,6 @@ int main(int argc, const char **argv) try {
 
     return 0;
 } catch (const std::exception &e) {
-    std::cerr << "Captains log encountered an error: \n " << e.what() << std::endl;
+    std::cerr << "Captains log encountered an error: \n " << e.what() << '\n' << std::flush;
     return 1;
 }

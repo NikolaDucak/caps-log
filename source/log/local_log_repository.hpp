@@ -1,9 +1,9 @@
 #pragma once
 
 #include "log_repository_base.hpp"
+#include "utils/date.hpp"
 
 #include <filesystem>
-#include <map>
 #include <optional>
 
 namespace caps_log::log {
@@ -21,8 +21,8 @@ class LocalFSLogFilePathProvider {
     LocalFSLogFilePathProvider(const std::filesystem::path &logDir, std::string logFilenameFormat)
         : m_logDirectory{logDir}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
 
-    inline std::filesystem::path path(const date::Date &date) const {
-        return {m_logDirectory / date.formatToString(m_logFilenameFormat)};
+    inline std::filesystem::path path(const std::chrono::year_month_day &date) const {
+        return {m_logDirectory / utils::date::formatToString(date, m_logFilenameFormat)};
     }
 
     inline std::filesystem::path getLogDirPath() const { return m_logDirectory; }
@@ -31,8 +31,8 @@ class LocalFSLogFilePathProvider {
 
 class LocalLogRepository : public LogRepositoryBase {
   public:
-    static const std::string DEFAULT_LOG_DIR_PATH;
-    static const std::string DEFAULT_LOG_FILENAME_FORMAT;
+    static const std::string kDefaultLogDirPath;
+    static const std::string kDefaultLogFilenameFormat;
 
     /**
      * @param logDirectory Directory in which individiaul log entries are stored.
@@ -41,8 +41,8 @@ class LocalLogRepository : public LogRepositoryBase {
      */
     LocalLogRepository(LocalFSLogFilePathProvider pathProvider, std::string password = "");
 
-    std::optional<LogFile> read(const date::Date &date) const override;
-    void remove(const date::Date &date) override;
+    std::optional<LogFile> read(const std::chrono::year_month_day &date) const override;
+    void remove(const std::chrono::year_month_day &date) override;
     void write(const LogFile &log) override;
 
   private:
