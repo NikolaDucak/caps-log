@@ -35,9 +35,13 @@ section below)
 
 # Getting It
 
-Visit the [releases page](https://github.com/nikoladucak/caps-log/releases) and
-download a `caps-log-<platform>.tar.gz` file for the desired release (usually
-the latest).
+It is recomended that you build and install it manualy, see 
+[Building and installing](#building--installing) section.
+
+Or you can visit the [releases page](https://github.com/nikoladucak/caps-log/releases)
+and download a `caps-log-<platform>.tar.gz` file that contains a prebuilt binary, but 
+for now only x86 Linux and intel MacOS platfroms are supported. This will be 
+improved in the future.
 
 ## Keybindings
 
