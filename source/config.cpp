@@ -9,10 +9,28 @@
 
 namespace caps_log {
 
-const std::string Config::DEFAULT_CONFIG_LOCATION =
-    std::getenv("HOME") + std::string{"/.caps-log/config.ini"};
-const std::string Config::DEFAULT_LOG_DIR_PATH =
-    std::getenv("HOME") + std::string{"/.caps-log/day"};
+const std::filesystem::path HOME =
+    [] {
+        auto* homeDir = std::getenv("HOME");
+#ifdef _WIN32
+        if (!homeDir) {
+            homeDir = std::getenv("USERPROFILE");
+        }
+        if (!homeDir) {
+            homeDir = std::getenv("HOMEPATH");
+        }
+#endif
+        if (homeDir == nullptr) {
+            throw std::runtime_error("Home directory not found");
+        }
+
+        return std::filesystem::path(homeDir);
+    }();
+
+const std::filesystem::path Config::DEFAULT_CONFIG_LOCATION =
+    HOME / ".caps-log" / "config.ini";
+const std::filesystem::path Config::DEFAULT_LOG_DIR_PATH =
+    HOME / ".caps-log" / "day";
 const std::string Config::DEFAULT_LOG_FILENAME_FORMAT = "d%Y_%m_%d.md";
 const bool Config::DEFAULT_SUNDAY_START = false;
 const bool Config::DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS = true;

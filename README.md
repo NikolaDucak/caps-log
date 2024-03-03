@@ -34,6 +34,7 @@ section below)
   performs best when the entire calendar is visible.
 
 # Getting It
+[Building and installing](#building--installing)
 
 Visit the [releases page](https://github.com/nikoladucak/caps-log/releases) and
 download a `caps-log-<platform>.tar.gz` file for the desired release (usually

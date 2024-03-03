@@ -25,14 +25,14 @@ struct Config {
     static Config make(const FileReader &fileReader,
                        const boost::program_options::variables_map &cmdLineArgs);
 
-    static const std::string DEFAULT_CONFIG_LOCATION;
-    static const std::string DEFAULT_LOG_DIR_PATH;
+    static const std::filesystem::path DEFAULT_CONFIG_LOCATION;
+    static const std::filesystem::path DEFAULT_LOG_DIR_PATH;
     static const std::string DEFAULT_LOG_FILENAME_FORMAT;
     static const bool DEFAULT_SUNDAY_START;
     static const bool DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS;
 
     std::filesystem::path logDirPath = DEFAULT_LOG_DIR_PATH;
-    std::filesystem::path logFilenameFormat = DEFAULT_LOG_FILENAME_FORMAT;
+    std::string logFilenameFormat = DEFAULT_LOG_FILENAME_FORMAT;
     bool sundayStart = DEFAULT_SUNDAY_START;
     bool ignoreFirstLineWhenParsingSections = DEFAULT_IGNORE_FIRST_LINE_WHEN_PARSING_SECTIONS;
     std::string password;

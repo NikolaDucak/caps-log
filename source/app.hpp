@@ -62,6 +62,12 @@ class AsyncGitRepo {
     }
 };
 
+/**
+ * The main caps-log class.
+ * It's the main class that holds the input handling logic and the main loop.
+ * It's constructed with a view, repository and editor. It's responsible for
+ * updating the view with the data from the repository and handling user input.
+ */
 class App : public InputHandlerBase {
     unsigned m_displayedYear;
     std::shared_ptr<AnnualViewBase> m_view;
