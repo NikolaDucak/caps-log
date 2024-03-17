@@ -1,4 +1,4 @@
-name: Build and test
+name: PR check
 
 on:
   pull_request:
@@ -98,32 +98,21 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
 
-
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: cpp-linter/cpp-linter-action@v2
+        id: linter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: 16
+          style: 'file'  # Use .clang-format config file
+          tidy-checks: '' # Use .clang-tidy config file
+          # only 'update' a single comment in a pull request's thread.
+          thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
+      - name: Fail fast?!
+        if: steps.linter.outputs.checks-failed > 0
+        run: exit 1
     
-    - name: Prepare environment
-      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libgit2-dev clang-tidy
-
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=Off
-
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config Release
-
-    - name: Static Analysis
-      run: ln -s ./build/compile_commands.json ./ && run-clang-tidy ./source/
-    
-  code-formatting:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - uses: DoozyX/clang-format-lint-action@v0.16.2
-      with:
-        source: 'source test'
-        extensions: 'hpp,cpp'
-        clangFormatVersion: 16
