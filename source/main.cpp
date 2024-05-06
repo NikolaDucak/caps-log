@@ -38,7 +38,7 @@ std::string promptPassword(const caps_log::Config &config) {
     return password;
 }
 
-std::string getPassword(const caps_log::Config &conf) {
+std::string getPasswordFromTUIIfNeededAndNotProvided(const caps_log::Config &conf) {
     std::string pass = conf.password;
     if (caps_log::LogRepositoryCryptoApplier::isEncrypted(conf.logDirPath) && pass.empty()) {
         pass = promptPassword(conf);
@@ -48,15 +48,15 @@ std::string getPassword(const caps_log::Config &conf) {
 
 auto makeCapsLog(const caps_log::Config &conf) {
     using namespace caps_log;
-    const auto pass = getPassword(conf);
+    const auto password = getPasswordFromTUIIfNeededAndNotProvided(conf);
     auto pathProvider = log::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
     auto view = std::make_shared<view::AnnualView>(utils::date::getToday(), conf.sundayStart);
-    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, conf.password);
+    auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, password);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
-        if (pass.empty()) {
+        if (password.empty()) {
             return std::make_shared<editor::EnvBasedEditor>(pathProvider);
         }
-        return std::make_shared<editor::EncryptedFileEditor>(pathProvider, pass);
+        return std::make_shared<editor::EncryptedFileEditor>(pathProvider, password);
     }();
     auto gitRepo = [&]() -> std::optional<utils::GitRepo> {
         if (conf.repoConfig) {
