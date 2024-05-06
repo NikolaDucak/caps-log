@@ -15,14 +15,14 @@ LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider,
                                        std::string password)
     : m_pathProvider(std::move(pathProvider)), m_password{std::move(password)} {
     std::filesystem::create_directories(m_pathProvider.getLogDirPath());
-    const auto kisEncrypted =
+    const auto isEncrypted =
         LogRepositoryCryptoApplier::isEncrypted(m_pathProvider.getLogDirPath());
     if (m_password.empty()) {
-        if (kisEncrypted) {
+        if (isEncrypted) {
             throw std::runtime_error{"Password is required to open encrypted log repository!"};
         }
     } else {
-        if (not kisEncrypted) {
+        if (not isEncrypted) {
             throw std::runtime_error{"Password provided for a non encrypted repository!"};
         }
         if (not LogRepositoryCryptoApplier::isDecryptionPasswordValid(
