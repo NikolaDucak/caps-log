@@ -11,6 +11,21 @@ namespace caps_log::utils {
  * has an innitial commit, remote added and ssh communication.
  */
 class GitRepo {
+    class GitLibRaii {
+      public:
+        GitLibRaii() { git_libgit2_init(); }
+        GitLibRaii(const GitLibRaii &) = delete;
+        GitLibRaii(GitLibRaii &&) = delete;
+        GitLibRaii &operator=(const GitLibRaii &) = delete;
+        GitLibRaii &operator=(GitLibRaii &&) = delete;
+        ~GitLibRaii() { git_libgit2_shutdown(); }
+    };
+    static std::shared_ptr<GitLibRaii> getGitLibRaii() {
+        static auto gitLibRaii = std::make_shared<GitLibRaii>();
+        return gitLibRaii;
+    }
+
+    std::shared_ptr<GitLibRaii> m_gitLibRaii;
     git_repository *m_repo = nullptr;
     std::string m_remoteName;
     std::string m_mainBranchName;

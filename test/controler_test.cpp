@@ -13,53 +13,56 @@ using namespace testing;
 
 class ControllerTest : public testing::Test {
   protected:
-    // capsLog collects info for the date::Date::getToday().year
-    // so collected data will miss info for other year
-    // this is not very obvious when testing, resulting in failing
-    // asserting some data is added if this fact is forgotten.
-    // TODO: Maybe pass year as a constructor param?
-    std::chrono::year_month_day selectedDate{utils::date::getToday().year(), // NOLINT
-                                             std::chrono::month{5},          // NOLINT
-                                             std::chrono::day{25}};          // NOLINT
     // NOLINTNEXTLINE
-    std::chrono::year_month_day dayAfterSelectedDate{
-        selectedDate.year(), selectedDate.month(),
-        std::chrono::day{unsigned(selectedDate.day()) + 1}};
+    static constexpr std::chrono::year_month_day selectedDate{
+        std::chrono::year{2000}, std::chrono::month{5}, std::chrono::day{25}};
+    // NOLINTNEXTLINE
+    static constexpr std::chrono::year_month_day dayAfterSelectedDate{
+        selectedDate.year(), selectedDate.month(), ++selectedDate.day()};
+
     std::shared_ptr<NiceMock<DMockYearView>> mock_view = // NOLINT
         std::make_shared<NiceMock<DMockYearView>>();
     // NOLINTNEXTLINE
     std::shared_ptr<NiceMock<DMockRepo>> mock_repo = std::make_shared<NiceMock<DMockRepo>>();
     std::shared_ptr<MockEditor> mock_editor = std::make_shared<MockEditor>(); // NOLINT
 
+    /**
+     * @brief Create a caps_log::App object with the mock objects and selected year.
+     */
+    auto makeCapsLog() {
+        return caps_log::App{mock_view, mock_repo,    mock_editor,
+                             true,      std::nullopt, selectedDate.year()};
+    }
+
   public:
     ControllerTest() { mock_view->getDummyView().m_focusedDate = selectedDate; }
 };
 
 TEST_F(ControllerTest, EscQuits) {
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         EXPECT_CALL(*mock_view, stop());
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::Escape.input()});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::Escape.input()}});
     });
     capsLog.run();
 }
 
 TEST_F(ControllerTest, SpecialCharsDontQuit) {
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         ON_CALL(*mock_view, stop).WillByDefault([] {
             ASSERT_FALSE(true) << "Expected to not quit.";
         });
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::ArrowDown.input()});
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::ArrowUp.input()});
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::ArrowLeft.input()});
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::ArrowRight.input()});
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::Tab.input()});
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, ftxui::Event::TabReverse.input()});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowDown.input()}});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowUp.input()}});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowLeft.input()}});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowRight.input()}});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::Tab.input()}});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::TabReverse.input()}});
     });
 
     capsLog.run();
@@ -67,8 +70,7 @@ TEST_F(ControllerTest, SpecialCharsDontQuit) {
 
 TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
     mock_repo->write(LogFile{selectedDate, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
-    selectedDate = mock_view->getFocusedDate();
+    auto capsLog = makeCapsLog();
 
     // Expect dummy data has been propagated to view
     // ignoring first item '-----' that represents nothing
@@ -86,7 +88,7 @@ TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
             // trigger callback as if user clicked 'yes'
             callback();
         });
-        capsLog.handleInputEvent(UIEvent{UIEvent::RootEvent, "d"});
+        capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{"d"}});
         // assert that it has indeed been removed
         EXPECT_FALSE(mock_repo->read(selectedDate));
         // and that the view things have been updated
@@ -101,14 +103,14 @@ TEST_F(ControllerTest, OnFocusedDateChange_UpdatePreviewString) {
     auto dummyLog2 = LogFile{dayAfterSelectedDate, "dummy content 2"};
     mock_repo->write(dummyLog1);
     mock_repo->write(dummyLog2);
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
     ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog1.getContent());
     ASSERT_EQ(mock_view->getDummyView().m_focusedDate, dummyLog1.getDate());
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         mock_view->getDummyView().m_focusedDate = dummyLog2.getDate();
-        capsLog.handleInputEvent(UIEvent{UIEvent::FocusedDateChange, ""});
+        capsLog.handleInputEvent(UIEvent{FocusedDateChange{dummyLog2.getDate()}});
         ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog2.getContent());
     });
 
@@ -120,13 +122,13 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
     auto dummyLog2 = LogFile{dayAfterSelectedDate, "\n# secttwo \n* tagtwo"};
     mock_repo->getDummyRepo().write(dummyLog1);
     mock_repo->getDummyRepo().write(dummyLog2);
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&]() { // NOLINT
-        // Tags and sections are passed from the view as an index in the section/tagMenuItem vector
-        // 0 = '------' aka nothing selected
-        capsLog.handleInputEvent(UIEvent{UIEvent::FocusedTagChange, "1"});
+        // Tags and sections are passed from the view as an index in the section/tagMenuItem
+        // vector 0 = '------' aka nothing selected
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{1}});
         auto *dummyView = &mock_view->getDummyView();
 
         // Tags
@@ -134,18 +136,18 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
         ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
         ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
 
-        capsLog.handleInputEvent(UIEvent{UIEvent::FocusedTagChange, "2"});
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{2}});
         ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
         ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
         ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
 
         // Sections
-        capsLog.handleInputEvent(UIEvent{UIEvent::FocusedSectionChange, "1"});
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{1}});
         ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
         ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
         ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
 
-        capsLog.handleInputEvent(UIEvent{UIEvent::FocusedSectionChange, "2"});
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{2}});
         ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
         ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
         ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
@@ -154,7 +156,7 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
 }
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
     // +1 for '-----' aka no section
     ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
@@ -171,7 +173,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
         });
 
         // on callendar button click
-        capsLog.handleInputEvent(UIEvent{UIEvent::CalendarButtonClick, ""});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
 
         // expect the initialy set availability map pointer to still be valid
         EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), true);
@@ -185,7 +187,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
 }
 
 TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -195,14 +197,14 @@ TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
             EXPECT_EQ(baseLog->getContent(),
                       utils::date::formatToString(selectedDate, kLogBaseTemplate));
         });
-        capsLog.handleInputEvent(UIEvent{UIEvent::CalendarButtonClick, ""});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
     });
 
     capsLog.run();
 }
 
 TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
     EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -219,20 +221,22 @@ TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
                 mock_repo->getDummyRepo().write({selectedDate, ""});
             });
 
-        capsLog.handleInputEvent(UIEvent{UIEvent::CalendarButtonClick, ""});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
         EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));
 
-        capsLog.handleInputEvent(UIEvent{UIEvent::CalendarButtonClick, ""});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
         EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));
     });
     capsLog.run();
 }
 
 TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
-    caps_log::App capsLog{mock_view, mock_repo, mock_editor};
+    auto capsLog = makeCapsLog();
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
     mock_repo->write(LogFile{selectedDate, "# Dummy section"});
-    auto capsLog2 = caps_log::App{mock_view, mock_repo, mock_editor, false};
+    auto capsLog2 =
+        caps_log::App{mock_view, mock_repo, mock_editor, false, std::nullopt, selectedDate.year()};
+
     // +1 for '-----' aka no section
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
 }

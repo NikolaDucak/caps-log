@@ -89,13 +89,13 @@ class App : public InputHandlerBase {
   public:
     App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor, bool skipFirstLine = true,
-        std::optional<GitRepo> gitRepo = std::nullopt)
-        : m_displayedYear(date::getToday().year()), m_view{std::move(view)},
-          m_repo{std::move(repo)}, m_editor{std::move(editor)},
-          m_data{AnnualLogData::collect(m_repo, date::getToday().year(), skipFirstLine)},
+        std::optional<GitRepo> gitRepo = std::nullopt,
+        std::chrono::year year = date::getToday().year())
+        : m_displayedYear{year}, m_view{std::move(view)}, m_repo{std::move(repo)},
+          m_editor{std::move(editor)},
+          m_data{AnnualLogData::collect(m_repo, m_displayedYear, skipFirstLine)},
           m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
-        // if pass not prowided and repo is encrypted
         m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
 
@@ -107,26 +107,27 @@ class App : public InputHandlerBase {
     void run() { m_view->run(); }
 
     bool handleInputEvent(const UIEvent &event) override {
-        switch (event.type) {
-        case UIEvent::RootEvent:
-            return handleRootEvent(event.input);
-        case UIEvent::UiStarted:
-            handleUiStarted();
-            break;
-        case UIEvent::FocusedDateChange:
-            handleFocusedDateChange(event.input);
-            break;
-        case UIEvent::FocusedTagChange:
-            handleFocusedTagChange(event.input);
-            break;
-        case UIEvent::FocusedSectionChange:
-            handleFocusedSectionChange(event.input);
-            break;
-        case UIEvent::CalendarButtonClick:
-            handleCalendarButtonClick();
-            break;
-        };
-        return true;
+        return std::visit(
+            [this](auto &&arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, DisplayedYearChange>) {
+                    displayYear(arg.year);
+                } else if constexpr (std::is_same_v<T, OpenLogFile>) {
+                    handleCalendarButtonClick();
+                } else if constexpr (std::is_same_v<T, UiStarted>) {
+                    handleUiStarted();
+                } else if constexpr (std::is_same_v<T, FocusedDateChange>) {
+                    handleFocusedDateChange(arg.date);
+                } else if constexpr (std::is_same_v<T, FocusedTagChange>) {
+                    handleFocusedTagChange(arg.tag);
+                } else if constexpr (std::is_same_v<T, FocusedSectionChange>) {
+                    handleFocusedSectionChange(arg.section);
+                } else if constexpr (std::is_same_v<T, UnhandledRootEvent>) {
+                    return handleRootEvent(arg.input);
+                }
+                return true;
+            },
+            event);
     };
 
   private:
@@ -146,23 +147,23 @@ class App : public InputHandlerBase {
         return true;
     }
 
-    void handleFocusedDateChange(const std::string & /* unused */) {
-        if (auto log = m_repo->read(m_view->getFocusedDate())) {
+    void handleFocusedDateChange(const std::chrono::year_month_day &date) {
+        if (auto log = m_repo->read(date)) {
             m_view->setPreviewString(log->getContent());
         } else {
             m_view->setPreviewString("");
         }
     }
 
-    void handleFocusedTagChange(const std::string &newTag) {
+    void handleFocusedTagChange(int newTag) {
         m_view->selectedSection() = 0;
-        const auto *const highlighMap = m_tagMaps.at(std::stoi(newTag));
+        const auto *const highlighMap = m_tagMaps.at(newTag);
         m_view->setHighlightedLogsMap(highlighMap);
     }
 
-    void handleFocusedSectionChange(const std::string &newSection) {
+    void handleFocusedSectionChange(int newSection) {
         m_view->selectedTag() = 0;
-        const auto *const highlighMap = m_sectionMaps.at(std::stoi(newSection));
+        const auto *const highlighMap = m_sectionMaps.at(newSection);
         m_view->setHighlightedLogsMap(highlighMap);
     }
 

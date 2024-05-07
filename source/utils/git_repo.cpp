@@ -26,29 +26,29 @@ bool validateStr(const std::string &str) {
 
 git_signature *getSignatureFromRepoConfig(git_repository *repo) {
     // Load the repository configuration
-    git_config *live_config = nullptr;
-    CHECK_GIT_ERROR(git_repository_config(&live_config, repo));
+    git_config *liveConfig = nullptr;
+    CHECK_GIT_ERROR(git_repository_config(&liveConfig, repo));
     git_config *config = nullptr;
-    git_config_snapshot(&config, live_config);
+    git_config_snapshot(&config, liveConfig);
 
     // Retrieve user.name
-    const char *config_name = nullptr;
-    CHECK_GIT_ERROR(git_config_get_string(&config_name, config, "user.name") != 0);
+    const char *configName = nullptr;
+    CHECK_GIT_ERROR(git_config_get_string(&configName, config, "user.name") != 0);
 
     // Retrieve user.email
-    const char *config_email = nullptr;
-    CHECK_GIT_ERROR(git_config_get_string(&config_email, config, "user.email") != 0);
+    const char *configEmail = nullptr;
+    CHECK_GIT_ERROR(git_config_get_string(&configEmail, config, "user.email") != 0);
 
-    if (not validateStr(config_name)) {
-        throw std::runtime_error{std::string{"Invalid name from config: "} + config_name};
+    if (not validateStr(configName)) {
+        throw std::runtime_error{std::string{"Invalid name from config: "} + configName};
     }
-    if (not validateStr(config_email)) {
-        throw std::runtime_error{std::string{"Invalid email from config: "} + config_email};
+    if (not validateStr(configEmail)) {
+        throw std::runtime_error{std::string{"Invalid email from config: "} + configEmail};
     }
 
     // Create signature
     git_signature *sig = nullptr;
-    CHECK_GIT_ERROR(git_signature_now(&sig, config_name, config_email));
+    CHECK_GIT_ERROR(git_signature_now(&sig, configName, configEmail));
     git_config_free(config);
 
     return sig;
@@ -62,10 +62,10 @@ bool hasChangedFiles(git_repository *repo) {
 
     CHECK_GIT_ERROR(git_status_list_new(&status, repo, &opts));
 
-    size_t status_count = git_status_list_entrycount(status);
+    size_t statusCount = git_status_list_entrycount(status);
     git_status_list_free(status);
 
-    return status_count > 0;
+    return statusCount > 0;
 }
 
 } // namespace
@@ -73,8 +73,9 @@ bool hasChangedFiles(git_repository *repo) {
 GitRepo::GitRepo(const std::filesystem::path &path, const std::filesystem::path &sshKeyPath,
                  const std::filesystem::path &sshPubKeyPath, std::string remoteName,
                  std::string mainBranchName)
-    : m_remoteName{std::move(remoteName)}, m_mainBranchName{std::move(mainBranchName)},
-      m_sshKeyPath{sshKeyPath}, m_sshPubKeyPath{sshPubKeyPath} {
+    : m_gitLibRaii{getGitLibRaii()}, m_remoteName{std::move(remoteName)},
+      m_mainBranchName{std::move(mainBranchName)}, m_sshKeyPath{sshKeyPath},
+      m_sshPubKeyPath{sshPubKeyPath} {
     if (m_sshKeyPath.empty() || m_sshPubKeyPath.empty()) {
         throw std::invalid_argument{"SSH keys are not set!"};
     }
@@ -96,7 +97,8 @@ GitRepo::GitRepo(const std::filesystem::path &path, const std::filesystem::path 
 }
 
 GitRepo::GitRepo(GitRepo &&other) noexcept
-    : m_repo(other.m_repo), m_mainBranchName(std::move(other.m_mainBranchName)),
+    : m_gitLibRaii(std::move(other.m_gitLibRaii)), m_repo(other.m_repo),
+      m_mainBranchName(std::move(other.m_mainBranchName)),
       m_remoteName{std::move(other.m_remoteName)}, m_sshKeyPath{std::move(other.m_sshKeyPath)},
       m_sshPubKeyPath{std::move(other.m_sshPubKeyPath)} {
     other.m_repo = nullptr;
@@ -117,8 +119,6 @@ GitRepo &GitRepo::operator=(GitRepo &&other) noexcept {
 GitRepo::~GitRepo() {
     if (m_repo != nullptr) {
         git_repository_free(m_repo);
-        // TODO: not every repo should do this...
-        git_libgit2_shutdown();
     }
 }
 
@@ -149,18 +149,18 @@ void GitRepo::push() {
     git_remote *remote = nullptr;
     CHECK_GIT_ERROR(git_remote_lookup(&remote, m_repo, m_remoteName.c_str()));
 
-    auto push_ref = "refs/heads/" + m_mainBranchName + ":refs/heads/" + m_mainBranchName;
-    git_remote_add_push(m_repo, m_remoteName.c_str(), push_ref.c_str());
+    auto pushRef = "refs/heads/" + m_mainBranchName + ":refs/heads/" + m_mainBranchName;
+    git_remote_add_push(m_repo, m_remoteName.c_str(), pushRef.c_str());
 
-    git_push_options push_opts = GIT_PUSH_OPTIONS_INIT;
+    git_push_options pushOpts = GIT_PUSH_OPTIONS_INIT;
     const auto callbacks = getRemoteCallbacks();
-    push_opts.callbacks = callbacks;
+    pushOpts.callbacks = callbacks;
 
     auto refspec = std::string{"refs/heads/"} + m_mainBranchName;
     auto *tmp = refspec.data();
     const git_strarray refspecs = {&tmp, 1};
 
-    CHECK_GIT_ERROR(git_remote_push(remote, &refspecs, &push_opts));
+    CHECK_GIT_ERROR(git_remote_push(remote, &refspecs, &pushOpts));
 }
 
 bool GitRepo::commitAll() {
@@ -177,76 +177,76 @@ bool GitRepo::commitAll() {
     CHECK_GIT_ERROR(git_index_write(index));
 
     // Create tree
-    git_oid tree_oid;
-    git_oid commit_oid;
+    git_oid treeOid;
+    git_oid commitOid;
     git_tree *tree = nullptr;
-    CHECK_GIT_ERROR(git_index_write_tree(&tree_oid, index));
-    CHECK_GIT_ERROR(git_tree_lookup(&tree, m_repo, &tree_oid));
+    CHECK_GIT_ERROR(git_index_write_tree(&treeOid, index));
+    CHECK_GIT_ERROR(git_tree_lookup(&tree, m_repo, &treeOid));
 
     // Commit
-    git_oid parent_commit_oid;
-    git_commit *parent_commit = nullptr;
-    if (git_reference_name_to_id(&parent_commit_oid, m_repo, "HEAD") == 0) {
-        CHECK_GIT_ERROR(git_commit_lookup(&parent_commit, m_repo, &parent_commit_oid));
+    git_oid parentCommitOid;
+    git_commit *parentCommit = nullptr;
+    if (git_reference_name_to_id(&parentCommitOid, m_repo, "HEAD") == 0) {
+        CHECK_GIT_ERROR(git_commit_lookup(&parentCommit, m_repo, &parentCommitOid));
     }
 
-    static const char *commit_message = "caps-log auto push";
+    static const char *commitMessage = "caps-log auto push";
     // NOLINTNEXTLINE
-    git_commit_create_v(&commit_oid, m_repo, "HEAD", sig, sig, nullptr, commit_message, tree,
-                        parent_commit != nullptr ? 1 : 0, parent_commit);
+    git_commit_create_v(&commitOid, m_repo, "HEAD", sig, sig, nullptr, commitMessage, tree,
+                        parentCommit != nullptr ? 1 : 0, parentCommit);
 
     // Cleanup
     git_signature_free(sig);
     git_index_free(index);
     git_tree_free(tree);
-    if (parent_commit != nullptr) {
-        git_commit_free(parent_commit);
+    if (parentCommit != nullptr) {
+        git_commit_free(parentCommit);
     }
     return true;
 }
 
 void GitRepo::pull() {
     git_remote *remote = nullptr;
-    git_reference *local_ref = nullptr;
-    git_reference *remote_ref = nullptr;
-    git_annotated_commit *remote_annotated = nullptr;
+    git_reference *localRef = nullptr;
+    git_reference *remoteRef = nullptr;
+    git_annotated_commit *remoteAnnotated = nullptr;
 
     // Look up the remote
     CHECK_GIT_ERROR(git_remote_lookup(&remote, m_repo, m_remoteName.c_str()));
 
     // Fetch the changes from the remote
-    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
-    fetch_opts.callbacks = getRemoteCallbacks();
-    CHECK_GIT_ERROR(git_remote_fetch(remote, nullptr, &fetch_opts, "Fetch"));
+    git_fetch_options fetchOpts = GIT_FETCH_OPTIONS_INIT;
+    fetchOpts.callbacks = getRemoteCallbacks();
+    CHECK_GIT_ERROR(git_remote_fetch(remote, nullptr, &fetchOpts, "Fetch"));
 
     // Get the reference for the remote tracking branch
-    std::string remote_refname = "refs/remotes/" + m_remoteName + "/" + m_mainBranchName;
-    CHECK_GIT_ERROR(git_reference_lookup(&remote_ref, m_repo, remote_refname.c_str()));
+    std::string remoteRefname = "refs/remotes/" + m_remoteName + "/" + m_mainBranchName;
+    CHECK_GIT_ERROR(git_reference_lookup(&remoteRef, m_repo, remoteRefname.c_str()));
 
     // Create an annotated commit from the remote reference
-    const git_oid *remote_oid = git_reference_target(remote_ref);
-    CHECK_GIT_ERROR(git_annotated_commit_lookup(&remote_annotated, m_repo, remote_oid));
+    const git_oid *remoteOid = git_reference_target(remoteRef);
+    CHECK_GIT_ERROR(git_annotated_commit_lookup(&remoteAnnotated, m_repo, remoteOid));
 
     // Get the reference for the local branch
-    std::string local_refname = "refs/heads/" + m_mainBranchName;
-    CHECK_GIT_ERROR(git_reference_lookup(&local_ref, m_repo, local_refname.c_str()));
+    std::string localRefname = "refs/heads/" + m_mainBranchName;
+    CHECK_GIT_ERROR(git_reference_lookup(&localRef, m_repo, localRefname.c_str()));
 
     // Perform merge analysis
-    git_merge_analysis_t analysis;                                  // NOLINT
-    git_merge_preference_t preference;                              // NOLINT
-    const git_annotated_commit *their_heads[] = {remote_annotated}; // NOLINT
+    git_merge_analysis_t analysis;                                 // NOLINT
+    git_merge_preference_t preference;                             // NOLINT
+    const git_annotated_commit *their_heads[] = {remoteAnnotated}; // NOLINT
     CHECK_GIT_ERROR(git_merge_analysis(&analysis, &preference, m_repo, their_heads, 1));
 
     // Check if the merge is a fast-forward and perform it if so
     if ((analysis & GIT_MERGE_ANALYSIS_FASTFORWARD) != 0) {
-        const char *log_message = "Fast-Forward Merge";
-        CHECK_GIT_ERROR(git_reference_set_target(&local_ref, local_ref, remote_oid, log_message));
+        const char *logMessage = "Fast-Forward Merge";
+        CHECK_GIT_ERROR(git_reference_set_target(&localRef, localRef, remoteOid, logMessage));
 
         // Perform the checkout to update files in the working directory
-        git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
-        checkout_opts.checkout_strategy =
+        git_checkout_options checkoutOpts = GIT_CHECKOUT_OPTIONS_INIT;
+        checkoutOpts.checkout_strategy =
             GIT_CHECKOUT_FORCE; // Use force if you want to ensure the working directory is clean
-        CHECK_GIT_ERROR(git_checkout_head(m_repo, &checkout_opts));
+        CHECK_GIT_ERROR(git_checkout_head(m_repo, &checkoutOpts));
 
         git_index *index = nullptr;
         // Update the index to match the working directory to ensure no staged files
@@ -261,9 +261,9 @@ void GitRepo::pull() {
     }
 
     // Clean up
-    git_annotated_commit_free(remote_annotated);
-    git_reference_free(local_ref);
-    git_reference_free(remote_ref);
+    git_annotated_commit_free(remoteAnnotated);
+    git_reference_free(localRef);
+    git_reference_free(remoteRef);
     git_remote_free(remote);
 }
 

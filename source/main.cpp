@@ -13,7 +13,7 @@
 #include "config.hpp"
 #include "editor/env_based_editor.hpp"
 #include "log/local_log_repository.hpp"
-#include "log/log_repository_crypto_applyer.hpp"
+#include "log/log_repository_crypto_applier.hpp"
 #include "utils/git_repo.hpp"
 #include "view/annual_view.hpp"
 #include <boost/program_options.hpp>

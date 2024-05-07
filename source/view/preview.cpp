@@ -2,10 +2,10 @@
 #include <sstream>
 
 namespace caps_log::view {
+using namespace ftxui;
 
-ftxui::Element Preview::Render() {
-    using namespace ftxui;
-    ftxui::Elements visibleLines;
+Element Preview::Render() {
+    Elements visibleLines;
     for (int i = m_topLineIndex; i < m_lines.size(); i++) {
         visibleLines.push_back(m_lines[i]);
     }
@@ -19,8 +19,7 @@ ftxui::Element Preview::Render() {
 
 bool Preview::Focusable() const { return true; }
 
-bool Preview::OnEvent(ftxui::Event event) {
-    using namespace ftxui;
+bool Preview::OnEvent(Event event) {
     if (!Focused()) {
         return false;
     }
@@ -44,7 +43,6 @@ bool Preview::OnEvent(ftxui::Event event) {
 void Preview::resetScroll() { m_topLineIndex = 0; }
 
 void Preview::setContent(const std::string &str) {
-    using namespace ftxui;
     Elements lines;
     std::istringstream input{str};
     for (std::string line; std::getline(input, line);) {

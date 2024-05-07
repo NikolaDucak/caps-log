@@ -1,10 +1,8 @@
 #include "local_log_repository.hpp"
 
-#include "log/log_repository_crypto_applyer.hpp"
+#include "log/log_repository_crypto_applier.hpp"
 #include <fstream>
 #include <iostream>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
 #include <sstream>
 #include <utility>
 #include <utils/crypto.hpp>

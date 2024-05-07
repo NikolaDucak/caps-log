@@ -46,15 +46,11 @@ void forEachLogLine(std::istream &input, const std::function<void(const std::str
 
 } // namespace
 
-bool LogFile::hasMeaningfullContent() {
-    // TODO: maybe check if its more than a base template
-    return not m_content.empty();
-}
-
-std::vector<std::string> LogFile::readTagTitles(std::istream &input) {
+std::vector<std::string> LogFile::readTagTitles() const {
     std::vector<std::string> result;
+    std::stringstream sstream{m_content};
 
-    forEachLogLine(input, [&](const auto &line) {
+    forEachLogLine(sstream, [&](const auto &line) {
         if (std::smatch smatch; std::regex_match(line, smatch, kTagRegex)) {
             result.push_back(utils::trim(smatch[kTagTitleMatch]));
         }
@@ -63,16 +59,16 @@ std::vector<std::string> LogFile::readTagTitles(std::istream &input) {
     return result;
 }
 
-std::vector<std::string> LogFile::readSectionTitles(std::istream &input, bool skipFirstLine) {
+std::vector<std::string> LogFile::readSectionTitles(bool skipFirstLine) const {
+    std::stringstream sstream{m_content};
     std::vector<std::string> result;
 
-    std::string line;
-
     if (skipFirstLine) {
-        getline(input, line);
+        std::string line;
+        getline(sstream, line);
     }
 
-    forEachLogLine(input, [&](const auto &line) {
+    forEachLogLine(sstream, [&](const auto &line) {
         if (std::smatch smatch; std::regex_match(line, smatch, kSectionTitleRegex)) {
             result.push_back(utils::trim(smatch[kSectionTitleMatch]));
         }

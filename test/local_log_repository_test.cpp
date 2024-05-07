@@ -1,7 +1,7 @@
 #include "config.hpp"
 #include "log/local_log_repository.hpp"
 #include "log/log_file.hpp"
-#include "log/log_repository_crypto_applyer.hpp"
+#include "log/log_repository_crypto_applier.hpp"
 #include "mocks.hpp"
 #include "utils/crypto.hpp"
 #include <filesystem>
@@ -87,12 +87,12 @@ class EncryptedLocalLogRepositoryTest : public LocalLogRepositoryTest {
   private:
     static void writeDummyEncryptedRepoMarkerFile(const std::filesystem::path &path,
                                                   const std::string &password) {
-        std::ofstream cle{path / caps_log::LogRepositoryCryptoApplier::kEncryptetLogRepoMarkerFile,
+        std::ofstream cle{path / caps_log::LogRepositoryCryptoApplier::kEncryptedLogRepoMarkerFile,
                           std::ios::binary};
         if (not cle.is_open()) {
             throw std::runtime_error{"Failed writing encryption marker file"};
         }
-        std::istringstream oss{caps_log::LogRepositoryCryptoApplier::kEncryptetLogRepoMarker};
+        std::istringstream oss{caps_log::LogRepositoryCryptoApplier::kEncryptedLogRepoMarker};
         cle << caps_log::utils::encrypt(password, oss);
     }
 

@@ -19,7 +19,7 @@ namespace caps_log::view {
 
 class AnnualView : public AnnualViewBase {
     InputHandlerBase *m_handler{nullptr};
-    ScreenInteractive m_screen;
+    ftxui::ScreenInteractive m_screen;
 
     // UI compontents visible to the user
     std::shared_ptr<Calendar> m_calendarButtons;
@@ -40,7 +40,7 @@ class AnnualView : public AnnualViewBase {
     void run() override;
     void stop() override;
 
-    void post(Task task) override;
+    void post(ftxui::Task task) override;
 
     void prompt(std::string message, std::function<void()> onYesCallback) override;
     void promptOk(std::string message, std::function<void()> callback) override;
