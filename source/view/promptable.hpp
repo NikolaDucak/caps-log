@@ -3,7 +3,6 @@
 #include "ftxui/component/component_base.hpp"
 
 namespace caps_log::view {
-using namespace ftxui;
 
 /**
  * A 'prompt' wrapper around a component that is considered root of the ui.
@@ -11,21 +10,21 @@ using namespace ftxui;
  * and on 'yes' it executes a callback. It is insiper by the ftxui modal window
  * example from the /examples directory in ftxui repo.
  */
-class Promptable : public ComponentBase {
+class Promptable : public ftxui::ComponentBase {
     int m_depth = 0;
-    Component m_main = nullptr;
-    Component m_prompt = nullptr;
+    ftxui::Component m_main = nullptr;
+    ftxui::Component m_prompt = nullptr;
     std::string m_message;
     std::function<void()> m_callback = nullptr;
 
   public:
-    Promptable(Component main);
+    Promptable(ftxui::Component main);
     void prompt(std::string message, std::function<void()> callback);
     void promptOk(std::string message, std::function<void()> callback);
     void loadingScreen(std::string message);
     void resetToMain() { m_depth = 0; }
 
-    Element Render() override;
+    ftxui::Element Render() override;
 };
 
 } // namespace caps_log::view

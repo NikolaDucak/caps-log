@@ -24,8 +24,8 @@ class CryptoAlreadyAppliedError : public std::runtime_error {
 
 class LogRepositoryCryptoApplier {
   public:
-    static constexpr auto kEncryptetLogRepoMarker = "encryption-marker:";
-    static constexpr auto kEncryptetLogRepoMarkerFile = ".cle";
+    static constexpr auto kEncryptedLogRepoMarker = "encryption-marker:";
+    static constexpr auto kEncryptedLogRepoMarkerFile = ".cle";
     static void apply(const std::string &password, const std::filesystem::path &logDirPath,
                       const std::string &logFilenameFormat, Crypto crypto);
     static bool isEncrypted(const std::filesystem::path &logDirPath);

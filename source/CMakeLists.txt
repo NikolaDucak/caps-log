@@ -12,8 +12,8 @@ add_executable(
     ./log/log_file.cpp
     ./log/log_file.hpp
     ./log/log_repository_base.hpp
-    ./log/log_repository_crypto_applyer.cpp
-    ./log/log_repository_crypto_applyer.hpp
+    ./log/log_repository_crypto_applier.cpp
+    ./log/log_repository_crypto_applier.hpp
 
     ./utils/crypto.cpp
     ./utils/crypto.hpp

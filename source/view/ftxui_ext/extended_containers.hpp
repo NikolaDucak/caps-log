@@ -3,7 +3,6 @@
 #include "ftxui/component/component_base.hpp"
 
 namespace caps_log::view::ftxui_ext {
-using namespace ftxui;
 
 /**
  * @brief A list of components, drawn in a grid and navigated * using up/down &
@@ -14,7 +13,9 @@ using namespace ftxui;
  * @note This is not supposed to be an actual FTXUI feature extension, but an
  * extension for this specific projects use.
  */
-Component Grid(int width, Components children, int *selected = nullptr);
+// This is a FTXUI extension so naming is kept consistent with the library
+// NOLINTNEXTLINE(readability-identifier-naming);
+ftxui::Component Grid(int width, ftxui::Components children, int *selected = nullptr);
 
 /**
  * @brief A list of components, drawn in any form that can be navigated with
@@ -23,11 +24,15 @@ Component Grid(int width, Components children, int *selected = nullptr);
  * @note This is not supposed to be an actual FTXUI feature extension, but an
  * extension for this specific projects use.
  */
-Component AnyDir(Components children, int *selected = nullptr);
+// This is a FTXUI extension so naming is kept consistent with the library
+// NOLINTNEXTLINE(readability-identifier-naming);
+ftxui::Component AnyDir(ftxui::Components children, int *selected = nullptr);
 
 /**
  * @brief Same as a vertical container but it accepts custom navigation keys.
  */
-Component CustomContainer(Components children, Event next, Event prev);
+// This is a FTXUI extension so naming is kept consistent with the library
+// NOLINTNEXTLINE(readability-identifier-naming);
+ftxui::Component CustomContainer(ftxui::Components children, ftxui::Event next, ftxui::Event prev);
 
 } // namespace caps_log::view::ftxui_ext

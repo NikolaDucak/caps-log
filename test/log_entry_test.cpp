@@ -5,6 +5,9 @@
 #include "log/log_file.hpp"
 #include "utils/string.hpp"
 
+namespace caps_log::log::testing {
+
+namespace {
 struct ParsingTestData {
     std::string text;
     std::vector<std::string> expectedResult;
@@ -19,7 +22,6 @@ inline ParsingTestData makeSectionParsingData(const std::string &base, std::stri
     return {fmt::format(fmt::runtime("\n" + base), title), {caps_log::utils::lowercase(title)}};
 }
 
-namespace {
 const std::vector<ParsingTestData> validTagsTestData{
     makeTagParsingData("* {}", "tag"),
     makeTagParsingData("* {}", "TAG"),
@@ -58,34 +60,36 @@ const std::vector<ParsingTestData> invalidSectionsTestData{
     makeSectionParsingData("### {}", "section"),
 };
 
+const std::chrono::year_month_day kDate{std::chrono::year{2021}, std::chrono::month{1},
+                                        std::chrono::day{1}};
+
 } // namespace
 
 TEST(LogEntry, ParseTagTitles_Valid) {
     for (auto [text, expectedTagTitles] : validTagsTestData) {
-        auto strstream = std::stringstream{text};
-        auto parsedTagTitles = caps_log::log::LogFile::readTagTitles(strstream);
+        const auto parsedTagTitles = LogFile{kDate, text}.readTagTitles();
         EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
     }
 }
 
 TEST(LogEntry, ParseSectionTitles_Valid) {
     for (const auto &[text, expectedTagTitles] : validSectionsTestData) {
-        const auto parsedTagTitles = caps_log::log::LogFile::readSectionTitles(text);
-        EXPECT_EQ(parsedTagTitles, expectedTagTitles) << "Failed at: " << text;
+        const auto parsedSectionTitles = LogFile{kDate, text}.readSectionTitles();
+        EXPECT_EQ(parsedSectionTitles, expectedTagTitles) << "Failed at: " << text;
     }
 }
 
 TEST(LogEntry, ParseTagTitles_Invalid) {
     for (const auto &[text, _] : invalidSectionsTestData) {
-        const auto parsedTagTitles = caps_log::log::LogFile::readTagTitles(text);
+        const auto parsedTagTitles = LogFile{kDate, text}.readTagTitles();
         EXPECT_TRUE(parsedTagTitles.empty()) << "Failed at: " << text;
     }
 }
 
 TEST(LogEntry, ParseSectionTitles_Invalid) {
     for (const auto &[text, _] : invalidSectionsTestData) {
-        const auto parsedTagTitles = caps_log::log::LogFile::readSectionTitles(text);
-        EXPECT_TRUE(parsedTagTitles.empty()) << "Failed at: " << text;
+        const auto parsedSectionTitles = LogFile{kDate, text}.readSectionTitles();
+        EXPECT_TRUE(parsedSectionTitles.empty()) << "Failed at: " << text;
     }
 }
 
@@ -104,13 +108,13 @@ TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
 ```
     )";
 
-    auto parsedSectionTitles = caps_log::log::LogFile::readSectionTitles(sectionInCodeBlock, true);
+    auto parsedSectionTitles = LogFile{kDate, sectionInCodeBlock}.readSectionTitles();
     EXPECT_TRUE(parsedSectionTitles.empty());
-    parsedSectionTitles = caps_log::log::LogFile::readSectionTitles(sectionInCodeBlock2, true);
+    parsedSectionTitles = LogFile{kDate, sectionInCodeBlock2}.readSectionTitles();
     EXPECT_TRUE(parsedSectionTitles.empty());
 }
 
-TEST(LogEntry, ParseTagTitels_IgnoreTagInCodeBlocks) {
+TEST(LogEntry, ParseTagTitles_IgnoreTagInCodeBlocks) {
     const auto *const sectionInCodeBlock = R"(
 ```
 * tag title
@@ -126,8 +130,10 @@ TEST(LogEntry, ParseTagTitels_IgnoreTagInCodeBlocks) {
 ```
     )";
 
-    auto parsedSectionTag = caps_log::log::LogFile::readTagTitles(sectionInCodeBlock);
+    auto parsedSectionTag = LogFile{kDate, sectionInCodeBlock}.readTagTitles();
     EXPECT_TRUE(parsedSectionTag.empty());
-    parsedSectionTag = caps_log::log::LogFile::readTagTitles(sectionInCodeBlock2);
+    parsedSectionTag = LogFile{kDate, sectionInCodeBlock2}.readTagTitles();
     EXPECT_TRUE(parsedSectionTag.empty());
 }
+
+} // namespace caps_log::log::testing

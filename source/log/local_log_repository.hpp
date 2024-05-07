@@ -8,11 +8,6 @@
 
 namespace caps_log::log {
 
-/**
- * Helps to have a one place for getting paths for both LocalLogRepository and any other editor that
- * wants to log. Previously repo base had path member and it kinda stuck out. not all repos have a
- * path like filesystem
- */
 class LocalFSLogFilePathProvider {
     std::filesystem::path m_logDirectory;
     std::string m_logFilenameFormat;
@@ -31,14 +26,6 @@ class LocalFSLogFilePathProvider {
 
 class LocalLogRepository : public LogRepositoryBase {
   public:
-    static const std::string kDefaultLogDirPath;
-    static const std::string kDefaultLogFilenameFormat;
-
-    /**
-     * @param logDirectory Directory in which individiaul log entries are stored.
-     * @param logFilenameFormat Format used to generate names for log entries,
-     * that format is used with Date::formatToString that.
-     */
     LocalLogRepository(LocalFSLogFilePathProvider pathProvider, std::string password = "");
 
     std::optional<LogFile> read(const std::chrono::year_month_day &date) const override;

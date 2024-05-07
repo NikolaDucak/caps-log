@@ -6,7 +6,7 @@ namespace caps_log::log {
 namespace {
 void collectEmpty(AnnualLogData &data, const std::shared_ptr<LogRepositoryBase> &repo,
                   std::chrono::year_month_day date, bool skipFirstLine) {
-    auto input = repo->read(date);
+    const auto input = repo->read(date);
 
     // if there is no log to be processed, return
     if (not input) {
@@ -63,7 +63,6 @@ void AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
         annual_map.set(date, false);
         return not annual_map.hasAnyDaySet();
     });
-    auto input = repo->read(date);
 
     // collect as if it was empty
     collectEmpty(*this, repo, date, skipFirstLine);

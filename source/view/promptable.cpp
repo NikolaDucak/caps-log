@@ -5,6 +5,8 @@
 
 namespace caps_log::view {
 
+using namespace ftxui;
+
 constexpr std::size_t kIndexYesNot = 1;
 constexpr std::size_t kIndexOk = 2;
 constexpr std::size_t kIndexSpinner = 3;

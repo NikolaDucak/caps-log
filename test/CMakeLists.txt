@@ -25,7 +25,7 @@ add_executable(
 
     ./../source/config.cpp
     ./../source/log/log_file.cpp
-    ./../source/log/log_repository_crypto_applyer.cpp
+    ./../source/log/log_repository_crypto_applier.cpp
     ./../source/log/local_log_repository.cpp
     ./../source/log/annual_log_data.cpp
     ./../source/view/calendar_component.cpp
