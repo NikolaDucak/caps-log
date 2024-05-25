@@ -1,5 +1,8 @@
 #pragma once
 
+#include <chrono>
+#include <memory>
+
 #include "log_repository_base.hpp"
 #include "utils/date.hpp"
 

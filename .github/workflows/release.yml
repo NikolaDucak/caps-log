@@ -6,13 +6,13 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  get-version:
+  create-next-release:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_next_version.outputs.version }}
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get next version
@@ -24,59 +24,16 @@ jobs:
             echo "Failed to comput next version!"
             exit 1
           fi
-
-  create-release:
-    needs: get-version
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      version: ${{ steps.set_output.outputs.version }}
-    steps:
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1 
         with:
-          tag: ${{ needs.get-version.outputs.version }}
-      - name: Set version output for dependent jobs
-        id: set_output
-        run: echo "version=${{ needs.get-version.outputs.version }}" >> "$GITHUB_OUTPUT"
+          tag: ${{ steps.get_next_version.outputs.version  }}
 
-  build-and-upload-linux:
-    needs: create-release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libssl-dev libgit2-dev
+  matrix-build-and-upload: 
+    needs: create-next-release
+    uses: ./.github/workflows/build-and-test-matrix.yml
+    with:
+      run_tests: false
+      build_type: "Release"
+      release_name: ${{ needs.create-next-release.outputs.version }}
 
-      - name: Build 
-        run: |
-          mkdir build && cd build
-          cmake -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" .. && make
-
-      - name: Archive and Upload binaries to release
-        run: |
-          cp build/source/caps-log ./caps-log
-          tar -czvf caps-log-linux.tar.gz caps-log
-          gh release upload ${{ needs.create-release.outputs.version }} caps-log-linux.tar.gz --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-and-upload-mac:
-    needs: create-release
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: brew install boost openssl libgit2
-
-      - name: Build for MacOS
-        run: |
-          mkdir build-macos && cd build-macos
-          cmake -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" .. && make
-
-      - name: Archive and Upload MacOS binaries to release
-        run: |
-          cp build-macos/source/caps-log ./caps-log
-          tar -czvf caps-log-macos.tar.gz caps-log
-          gh release upload ${{ needs.create-release.outputs.version }} caps-log-macos.tar.gz --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

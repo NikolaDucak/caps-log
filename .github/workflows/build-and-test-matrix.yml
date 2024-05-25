@@ -1,0 +1,113 @@
+name: Build and test matrix
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version of the caps-log'
+        required: false
+        default: ''
+        type: string
+      run_tests:
+        description: 'Whether to run tests'
+        required: false
+        default: false
+        type: boolean
+      build_type:
+        description: 'Build type (e.g., Debug, Release)'
+        required: true
+        type: string
+      release_name:
+        description: 'Name of the release'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  build_and_test_windows:
+    runs-on: windows-latest
+    steps:
+      - name: Get deps
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install boost-msvc-14.1
+          choco install libgit2
+      - name: Configure environment
+        run: |
+          $libgit2_root = "C:\ProgramData\chocolatey\lib\libgit2\tools"
+          echo "LIBGIT2_INCLUDE_DIR=$libgit2_root\include" >> $env:GITHUB_ENV
+          echo "LIBGIT2_LIBRARY=$libgit2_root\lib\libgit2.lib" >> $env:GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=C:\Program Files\libgit2" >> $env:GITHUB_ENV
+      - uses: actions/checkout@v4
+      - name: CMake configure
+        run: |  
+          if ('${{ inputs.run_tests }}' -eq 'true') { $CAPS_LOG_BUILD_TESTS = 'On' } else { $CAPS_LOG_BUILD_TESTS = 'Off' }
+          cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} -DCAPS_LOG_BUILD_TESTS=$CAPS_LOG_BUILD_TESTS -DBOOST_ROOT=C:\local\boost -DCMAKE_PREFIX_PATH="C:\local\boost;C:\Program Files\libgit2" -DLIBGIT2_INCLUDE_DIR=$env:LIBGIT2_INCLUDE_DIR -DLIBGIT2_LIBRARY=$env:LIBGIT2_LIBRARY
+
+      - name: CMake build
+        run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }}
+      - name: Test
+        if: ${{ inputs.run_tests == true }}
+        working-directory: ${{ github.workspace }}/build
+        run: ctest -C ${{ inputs.build_type }} --output-on-failure
+      - name: Upload 
+        if: ${{ inputs.release_name != '' }}
+        run: |
+          ARCHIVE="caps-log-win.tar.gz"
+          cp build/source/caps-log ./caps-log
+          tar -czvf $ARCHIVE caps-log
+          gh release upload ${{ inputs.release_name }} $ARCHIVE --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_test_macos:
+    runs-on: macos-latest
+    steps:
+      - name: Get deps
+        run: brew install libgit2 boost
+      - uses: actions/checkout@v4
+      - name: CMake configure
+        run: |
+          if [ "${{ inputs.run_tests }}" == "true" ]; then TESTS="On"; else TESTS="Off"; fi
+          cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} -DCAPS_LOG_BUILD_TESTS=$TEST
+      - name: CMake build
+        run: cmake --build ${{github.workspace}}/build --config ${{ inputs.build_type }}
+      - name: Test
+        if: ${{ inputs.run_tests == true }}
+        working-directory: ${{ github.workspace }}/build
+        run: ctest -C ${{ inputs.build_type }} --output-on-failure
+      - name: Upload 
+        if: ${{ inputs.release_name != '' }}
+        run: |
+          ARCHIVE="caps-log-macos.tar.gz"
+          cp build/source/caps-log ./caps-log
+          tar -czvf $ARCHIVE caps-log
+          gh release upload ${{ inputs.release_name }} $ARCHIVE --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_test_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get deps
+        run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libgit2-dev
+      - uses: actions/checkout@v4
+      - name: CMake configure
+        run: |
+          if [ "${{ inputs.run_tests }}" == "true" ]; then TESTS="On"; else TESTS="Off"; fi
+          cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} -DCAPS_LOG_BUILD_TESTS=$TESTS
+      - name: CMake build
+        run: cmake --build ${{ github.workspace }}/build --config ${{ inputs.build_type }}
+      - name: Test
+        if: ${{ inputs.run_tests == true }}
+        working-directory: ${{ github.workspace }}/build
+        run: ctest -C ${{ inputs.build_type }} --output-on-failure
+      - name: Upload 
+        if: ${{ inputs.release_name != '' }}
+        run: |
+          ARCHIVE="caps-log-linux.tar.gz"
+          cp build/source/caps-log ./caps-log
+          tar -czvf $ARCHIVE caps-log
+          gh release upload ${{ inputs.release_name }} $ARCHIVE --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

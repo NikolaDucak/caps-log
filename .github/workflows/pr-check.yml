@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "master" ]
     paths-ignore:
-      - '.github/**'
+      #- '.github/**'
       - '.gitignore'
       - 'README'
       - 'LICENCE'
@@ -21,82 +21,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: ['clang','msvc','gcc']
-        os: ['ubuntu-latest', 'windows-latest']
-        exclude:
-        - os: 'ubuntu-latest'
-          compiler: 'msvc'
-        - os: 'windows-latest'
-          # temporary exclude everything
-          # compiler: 'gcc'
-
-    runs-on: ${{ matrix.os }}
-
-    steps: 
-    - uses: actions/checkout@v3
-    - name: Cache
-      id: cache-step
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/vcpkg
-          ./build/vcpkg_installed
-          ${{ env.CONAN_USER_HOME }}
-          ~/.cache/pip
-          ${{ env.HOME }}/.cache/vcpkg/archives
-          ${{ env.XDG_CACHE_HOME }}/vcpkg/archives
-          ${{ env.LOCALAPPDATA }}\vcpkg\archives
-          ${{ env.APPDATA }}\vcpkg\archives
-        key: ${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('**/CMakeLists.txt') }}
-        restore-keys: |
-            ${{ runner.os }}-${{ matrix.compiler }}
-
-    - name: Prepare environment
-      uses: aminya/setup-cpp@v1
-      with:
-        compiler: ${{ matrix.compiler }}
-        vcvarsall: ${{ contains(matrix.os, 'windows' )}}
-        cmake: true
-        ninja: true
-        conan: false
-        vcpkg: false
-        ccache: false
-        clangtidy: false
-        cppcheck: false
-        gcovr: false
-        opencppcoverage: false
-
-    - name: Setup vcpkg and install Boost (Windows)
-      if: steps.cache-step.outputs.cache-hit != 'true' && matrix.os == 'windows-latest'
-
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        cd vcpkg
-        ./bootstrap-vcpkg.bat
-        ./vcpkg install boost
-
-    - name: Get boost
-      if: matrix.os != 'windows-latest'
-      run: sudo apt-get update && sudo apt-get install libboost-program-options-dev libgit2-dev
-
-    - name: Configure CMake (Windows)
-      if: matrix.os == 'windows-latest'
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCAPS_LOG_BUILD_TESTS=On -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
-
-    - name: Configure CMake (Windows)
-      if: matrix.os != 'windows-latest'
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DCAPS_LOG_BUILD_TESTS=On
-
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config Release
-
-    - name: Test
-      working-directory: ${{ github.workspace }}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+  matrix_build_and_test: 
+    uses: ./.github/workflows/build-and-test-matrix.yml
+    with:
+      run_tests: true
+      build_type: "Release"
 
   static-analysis:
     runs-on: ubuntu-latest
@@ -118,4 +47,3 @@ jobs:
       - name: Fail fast?!
         if: steps.linter.outputs.checks-failed > 0
         run: exit 1
-    

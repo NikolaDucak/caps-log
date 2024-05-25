@@ -67,6 +67,9 @@ std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
         });
 
     const auto eventHandler = CatchEvent(wholeUiRenderer, [&](const Event &event) {
+
+        event.
+
         // controller does not care about mouse events
         if (not event.is_mouse()) {
             return m_handler->handleInputEvent(UIEvent{UnhandledRootEvent{event.input()}});
