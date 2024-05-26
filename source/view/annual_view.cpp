@@ -17,14 +17,31 @@ namespace caps_log::view {
 using namespace ftxui;
 
 AnnualView::AnnualView(const std::chrono::year_month_day &today, bool sundayStart)
-    : m_screen{ScreenInteractive::Fullscreen()},
+    : m_screen{ScreenInteractive::Fullscreen()}, m_testing{false},
       m_calendarButtons{Calendar::make(m_screen, today, makeCalendarOptions(today, sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
       m_rootComponent{makeFullUIComponent()} {}
 
-void AnnualView::run() { m_screen.Loop(m_rootComponent); }
+AnnualView::AnnualView(AnnualView::Testing test, const std::chrono::year_month_day &today,
+                       bool sundayStart)
+    : m_screen{ScreenInteractive::FixedSize(test.screenDimensions.first,
+                                            test.screenDimensions.second)},
+      m_testing{true},
+      m_calendarButtons{Calendar::make(m_screen, today, makeCalendarOptions(today, sundayStart))},
+      m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
+      m_rootComponent{makeFullUIComponent()} {}
 
-void AnnualView::stop() { m_screen.ExitLoopClosure()(); }
+void AnnualView::run() {
+    if (not m_testing) {
+        m_screen.Loop(m_rootComponent);
+    }
+}
+
+void AnnualView::stop() {
+    if (not m_testing) {
+        m_screen.Exit();
+    }
+}
 
 void AnnualView::showCalendarForYear(std::chrono::year year) {
     m_calendarButtons->displayYear(year);

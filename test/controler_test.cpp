@@ -2,14 +2,85 @@
 #include "mocks.hpp"
 
 #include "log/log_file.hpp"
+#include "view/annual_view.hpp"
 #include "view/input_handler.hpp"
 
 #include <ftxui/component/event.hpp>
 #include <gmock/gmock-spec-builders.h>
 #include <memory>
 
+#include <fstream>
+
 using namespace caps_log;
 using namespace testing;
+// NOTLINTBEGIN
+
+const std::filesystem::path kCalendarRenderTestData = std::filesystem::path{CAPS_LOG_TEST_DATA_DIR};
+
+std::string readFile(const std::string &path) {
+    std::ifstream ifs{path};
+    if (not ifs.is_open()) {
+        throw std::runtime_error{"Failed to open file: " + path};
+    }
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return buffer.str();
+}
+
+class ComponentTest : public testing::Test {
+  public:
+    ComponentTest()
+        : m_repo{std::make_shared<NiceMock<DMockRepo>>()},
+          m_uiLoop{std::make_shared<AnnualView>(AnnualView::Testing{}, kToday, false)},
+          m_uiLoopSpy{m_uiLoop.get()}, m_uiRootComponent{m_uiLoop->rootComponent()},
+          m_capsLog{m_uiLoop, m_repo, m_editor, true, std::nullopt, kToday.year()} {}
+    constexpr static const std::chrono::year_month_day kToday{
+        std::chrono::year{2005}, std::chrono::month{1}, std::chrono::day{1}};
+    std::shared_ptr<NiceMock<DMockRepo>> m_repo;
+    std::shared_ptr<MockEditor> m_editor = std::make_shared<MockEditor>();
+    std::shared_ptr<AnnualView> m_uiLoop;
+    SpyAnnualView m_uiLoopSpy;
+    ftxui::Component m_uiRootComponent;
+    caps_log::App m_capsLog;
+    // read whole file
+    static std::string renderTestData(const std::string &filename) {
+        std::ifstream file(filename, std::ios::binary);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        return buffer.str();
+    }
+};
+// NOLINTEND
+
+TEST_F(ComponentTest, EscQuits) {
+    EXPECT_CALL(m_uiLoopSpy, stop());
+    m_capsLog.run();
+    m_uiRootComponent->OnEvent(ftxui::Event::Escape);
+}
+
+TEST_F(ComponentTest, SpecialCharsDontQuit) {
+    EXPECT_CALL(m_uiLoopSpy, stop()).Times(0);
+    m_capsLog.run();
+    m_uiRootComponent->OnEvent(ftxui::Event::ArrowDown);
+    m_uiRootComponent->OnEvent(ftxui::Event::ArrowUp);
+    m_uiRootComponent->OnEvent(ftxui::Event::ArrowLeft);
+    m_uiRootComponent->OnEvent(ftxui::Event::ArrowRight);
+    m_uiRootComponent->OnEvent(ftxui::Event::Tab);
+    m_uiRootComponent->OnEvent(ftxui::Event::TabReverse);
+}
+
+TEST_F(ComponentTest, OnFocusedDateChange_UpdatePreviewString) {
+    m_capsLog.run();
+    m_uiRootComponent->OnEvent(ftxui::Event::ArrowRight);
+    auto render = m_uiRootComponent->Render();
+    EXPECT_EQ(render, renderTestData("update_preview_string.bin"));
+}
+
+TEST_F(ComponentTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
+}
+
+
+
 
 class ControllerTest : public testing::Test {
   protected:

@@ -2,6 +2,7 @@
 
 #include "annual_view_base.hpp"
 #include "calendar_component.hpp"
+#include "fmt/core.h"
 #include "input_handler.hpp"
 #include "preview.hpp"
 #include "promptable.hpp"
@@ -14,10 +15,13 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/component/task.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
+#include <utility>
 
 namespace caps_log::view {
 
 class AnnualView : public AnnualViewBase {
+    bool m_testing;
     InputHandlerBase *m_handler{nullptr};
     ftxui::ScreenInteractive m_screen;
 
@@ -36,6 +40,10 @@ class AnnualView : public AnnualViewBase {
 
   public:
     AnnualView(const std::chrono::year_month_day &today, bool sundayStart);
+    // Constructor for testing purposes
+    struct Testing {std::pair<int,int> screenDimensions; };
+    AnnualView(Testing test, const std::chrono::year_month_day &today, bool sundayStart);
+    ftxui::Component rootComponent() { return m_rootComponent; }
 
     void run() override;
     void stop() override;
