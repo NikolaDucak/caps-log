@@ -96,7 +96,7 @@ std::string decrypt(const std::string &password, std::istream &file) {
     }
 
     std::array<unsigned char, kBufferSize + EVP_MAX_BLOCK_LENGTH> inBuffer{};
-    std::array<unsigned char, kBufferSize> outBuffer{};
+    std::array<unsigned char, kBufferSize + EVP_MAX_BLOCK_LENGTH> outBuffer{};
     int bytesRead = 0;
     int outLength = 0;
     std::string output;
