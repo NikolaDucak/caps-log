@@ -2,9 +2,6 @@ name: Release
 
 on: workflow_dispatch
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   get-version:
     runs-on: ubuntu-latest
@@ -51,7 +48,7 @@ jobs:
       - name: Build 
         run: |
           mkdir build && cd build
-          cmake -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" .. && make
+          cmake -DBOOST_USE_STATIC_LIBS=On -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" -DCMAKE_BUILD_TYPE=Release .. && make
 
       - name: Archive and Upload binaries to release
         run: |
@@ -71,7 +68,7 @@ jobs:
       - name: Build for MacOS
         run: |
           mkdir build-macos && cd build-macos
-          cmake -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" .. && make
+          cmake -DBOOST_USE_STATIC_LIBS=On -DCAPS_LOG_VERSION="${{ needs.create-release.outputs.version }}" -DCMAKE_BUILD_TYPE=Release .. && make
 
       - name: Archive and Upload MacOS binaries to release
         run: |
