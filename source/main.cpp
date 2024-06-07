@@ -68,7 +68,7 @@ auto makeCapsLog(const caps_log::Config &conf) {
     }();
 
     return caps_log::App{std::move(view), std::move(repo), std::move(editor),
-                         conf.ignoreFirstLineWhenParsingSections, std::move(*gitRepo)};
+                         conf.ignoreFirstLineWhenParsingSections, std::move(gitRepo)};
 }
 
 int main(int argc, const char **argv) try {
