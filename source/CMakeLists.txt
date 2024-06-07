@@ -36,6 +36,7 @@ target_include_directories(caps-log PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(
   caps-log
+  PUBLIC
   ftxui::screen
   ftxui::dom
   ftxui::component

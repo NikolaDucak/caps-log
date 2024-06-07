@@ -137,6 +137,25 @@ TEST_F(EncryptedLocalLogRepositoryTest, EncryptionRoundtrip) {
     ASSERT_EQ(log->getContent(), kDummyLogContent);
 }
 
+const std::filesystem::path kTestDataDir = std::filesystem::path{CAPS_LOG_TEST_DATA_DIR};
+
+TEST_F(EncryptedLocalLogRepositoryTest, LongContentEncryptionRoundtrip) {
+    auto repo = LocalLogRepository(TMPDirPathProvider, kDummyPassword);
+    const auto longContentPath = kTestDataDir / "lorem_ipsum.txt";
+    const auto longContent = readFile(longContentPath);
+    const auto encryptedLongContentPath = kTestDataDir / "lorem_ipsum_ecrypted_with_word_dummy.bin";
+    const auto encryptedLogContent = readFile(encryptedLongContentPath);
+
+    repo.write(LogFile{kSelectedDate, longContent});
+    ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(kSelectedDate)));
+    EXPECT_EQ(readFile(TMPDirPathProvider.path(kSelectedDate)), encryptedLogContent);
+
+    auto log = repo.read(kSelectedDate);
+    ASSERT_TRUE(log.has_value());
+    ASSERT_EQ(log->getDate(), kSelectedDate);
+    ASSERT_EQ(log->getContent(), longContent);
+}
+
 class LogRepositoryCryptoApplierTest : public LocalLogRepositoryTest {
   protected:
     static constexpr auto kDummyLogContent = "Dummy string";
@@ -221,7 +240,6 @@ TEST_F(LogRepoConstructionAfterCryptoApplier, ErrorOnEncryptedRepoWithBadPasswor
                                                 TMPDirPathProvider.getLogFilenameFormat(),
                                                 caps_log::Crypto::Encrypt);
 
-    EXPECT_THROW(
-        { const auto repo = LocalLogRepository(TMPDirPathProvider, badPassword); },
-        std::runtime_error);
+    EXPECT_THROW({ const auto repo = LocalLogRepository(TMPDirPathProvider, badPassword); },
+                 std::runtime_error);
 }

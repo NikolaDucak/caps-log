@@ -89,7 +89,7 @@ std::string decrypt(const std::string &password, std::istream &file) {
     EvpCtx ctx;
 
     const EVP_CIPHER *cipher = EVP_aes_128_cfb();
-    auto [key, iv] = getKeyAndIv(password);
+    const auto [key, iv] = getKeyAndIv(password);
 
     if (EVP_DecryptInit_ex(ctx.get(), cipher, nullptr, key.data(), iv.data()) != 1) {
         throw std::runtime_error{"Decryption failed: failed to initialze decryption!"};
