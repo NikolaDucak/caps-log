@@ -57,8 +57,8 @@ class EncryptedFileEditor : public EditorBase {
         std::mt19937 gen(randDevice());
         std::uniform_int_distribution<> dis(kMinRandomDistribution, kMaxRandomDistribution);
 
-        std::string random_filename = "caps-log-edit-" + std::to_string(dis(gen)) + ".md";
-        return (std::filesystem::temp_directory_path() / random_filename).string();
+        std::string randomFilename = "caps-log-edit-" + std::to_string(dis(gen)) + ".md";
+        return (std::filesystem::temp_directory_path() / randomFilename).string();
     }
 
     void decryptFile(const std::string &path) {

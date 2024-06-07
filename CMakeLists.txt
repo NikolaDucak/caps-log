@@ -44,6 +44,7 @@ if(NOT ftxui_FOUND)
 endif()
 
 # --------------------------------- boost -------------------------------- #
+
 find_package(
   Boost 
   COMPONENTS program_options

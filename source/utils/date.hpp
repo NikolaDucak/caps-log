@@ -31,8 +31,8 @@ inline std::tm dateToTm(const std::chrono::year_month_day &date) {
 inline std::string formatToString(const std::chrono::year_month_day &date,
                                   const std::string &format = "%d. %m. %y.") {
     std::ostringstream oss;
-    std::tm date_time = detail::dateToTm(date);
-    oss << std::put_time(&date_time, format.c_str());
+    std::tm dateTime = detail::dateToTm(date);
+    oss << std::put_time(&dateTime, format.c_str());
     return oss.str();
 }
 
@@ -48,7 +48,7 @@ inline bool isWeekend(const std::chrono::year_month_day &date) {
 }
 
 inline unsigned getNumberOfDaysForMonth(std::chrono::month month, std::chrono::year year) {
-    static const std::array<unsigned, 13> days{
+    static const std::array<unsigned, 13> kDays{
         0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
     };
 
@@ -56,33 +56,33 @@ inline unsigned getNumberOfDaysForMonth(std::chrono::month month, std::chrono::y
         return detail::kLeapYearFebruaryDays;
     }
 
-    return days.at(static_cast<unsigned>(month));
+    return kDays.at(static_cast<unsigned>(month));
 }
 
 inline unsigned getStartingWeekdayForMonth(std::chrono::year_month year_month) {
-    std::tm first_day_of_the_month{};
-    first_day_of_the_month.tm_mday = 0;
-    first_day_of_the_month.tm_mon = static_cast<int>(static_cast<unsigned>(year_month.month())) - 1;
-    first_day_of_the_month.tm_year = static_cast<int>(year_month.year()) - detail::kTmYearStart;
+    std::tm firstDayOfTheMonth{};
+    firstDayOfTheMonth.tm_mday = 0;
+    firstDayOfTheMonth.tm_mon = static_cast<int>(static_cast<unsigned>(year_month.month())) - 1;
+    firstDayOfTheMonth.tm_year = static_cast<int>(year_month.year()) - detail::kTmYearStart;
 
-    auto time = std::mktime(&first_day_of_the_month);
-    auto *target_time_result = std::localtime(&time);
+    auto time = std::mktime(&firstDayOfTheMonth);
+    auto *targetTimeResult = std::localtime(&time);
 
-    if (target_time_result->tm_wday == 0) {
+    if (targetTimeResult->tm_wday == 0) {
         return 1;
     }
-    return target_time_result->tm_wday + 1;
+    return targetTimeResult->tm_wday + 1;
 }
 
 inline std::string getStringNameForMonth(std::chrono::month month) {
     assert(month.ok());
-    static const std::array<std::string, 13> month_names{
+    static const std::array<std::string, 13> kMonthNames{
         "", // month 0 == error
         "January", "February", "March",     "April",   "May",      "June",
         "July",    "August",   "September", "October", "November", "December"};
 
     const auto index = static_cast<unsigned>(month);
-    return month_names.at(index);
+    return kMonthNames.at(index);
 }
 
 /**
@@ -91,33 +91,36 @@ inline std::string getStringNameForMonth(std::chrono::month month) {
 template <typename T> class AnnualMap {
     static constexpr auto kDaysInMonth = 31;
     static constexpr auto kMonthsInYear = 12;
-    std::array<std::array<T, kDaysInMonth>, kMonthsInYear> map{};
+    std::array<std::array<T, kDaysInMonth>, kMonthsInYear> m_map{};
 
   public:
     T &get(const std::chrono::year_month_day &date) {
-        return map[static_cast<unsigned>(date.month()) - 1][static_cast<unsigned>(date.day()) - 1];
+        return m_map[static_cast<unsigned>(date.month()) - 1]
+                    [static_cast<unsigned>(date.day()) - 1];
     }
     const T &get(const std::chrono::year_month_day &date) const {
-        return map[static_cast<unsigned>(date.month()) - 1][static_cast<unsigned>(date.day()) - 1];
+        return m_map[static_cast<unsigned>(date.month()) - 1]
+                    [static_cast<unsigned>(date.day()) - 1];
     }
-    T &get(unsigned day, unsigned month) { return map[month - 1][day - 1]; }
-    const T &get(unsigned day, unsigned month) const { return map[month - 1][day - 1]; }
+    T &get(unsigned day, unsigned month) { return m_map[month - 1][day - 1]; }
+    const T &get(unsigned day, unsigned month) const { return m_map[month - 1][day - 1]; }
 
     void set(const std::chrono::year_month_day &date, const T &value) {
-        map[static_cast<unsigned>(date.month()) - 1][static_cast<unsigned>(date.day()) - 1] = value;
+        m_map[static_cast<unsigned>(date.month()) - 1][static_cast<unsigned>(date.day()) - 1] =
+            value;
     }
-    T &set(unsigned day, unsigned month, T &val) { return map[month - 1][day - 1] = val; }
+    T &set(unsigned day, unsigned month, T &val) { return m_map[month - 1][day - 1] = val; }
 
     inline unsigned daysSet() const {
         unsigned result = 0;
-        for (const auto &month : map) {
+        for (const auto &month : m_map) {
             result += std::count(month.begin(), month.end(), true);
         }
         return result;
     }
 
     inline bool hasAnyDaySet() const {
-        return std::ranges::any_of(map, [](const auto &month) {
+        return std::ranges::any_of(m_map, [](const auto &month) {
             return std::ranges::any_of(month, [](const auto &day) { return day; });
         });
     }
