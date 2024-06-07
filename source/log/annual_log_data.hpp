@@ -2,6 +2,7 @@
 
 #include "log_repository_base.hpp"
 #include "utils/date.hpp"
+#include <memory>
 
 namespace caps_log::log {
 
