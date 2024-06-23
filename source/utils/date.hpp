@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iomanip>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -27,6 +28,10 @@ inline std::tm dateToTm(const std::chrono::year_month_day &date) {
 }
 
 } // namespace detail
+
+inline std::chrono::month_day monthDay(std::chrono::year_month_day date) {
+    return std::chrono::month_day{date.month(), date.day()};
+}
 
 inline std::string formatToString(const std::chrono::year_month_day &date,
                                   const std::string &format = "%d. %m. %y.") {
@@ -85,47 +90,6 @@ inline std::string getStringNameForMonth(std::chrono::month month) {
     return kMonthNames.at(index);
 }
 
-/**
- * A type of "map" container that maps dates in one year to T
- **/
-template <typename T> class AnnualMap {
-    static constexpr auto kDaysInMonth = 31;
-    static constexpr auto kMonthsInYear = 12;
-    std::array<std::array<T, kDaysInMonth>, kMonthsInYear> m_map{};
-
-  public:
-    T &get(const std::chrono::year_month_day &date) {
-        return m_map[static_cast<unsigned>(date.month()) - 1]
-                    [static_cast<unsigned>(date.day()) - 1];
-    }
-    const T &get(const std::chrono::year_month_day &date) const {
-        return m_map[static_cast<unsigned>(date.month()) - 1]
-                    [static_cast<unsigned>(date.day()) - 1];
-    }
-    T &get(unsigned day, unsigned month) { return m_map[month - 1][day - 1]; }
-    const T &get(unsigned day, unsigned month) const { return m_map[month - 1][day - 1]; }
-
-    void set(const std::chrono::year_month_day &date, const T &value) {
-        m_map[static_cast<unsigned>(date.month()) - 1][static_cast<unsigned>(date.day()) - 1] =
-            value;
-    }
-    T &set(unsigned day, unsigned month, T &val) { return m_map[month - 1][day - 1] = val; }
-
-    inline unsigned daysSet() const {
-        unsigned result = 0;
-        for (const auto &month : m_map) {
-            result += std::count(month.begin(), month.end(), true);
-        }
-        return result;
-    }
-
-    inline bool hasAnyDaySet() const {
-        return std::ranges::any_of(m_map, [](const auto &month) {
-            return std::ranges::any_of(month, [](const auto &day) { return day; });
-        });
-    }
-};
-
-using StringYearMap = std::map<std::string, AnnualMap<bool>>;
+using Dates = std::set<std::chrono::month_day>;
 
 } // namespace caps_log::utils::date

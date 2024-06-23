@@ -2,13 +2,16 @@
 #include "mocks.hpp"
 
 #include "log/log_file.hpp"
+#include "utils/date.hpp"
 #include "view/input_handler.hpp"
 
 #include <ftxui/component/event.hpp>
 #include <gmock/gmock-spec-builders.h>
+#include <gmock/gmock.h>
 #include <memory>
 
-using namespace caps_log;
+namespace caps_log::test {
+
 using namespace testing;
 
 class ControllerTest : public testing::Test {
@@ -30,8 +33,7 @@ class ControllerTest : public testing::Test {
      * @brief Create a caps_log::App object with the mock objects and selected year.
      */
     auto makeCapsLog() {
-        return caps_log::App{mock_view, mock_repo,    mock_editor,
-                             true,      std::nullopt, selectedDate.year()};
+        return App{mock_view, mock_repo, mock_editor, true, std::nullopt, selectedDate.year()};
     }
 
   public:
@@ -77,9 +79,8 @@ TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
     ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
     EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems[1],
-              caps_log::view::makeMenuItemTitle("dummy section", 1));
-    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems[1],
-              caps_log::view::makeMenuItemTitle("dummy tag", 1));
+              view::makeMenuItemTitle("dummy section", 1));
+    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems[1], view::makeMenuItemTitle("dummy tag", 1));
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -131,26 +132,27 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
         capsLog.handleInputEvent(UIEvent{FocusedTagChange{1}});
         auto *dummyView = &mock_view->getDummyView();
 
+        using utils::date::monthDay;
         // Tags
-        ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
-        ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
-        ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
+        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
+        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
 
         capsLog.handleInputEvent(UIEvent{FocusedTagChange{2}});
-        ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
-        ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
-        ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
+        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
+        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
 
         // Sections
         capsLog.handleInputEvent(UIEvent{FocusedSectionChange{1}});
-        ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
-        ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
-        ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
+        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
+        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
 
         capsLog.handleInputEvent(UIEvent{FocusedSectionChange{2}});
-        ASSERT_NE(dummyView->m_highlightedLogsMap, nullptr);
-        ASSERT_FALSE(dummyView->m_highlightedLogsMap->get(dummyLog1.getDate()));
-        ASSERT_TRUE(dummyView->m_highlightedLogsMap->get(dummyLog2.getDate()));
+        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
+        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
     });
     capsLog.run();
 }
@@ -160,8 +162,9 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     // +1 for '-----' aka no section
     ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
-    ASSERT_NE(mock_view->getDummyView().m_availableLogsMap, nullptr);
-    EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
+    ASSERT_NE(mock_view->getDummyView().m_datesWithLogs, nullptr);
+    EXPECT_FALSE(
+        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
 
     EXPECT_CALL(*mock_view, run());
     ON_CALL(*mock_view, run()).WillByDefault([&] {
@@ -176,7 +179,8 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
         capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
 
         // expect the initialy set availability map pointer to still be valid
-        EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), true);
+        EXPECT_TRUE(mock_view->getDummyView().m_datesWithLogs->contains(
+            utils::date::monthDay(selectedDate)));
         ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
         EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.at(1), "(1) - section title");
         ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
@@ -188,7 +192,8 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
 
 TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
     auto capsLog = makeCapsLog();
-    EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
+    EXPECT_FALSE(
+        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](auto) {
@@ -205,7 +210,8 @@ TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
 
 TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
     auto capsLog = makeCapsLog();
-    EXPECT_EQ(mock_view->getDummyView().m_availableLogsMap->get(selectedDate), false);
+    EXPECT_FALSE(
+        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
 
     ON_CALL(*mock_view, run()).WillByDefault([&] {
         EXPECT_CALL(*mock_editor, openEditor(_))
@@ -235,8 +241,10 @@ TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
     mock_repo->write(LogFile{selectedDate, "# Dummy section"});
     auto capsLog2 =
-        caps_log::App{mock_view, mock_repo, mock_editor, false, std::nullopt, selectedDate.year()};
+        App{mock_view, mock_repo, mock_editor, false, std::nullopt, selectedDate.year()};
 
     // +1 for '-----' aka no section
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
 }
+
+} // namespace caps_log::test

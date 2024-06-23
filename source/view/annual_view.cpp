@@ -5,6 +5,7 @@
 #include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/dom/elements.hpp"
 #include "ftxui_ext/extended_containers.hpp"
+#include "utils/date.hpp"
 #include "view/input_handler.hpp"
 #include "view/windowed_menu.hpp"
 
@@ -49,7 +50,7 @@ std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
                 utils::date::formatToString(utils::date::getToday(), "%d. %m. %Y.");
             const auto titleText =
                 fmt::format("Today is: {} -- There are {} log entries for year {}.", dateStr,
-                            m_availabeLogsMap != nullptr ? m_availabeLogsMap->daysSet() : 0,
+                            m_datesWithLogs != nullptr ? m_datesWithLogs->size() : 0,
                             static_cast<int>(m_calendarButtons->getFocusedDate().year()));
             const auto mainSection =
                 hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
@@ -85,7 +86,8 @@ CalendarOption AnnualView::makeCalendarOptions(const std::chrono::year_month_day
 
         if (today == date) {
             element = element | color(Color::Red);
-        } else if (m_highlightedLogsMap && m_highlightedLogsMap->get(date)) {
+        } else if (m_highlightedDates &&
+                   m_highlightedDates->contains(utils::date::monthDay(date))) {
             element = element | color(Color::Yellow);
         } else if (utils::date::isWeekend(date)) {
             element = element | color(Color::Blue);
@@ -95,8 +97,8 @@ CalendarOption AnnualView::makeCalendarOptions(const std::chrono::year_month_day
             element = element | inverted;
         }
 
-        if (m_availabeLogsMap) {
-            if (m_availabeLogsMap->get(date)) {
+        if (m_datesWithLogs) {
+            if (m_datesWithLogs->contains(utils::date::monthDay(date))) {
                 element = element | underlined;
             } else {
                 element = element | dim;

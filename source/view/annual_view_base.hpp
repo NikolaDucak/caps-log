@@ -40,8 +40,9 @@ class AnnualViewBase { // NOLINT
 
     // passing only a pointer and having a view have no ownership of
     // the map allows for having precoputed maps and switching
-    virtual void setAvailableLogsMap(const utils::date::AnnualMap<bool> *map) = 0;
-    virtual void setHighlightedLogsMap(const utils::date::AnnualMap<bool> *map) = 0;
+    virtual void setDatesWithLogs(const utils::date::Dates *map) = 0;
+    virtual void setHighlightedDates(const utils::date::Dates *map) = 0;
+
     // can't use a pointer here because some FTXUI menu limitations
     virtual void setTagMenuItems(std::vector<std::string> items) = 0;
     virtual void setSectionMenuItems(std::vector<std::string> items) = 0;

@@ -240,6 +240,7 @@ TEST_F(LogRepoConstructionAfterCryptoApplier, ErrorOnEncryptedRepoWithBadPasswor
                                                 TMPDirPathProvider.getLogFilenameFormat(),
                                                 caps_log::Crypto::Encrypt);
 
-    EXPECT_THROW({ const auto repo = LocalLogRepository(TMPDirPathProvider, badPassword); },
-                 std::runtime_error);
+    EXPECT_THROW(
+        { const auto repo = LocalLogRepository(TMPDirPathProvider, badPassword); },
+        std::runtime_error);
 }

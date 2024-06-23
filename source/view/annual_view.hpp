@@ -28,8 +28,8 @@ class AnnualView : public AnnualViewBase {
     std::shared_ptr<Promptable> m_rootComponent;
 
     // Maps that help m_calendarButtons highlight certain logs.
-    const utils::date::AnnualMap<bool> *m_highlightedLogsMap = nullptr;
-    const utils::date::AnnualMap<bool> *m_availabeLogsMap = nullptr;
+    const utils::date::Dates *m_highlightedDates = nullptr;
+    const utils::date::Dates *m_datesWithLogs = nullptr;
 
     // Menu items for m_tagsMenu & m_sectionsMenu
     std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
@@ -54,12 +54,8 @@ class AnnualView : public AnnualViewBase {
 
     void setInputHandler(InputHandlerBase *handler) override { m_handler = handler; }
 
-    void setAvailableLogsMap(const utils::date::AnnualMap<bool> *map) override {
-        m_availabeLogsMap = map;
-    }
-    void setHighlightedLogsMap(const utils::date::AnnualMap<bool> *map) override {
-        m_highlightedLogsMap = map;
-    }
+    void setDatesWithLogs(const utils::date::Dates *map) override { m_datesWithLogs = map; }
+    void setHighlightedDates(const utils::date::Dates *map) override { m_highlightedDates = map; }
 
     void setTagMenuItems(std::vector<std::string> items) override {
         m_tagMenuItems = std::move(items);
