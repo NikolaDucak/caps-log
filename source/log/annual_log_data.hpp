@@ -2,7 +2,10 @@
 
 #include "log_repository_base.hpp"
 #include "utils/date.hpp"
+#include <chrono>
 #include <memory>
+#include <set>
+#include <string>
 
 namespace caps_log::log {
 
@@ -13,9 +16,9 @@ namespace caps_log::log {
  */
 class AnnualLogData {
   public:
-    utils::date::AnnualMap<bool> logAvailabilityMap;
-    utils::date::StringYearMap sectionMap;
-    utils::date::StringYearMap tagMap;
+    utils::date::Dates datesWithLogs;
+    std::map<std::string, utils::date::Dates> datesWithSection;
+    std::map<std::string, utils::date::Dates> datesWithTag;
 
     /**
      * Constructs YearOverviewData from logs in a given year.

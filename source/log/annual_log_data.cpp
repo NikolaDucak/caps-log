@@ -3,6 +3,8 @@
 
 namespace caps_log::log {
 
+using utils::date::monthDay;
+
 namespace {
 void collectEmpty(AnnualLogData &data, const std::shared_ptr<LogRepositoryBase> &repo,
                   std::chrono::year_month_day date, bool skipFirstLine) {
@@ -10,21 +12,21 @@ void collectEmpty(AnnualLogData &data, const std::shared_ptr<LogRepositoryBase> 
 
     // if there is no log to be processed, return
     if (not input) {
-        data.logAvailabilityMap.set(date, false);
+        data.datesWithLogs.erase(monthDay(date));
         return;
     }
 
-    data.logAvailabilityMap.set(date, true);
+    data.datesWithLogs.insert(monthDay(date));
 
     // then parse and set mentions again
     const auto parsedSections = input->readSectionTitles(skipFirstLine);
     const auto parsedTags = input->readTagTitles();
 
     for (const auto &tag : parsedTags) {
-        data.tagMap[tag].set(date, true);
+        data.datesWithTag[tag].insert(monthDay(date));
     }
     for (const auto &section : parsedSections) {
-        data.sectionMap[section].set(date, true);
+        data.datesWithSection[section].insert(monthDay(date));
     }
 }
 
@@ -52,16 +54,17 @@ AnnualLogData AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &r
 void AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
                             const std::chrono::year_month_day &date, bool skipFirstLine) {
     // remove all information in maps for this date first
-    std::erase_if(tagMap, [date](auto &item) {
-        auto &[_, annual_map] = item;
-        annual_map.set(date, false);
-        return not annual_map.hasAnyDaySet();
+    const auto monthDayDate = monthDay(date);
+    std::erase_if(datesWithTag, [monthDayDate](auto &item) {
+        auto &[_, dates] = item;
+        dates.erase(monthDayDate);
+        return dates.size() == 0;
     });
 
-    std::erase_if(sectionMap, [date](auto &item) {
-        auto &[_, annual_map] = item;
-        annual_map.set(date, false);
-        return not annual_map.hasAnyDaySet();
+    std::erase_if(datesWithSection, [monthDayDate](auto &item) {
+        auto &[_, dates] = item;
+        dates.erase(monthDayDate);
+        return dates.size() == 0;
     });
 
     // collect as if it was empty

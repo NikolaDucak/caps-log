@@ -63,8 +63,8 @@ class App : public InputHandlerBase {
     std::shared_ptr<EditorBase> m_editor;
     AnnualLogData m_data;
 
-    std::vector<const date::AnnualMap<bool> *> m_tagMaps;
-    std::vector<const date::AnnualMap<bool> *> m_sectionMaps;
+    std::vector<const utils::date::Dates *> m_tagMaps;
+    std::vector<const utils::date::Dates *> m_sectionMaps;
     bool m_skipFirstLine;
 
     std::optional<AsyncGitRepo> m_gitRepo;
@@ -72,11 +72,11 @@ class App : public InputHandlerBase {
     void
     updateViewSectionsAndTagsAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {
         m_data.collect(m_repo, dateOfChangedLog, m_skipFirstLine);
-        m_view->setTagMenuItems(makeMenuTitles(m_data.tagMap));
-        m_view->setSectionMenuItems(makeMenuTitles(m_data.sectionMap));
+        m_view->setTagMenuItems(makeMenuTitles(m_data.datesWithTag));
+        m_view->setSectionMenuItems(makeMenuTitles(m_data.datesWithSection));
 
-        updatePointersForHighlightMaps(m_tagMaps, m_data.tagMap);
-        updatePointersForHighlightMaps(m_sectionMaps, m_data.sectionMap);
+        updatePointersForHighlightMaps(m_tagMaps, m_data.datesWithTag);
+        updatePointersForHighlightMaps(m_sectionMaps, m_data.datesWithSection);
         if (dateOfChangedLog == m_view->getFocusedDate()) {
             if (auto log = m_repo->read(m_view->getFocusedDate())) {
                 m_view->setPreviewString(log->getContent());
@@ -96,7 +96,7 @@ class App : public InputHandlerBase {
           m_data{AnnualLogData::collect(m_repo, m_displayedYear, skipFirstLine)},
           m_skipFirstLine{skipFirstLine} {
         m_view->setInputHandler(this);
-        m_view->setAvailableLogsMap(&m_data.logAvailabilityMap);
+        m_view->setDatesWithLogs(&m_data.datesWithLogs);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
 
         if (gitRepo) {
@@ -158,13 +158,13 @@ class App : public InputHandlerBase {
     void handleFocusedTagChange(int newTag) {
         m_view->selectedSection() = 0;
         const auto *const highlighMap = m_tagMaps.at(newTag);
-        m_view->setHighlightedLogsMap(highlighMap);
+        m_view->setHighlightedDates(highlighMap);
     }
 
     void handleFocusedSectionChange(int newSection) {
         m_view->selectedTag() = 0;
         const auto *const highlighMap = m_sectionMaps.at(newSection);
-        m_view->setHighlightedLogsMap(highlighMap);
+        m_view->setHighlightedDates(highlighMap);
     }
 
     void handleUiStarted() {
@@ -191,7 +191,7 @@ class App : public InputHandlerBase {
 
     void deleteFocusedLog() {
         auto date = m_view->getFocusedDate();
-        if (m_data.logAvailabilityMap.get(date)) {
+        if (m_data.datesWithLogs.contains(date::monthDay(date))) {
             m_view->prompt("Are you sure you want to delete a log file?", [date, this] {
                 m_repo->remove(date);
                 updateViewSectionsAndTagsAfterLogChange(date);
@@ -203,7 +203,7 @@ class App : public InputHandlerBase {
         m_displayedYear = std::chrono::year{(int)m_displayedYear + diff};
         m_data = AnnualLogData::collect(m_repo, m_displayedYear, m_skipFirstLine);
         m_view->showCalendarForYear(m_displayedYear);
-        m_view->setHighlightedLogsMap(nullptr);
+        m_view->setHighlightedDates(nullptr);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
     }
 
@@ -234,8 +234,8 @@ class App : public InputHandlerBase {
         return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
     }
 
-    static const date::AnnualMap<bool> *findOrNull(const date::StringYearMap &map,
-                                                   const std::string &key) {
+    static const utils::date::Dates *
+    findOrNull(const std::map<std::string, utils::date::Dates> &map, const std::string &key) {
         auto result = map.find(key);
         if (result == map.end()) {
             return nullptr;
@@ -249,13 +249,14 @@ class App : public InputHandlerBase {
      * map for said menu item is appropriate. Alternative would getting the string and looking up
      * in the map.
      */
-    static void updatePointersForHighlightMaps(std::vector<const date::AnnualMap<bool> *> &vec,
-                                               const date::StringYearMap &map) {
+    static void
+    updatePointersForHighlightMaps(std::vector<const utils::date::Dates *> &vec,
+                                   const std::map<std::string, utils::date::Dates> &map) {
         vec.clear();
         vec.reserve(map.size());
         vec.push_back(nullptr); // 0 index = no highlighted days
-        for (auto const &[_, annual_map] : map) {
-            vec.emplace_back(&annual_map);
+        for (auto const &[_, dates] : map) {
+            vec.emplace_back(&dates);
         }
     }
 
@@ -264,12 +265,13 @@ class App : public InputHandlerBase {
      * title will be made of a key in the @p map and the number of days it has been
      * mantioned (days set).
      */
-    static std::vector<std::string> makeMenuTitles(const date::StringYearMap &map) {
+    static std::vector<std::string>
+    makeMenuTitles(const std::map<std::string, utils::date::Dates> &map) {
         std::vector<std::string> strs;
         strs.reserve(map.size());
         strs.push_back(" ----- ");
         for (auto const &[str, annual_map] : map) {
-            strs.push_back(std::string{"("} + std::to_string(annual_map.daysSet()) + ") - " + str);
+            strs.push_back(std::string{"("} + std::to_string(annual_map.size()) + ") - " + str);
         }
         return std::move(strs);
     }
