@@ -27,7 +27,13 @@ std::string promptPassword(const caps_log::Config &config) {
                                          .multiline = false,
                                          .on_enter = screen.ExitLoopClosure()});
     const auto buttonSubmit = Button("Submit", screen.ExitLoopClosure(), ButtonOption::Ascii());
-    const auto buttonQuit = Button("Quit", screen.ExitLoopClosure(), ButtonOption::Ascii());
+    const auto buttonQuit = Button(
+        "Quit",
+        [&]() {
+            screen.ExitLoopClosure();
+            std::exit(0);
+        },
+        ButtonOption::Ascii());
     const auto container = Container::Vertical({input, buttonSubmit, buttonQuit});
 
     const Component renderer = Renderer(container, [container]() {
