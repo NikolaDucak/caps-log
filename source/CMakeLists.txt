@@ -32,7 +32,12 @@ add_executable(
   ./view/promptable.cpp
   ./view/promptable.hpp)
 
-target_include_directories(caps-log PRIVATE ./ ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(
+  caps-log 
+  PRIVATE 
+  ./ 
+  ${CMAKE_CURRENT_BINARY_DIR}, 
+  ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(
   caps-log
@@ -41,6 +46,7 @@ target_link_libraries(
   ftxui::dom
   ftxui::component
   fmt::fmt
+  ${Boost_LIBRARIES}
   Boost::program_options
   OpenSSL::Crypto
   OpenSSL::SSL
