@@ -19,6 +19,7 @@ class AnnualLogData {
     utils::date::Dates datesWithLogs;
     std::map<std::string, utils::date::Dates> datesWithSection;
     std::map<std::string, utils::date::Dates> datesWithTag;
+    std::map<std::string, std::map<std::string, utils::date::Dates>> tagsPerSection;
 
     /**
      * Constructs YearOverviewData from logs in a given year.
