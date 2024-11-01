@@ -247,4 +247,37 @@ TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
     ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
 }
 
+TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMapsAfterRemove) {
+    mock_repo->write(LogFile{selectedDate, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
+    auto capsLog = makeCapsLog();
+
+    // +1 for '-----' aka no section
+    ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
+    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.at(1), "(1) - dummy tag");
+    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
+    EXPECT_TRUE(
+        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
+
+    EXPECT_CALL(*mock_view, run());
+    ON_CALL(*mock_view, run()).WillByDefault([&] {
+        // expect editor to open
+        EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](const auto &) {
+            const auto log = LogFile{selectedDate, "\n* tag title"};
+            mock_repo->getDummyRepo().write(log);
+        });
+
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{1}});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
+
+        EXPECT_EQ(mock_view->getDummyView().m_highlightedDates, nullptr);
+        EXPECT_TRUE(mock_view->getDummyView().m_datesWithLogs->contains(
+            utils::date::monthDay(selectedDate)));
+        EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
+        ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
+        EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.at(1), "(1) - tag title");
+    });
+
+    capsLog.run();
+}
+
 } // namespace caps_log::test
