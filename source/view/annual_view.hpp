@@ -32,7 +32,7 @@ class AnnualView : public AnnualViewBase {
     const utils::date::Dates *m_datesWithLogs = nullptr;
 
     // Menu items for m_tagsMenu & m_sectionsMenu
-    std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
+    MenuItems m_tagMenuItems, m_sectionMenuItems;
 
   public:
     AnnualView(const std::chrono::year_month_day &today, bool sundayStart);
@@ -49,20 +49,10 @@ class AnnualView : public AnnualViewBase {
 
     void showCalendarForYear(std::chrono::year year) override;
 
-    int &selectedTag() override { return m_tagsMenu->selected(); }
-    int &selectedSection() override { return m_sectionsMenu->selected(); }
-
     void setInputHandler(InputHandlerBase *handler) override { m_handler = handler; }
 
     void setDatesWithLogs(const utils::date::Dates *map) override { m_datesWithLogs = map; }
     void setHighlightedDates(const utils::date::Dates *map) override { m_highlightedDates = map; }
-
-    void setTagMenuItems(std::vector<std::string> items) override {
-        m_tagMenuItems = std::move(items);
-    }
-    void setSectionMenuItems(std::vector<std::string> items) override {
-        m_sectionMenuItems = std::move(items);
-    }
 
     void setPreviewString(const std::string &string) override { m_preview->setContent(string); }
 
@@ -70,6 +60,36 @@ class AnnualView : public AnnualViewBase {
 
     std::chrono::year_month_day getFocusedDate() const override {
         return m_calendarButtons->getFocusedDate();
+    }
+
+    MenuItems &tagMenuItems() override { return m_tagMenuItems; }
+    MenuItems &sectionMenuItems() override { return m_sectionMenuItems; }
+
+    void setSelectedTag(std::string tag) override {
+        const auto tagInMenu =
+            std::find(m_tagMenuItems.getKeys().begin(), m_tagMenuItems.getKeys().end(), tag);
+        const auto newSelected = tagInMenu != m_tagMenuItems.getKeys().end()
+                                     ? std::distance(m_tagMenuItems.getKeys().begin(), tagInMenu)
+                                     : 0;
+        m_tagsMenu->selected() = newSelected;
+    }
+
+    void setSelectedSection(std::string section) override {
+        const auto sectionInMenu = std::find(m_sectionMenuItems.getKeys().begin(),
+                                             m_sectionMenuItems.getKeys().end(), section);
+        const auto newSelected =
+            sectionInMenu != m_sectionMenuItems.getKeys().end()
+                ? std::distance(m_sectionMenuItems.getKeys().begin(), sectionInMenu)
+                : 0;
+        m_sectionsMenu->selected() = newSelected;
+    }
+
+    const std::string &getSelectedTag() const override {
+        return m_tagMenuItems.getKeys().at(m_tagsMenu->selected());
+    }
+
+    const std::string &getSelectedSection() const override {
+        return m_sectionMenuItems.getKeys().at(m_sectionsMenu->selected());
     }
 
   private:

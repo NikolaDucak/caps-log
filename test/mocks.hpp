@@ -2,7 +2,6 @@
 #include "log/log_repository_base.hpp"
 #include "utils/date.hpp"
 #include "view/annual_view_base.hpp"
-#include "view/calendar_component.hpp"
 #include "view/input_handler.hpp"
 #include <chrono>
 #include <gmock/gmock-actions.h>
@@ -10,18 +9,18 @@
 #include <gmock/gmock-nice-strict.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sstream>
+#include <utility>
 
 class DummyYearView : public caps_log::view::AnnualViewBase {
   public:
     caps_log::view::InputHandlerBase *m_inputHandler = nullptr;
     std::chrono::year m_displayedYear{};
-    int m_selectedTag{}, m_selectedSection{};
     std::chrono::year_month_day m_focusedDate{std::chrono::year{2005}, std::chrono::month{1},
                                               std::chrono::day{1}};
     std::string m_previewString;
     const caps_log::utils::date::Dates *m_datesWithLogs{}, *m_highlightedDates{};
-    std::vector<std::string> m_tagMenuItems, m_sectionMenuItems;
+    caps_log::view::MenuItems m_tagMenuItems, m_sectionMenuItems;
+    std::string m_selectedTag, m_selectedSection;
 
     void run() override {}
     void stop() override {}
@@ -49,16 +48,15 @@ class DummyYearView : public caps_log::view::AnnualViewBase {
         m_highlightedDates = map;
     }
 
-    void setTagMenuItems(std::vector<std::string> items) override { m_tagMenuItems = items; }
-    void setSectionMenuItems(std::vector<std::string> items) override {
-        m_sectionMenuItems = items;
-    }
-
     void setPreviewString(const std::string &string) override { m_previewString = string; }
     void withRestoredIO(std::function<void()> func) override { func(); }
 
-    int &selectedTag() override { return m_selectedTag; }
-    int &selectedSection() override { return m_selectedSection; }
+    caps_log::view::MenuItems &tagMenuItems() override { return m_tagMenuItems; }
+    caps_log::view::MenuItems &sectionMenuItems() override { return m_sectionMenuItems; }
+    const std::string &getSelectedTag() const override { return m_selectedTag; }
+    const std::string &getSelectedSection() const override { return m_selectedSection; }
+    void setSelectedTag(std::string tag) override { m_selectedTag = tag; }
+    void setSelectedSection(std::string section) override { m_selectedSection = section; }
 };
 
 class DMockYearView : public caps_log::view::AnnualViewBase {
@@ -79,23 +77,32 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
         ON_CALL(*this, showCalendarForYear).WillByDefault([&](auto year) {
             m_view.showCalendarForYear(year);
         });
-        ON_CALL(*this, setTagMenuItems).WillByDefault([&](auto items) {
-            m_view.setTagMenuItems(items);
-        });
-        ON_CALL(*this, setSectionMenuItems).WillByDefault([&](auto items) {
-            m_view.setSectionMenuItems(items);
-        });
-        ON_CALL(*this, withRestoredIO).WillByDefault([&](auto func) { func(); });
+        ON_CALL(*this, withRestoredIO).WillByDefault([&](const auto &func) { func(); });
         ON_CALL(*this, prompt).WillByDefault([&](auto msg, auto callback) {
-            m_view.prompt(msg, callback);
+            m_view.prompt(std::move(msg), std::move(callback));
         });
-        ON_CALL(*this, setPreviewString).WillByDefault([&](auto str) {
+        ON_CALL(*this, setPreviewString).WillByDefault([&](const auto &str) {
             m_view.setPreviewString(str);
         });
 
-        ON_CALL(*this, selectedTag).WillByDefault(::testing::ReturnRef(m_view.selectedTag()));
-        ON_CALL(*this, selectedSection)
-            .WillByDefault(::testing::ReturnRef(m_view.selectedSection()));
+        ON_CALL(*this, tagMenuItems).WillByDefault([&]() -> auto & {
+            return m_view.tagMenuItems();
+        });
+        ON_CALL(*this, sectionMenuItems).WillByDefault([&]() -> auto & {
+            return m_view.sectionMenuItems();
+        });
+        ON_CALL(*this, getSelectedTag).WillByDefault([&]() -> auto & {
+            return m_view.getSelectedTag();
+        });
+        ON_CALL(*this, getSelectedSection).WillByDefault([&]() -> auto & {
+            return m_view.getSelectedSection();
+        });
+        ON_CALL(*this, setSelectedTag).WillByDefault([&](auto tag) {
+            m_view.setSelectedTag(std::move(tag));
+        });
+        ON_CALL(*this, setSelectedSection).WillByDefault([&](auto section) {
+            m_view.setSelectedSection(std::move(section));
+        });
     }
 
     auto &getDummyView() { return m_view; }
@@ -117,14 +124,15 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
     MOCK_METHOD(void, setDatesWithLogs, (const caps_log::utils::date::Dates *map), (override));
     MOCK_METHOD(void, setHighlightedDates, (const caps_log::utils::date::Dates *map), (override));
 
-    MOCK_METHOD(void, setTagMenuItems, (std::vector<std::string> items), (override));
-    MOCK_METHOD(void, setSectionMenuItems, (std::vector<std::string> items), (override));
-
     MOCK_METHOD(void, setPreviewString, (const std::string &string), (override));
     MOCK_METHOD(void, withRestoredIO, (std::function<void()> func), (override));
 
-    MOCK_METHOD(int &, selectedTag, (), (override));
-    MOCK_METHOD(int &, selectedSection, (), (override));
+    MOCK_METHOD(caps_log::view::MenuItems &, tagMenuItems, (), (override));
+    MOCK_METHOD(caps_log::view::MenuItems &, sectionMenuItems, (), (override));
+    MOCK_METHOD(const std::string &, getSelectedTag, (), (const override));
+    MOCK_METHOD(const std::string &, getSelectedSection, (), (const override));
+    MOCK_METHOD(void, setSelectedTag, (std::string tag), (override));
+    MOCK_METHOD(void, setSelectedSection, (std::string section), (override));
 };
 
 class DummyRepository : public caps_log::log::LogRepositoryBase {

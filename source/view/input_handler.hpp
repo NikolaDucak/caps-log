@@ -6,25 +6,19 @@
 
 namespace caps_log::view {
 
+struct UiStarted {};
+struct FocusedSectionChange {};
+struct FocusedTagChange {};
+struct FocusedDateChange {};
 struct DisplayedYearChange {
     int year;
 };
 struct OpenLogFile {
     std::chrono::year_month_day date{};
 };
-struct FocusedSectionChange {
-    int section;
-};
-struct FocusedTagChange {
-    int tag;
-};
-struct FocusedDateChange {
-    std::chrono::year_month_day date{};
-};
 struct UnhandledRootEvent {
     std::string input;
 };
-struct UiStarted {};
 
 using UIEvent = std::variant<UiStarted, DisplayedYearChange, OpenLogFile, FocusedSectionChange,
                              FocusedTagChange, FocusedDateChange, UnhandledRootEvent>;

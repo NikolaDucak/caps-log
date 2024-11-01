@@ -13,13 +13,14 @@
 
 namespace caps_log::editor {
 
-class EnvBasedEditor : public EditorBase {
-    caps_log::log::LocalFSLogFilePathProvider m_pathProvider;
+class DefaultEditor : public EditorBase {
+    log::LocalFSLogFilePathProvider m_pathProvider;
+    std::string m_editorCommand;
 
   public:
-    EnvBasedEditor(caps_log::log::LocalFSLogFilePathProvider pathProvider)
-        : m_pathProvider{std::move(pathProvider)} {}
-
+    explicit DefaultEditor(caps_log::log::LocalFSLogFilePathProvider pathProvider,
+                           std::string editorCommand)
+        : m_pathProvider{std::move(pathProvider)}, m_editorCommand{std::move(editorCommand)} {}
     void openEditor(const caps_log::log::LogFile &log) override {
         if (std::getenv("EDITOR") != nullptr) {
             std::ignore =
@@ -28,14 +29,16 @@ class EnvBasedEditor : public EditorBase {
     }
 };
 
-class EncryptedFileEditor : public EditorBase {
+class EncryptedDefaultEditor : public EditorBase {
     caps_log::log::LocalFSLogFilePathProvider m_pathProvider;
     std::string m_password;
+    std::string m_editorCommand;
 
   public:
-    EncryptedFileEditor(caps_log::log::LocalFSLogFilePathProvider pathProvider,
-                        std::string password)
-        : m_pathProvider{std::move(pathProvider)}, m_password{std::move(password)} {}
+    EncryptedDefaultEditor(caps_log::log::LocalFSLogFilePathProvider pathProvider,
+                           std::string password, std::string editorCommand)
+        : m_pathProvider{std::move(pathProvider)}, m_password{std::move(password)},
+          m_editorCommand{std::move(editorCommand)} {}
 
     void openEditor(const caps_log::log::LogFile &log) override {
         const auto tmp = getTmpFile();
@@ -43,7 +46,7 @@ class EncryptedFileEditor : public EditorBase {
         std::filesystem::copy_file(originalLogPath, tmp,
                                    std::filesystem::copy_options::overwrite_existing);
         decryptFile(tmp);
-        openEnvEditor(tmp);
+        openEditor(tmp);
         encryptFile(tmp);
         std::filesystem::copy_file(tmp, originalLogPath,
                                    std::filesystem::copy_options::overwrite_existing);
@@ -85,10 +88,8 @@ class EncryptedFileEditor : public EditorBase {
         }
     }
 
-    static void openEnvEditor(const std::string &path) {
-        if (std::getenv("EDITOR") != nullptr) {
-            std::ignore = std::system(("$EDITOR " + path).c_str());
-        }
+    void openEditor(const std::string &path) {
+        std::ignore = std::system((m_editorCommand + " " + path).c_str());
     }
 };
 

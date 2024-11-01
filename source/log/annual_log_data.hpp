@@ -4,7 +4,6 @@
 #include "utils/date.hpp"
 #include <chrono>
 #include <memory>
-#include <set>
 #include <string>
 
 namespace caps_log::log {
@@ -16,9 +15,48 @@ namespace caps_log::log {
  */
 class AnnualLogData {
   public:
+    static constexpr auto kAnySection = "<any section>";
+    static constexpr auto kAnyTag = "<any tag>";
+
     utils::date::Dates datesWithLogs;
-    std::map<std::string, utils::date::Dates> datesWithSection;
-    std::map<std::string, utils::date::Dates> datesWithTag;
+    std::map<std::string, std::map<std::string, utils::date::Dates>> tagsPerSection;
+
+    std::vector<std::string> getAllSections() const {
+        std::set<std::string> sections;
+        for (const auto &[section, _] : tagsPerSection) {
+            sections.insert(section);
+        }
+        // remove <any section> from the list
+        sections.erase(kAnySection);
+        return {sections.begin(), sections.end()};
+    }
+
+    std::vector<std::string> getAllTags() const {
+        std::set<std::string> tags;
+        for (const auto &[_, tagsMap] : tagsPerSection) {
+            for (const auto &[tag, _] : tagsMap) {
+                if (tag == kAnyTag) {
+                    continue;
+                }
+                tags.insert(tag);
+            }
+        }
+        // remove <any tag> from the list
+        return {tags.begin(), tags.end()};
+    }
+
+    std::vector<std::string> getAllTagsForSection(const std::string &section) const {
+        std::vector<std::string> tags;
+        tags.reserve(tagsPerSection.at(section).size());
+        for (const auto &[tag, _] : tagsPerSection.at(section)) {
+            tags.push_back(tag);
+        }
+        // remove <any tag> from the list
+        tags.erase(std::remove(tags.begin(), tags.end(), kAnyTag), tags.end());
+        return tags;
+    }
+
+    AnnualLogData() { tagsPerSection[kAnySection][kAnyTag] = {}; }
 
     /**
      * Constructs YearOverviewData from logs in a given year.
