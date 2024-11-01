@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <fstream>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -11,7 +10,7 @@
 
 #include "app.hpp"
 #include "config.hpp"
-#include "editor/env_based_editor.hpp"
+#include "editor/default_editor.hpp"
 #include "log/local_log_repository.hpp"
 #include "log/log_repository_crypto_applier.hpp"
 #include "utils/git_repo.hpp"
@@ -30,7 +29,7 @@ std::string promptPassword(const caps_log::Config &config) {
     const auto buttonQuit = Button(
         "Quit",
         [&]() {
-            screen.ExitLoopClosure();
+            screen.Exit();
             std::exit(0);
         },
         ButtonOption::Ascii());
@@ -59,10 +58,15 @@ auto makeCapsLog(const caps_log::Config &conf) {
     auto view = std::make_shared<view::AnnualView>(utils::date::getToday(), conf.sundayStart);
     auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, password);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
-        if (password.empty()) {
-            return std::make_shared<editor::EnvBasedEditor>(pathProvider);
+        const auto envEditor = std::getenv("EDITOR");
+        if (envEditor == nullptr) {
+            return nullptr;
         }
-        return std::make_shared<editor::EncryptedFileEditor>(pathProvider, password);
+        const auto editorCmd = std::string(envEditor);
+        if (password.empty()) {
+            return std::make_shared<editor::DefaultEditor>(pathProvider, editorCmd);
+        }
+        return std::make_shared<editor::EncryptedDefaultEditor>(pathProvider, password, editorCmd);
     }();
     auto gitRepo = [&]() -> std::optional<utils::GitRepo> {
         if (conf.repoConfig) {
@@ -75,6 +79,15 @@ auto makeCapsLog(const caps_log::Config &conf) {
 
     return caps_log::App{std::move(view), std::move(repo), std::move(editor),
                          conf.ignoreFirstLineWhenParsingSections, std::move(gitRepo)};
+}
+
+void migrateToNewRepo() {
+    // TODO: implement
+    // if old repo has logs in root
+    // for each log in root
+    // parse year from title
+    // create year folder if not exists
+    // move log to year folder
 }
 
 int main(int argc, const char **argv) try {

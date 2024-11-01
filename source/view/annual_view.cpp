@@ -34,8 +34,8 @@ void AnnualView::showCalendarForYear(std::chrono::year year) {
 std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
     const auto container = ftxui_ext::CustomContainer(
         {
-            m_tagsMenu,
             m_sectionsMenu,
+            m_tagsMenu,
             m_calendarButtons,
             m_preview,
         },
@@ -53,7 +53,7 @@ std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
                             m_datesWithLogs != nullptr ? m_datesWithLogs->size() : 0,
                             static_cast<int>(m_calendarButtons->getFocusedDate().year()));
             const auto mainSection =
-                hbox(m_tagsMenu->Render(), m_sectionsMenu->Render(), m_calendarButtons->Render());
+                hbox(m_sectionsMenu->Render(), m_tagsMenu->Render(), m_calendarButtons->Render());
 
             static const auto kHelpString =
                 std::string{"hjkl/arrow keys - navigation | d - delete log "
@@ -109,7 +109,7 @@ CalendarOption AnnualView::makeCalendarOptions(const std::chrono::year_month_day
     };
     option.focusChange = [this](const auto &date) {
         m_preview->resetScroll();
-        m_handler->handleInputEvent(UIEvent{FocusedDateChange{date}});
+        m_handler->handleInputEvent(UIEvent{FocusedDateChange{}});
     };
     option.enter = [this](const auto &date) {
         m_handler->handleInputEvent(UIEvent{OpenLogFile{date}});
@@ -121,11 +121,8 @@ CalendarOption AnnualView::makeCalendarOptions(const std::chrono::year_month_day
 std::shared_ptr<WindowedMenu> AnnualView::makeTagsMenu() {
     WindowedMenuOption option{
         .title = "Tags",
-        .entries = &m_tagMenuItems,
-        .onChange =
-            [this] {
-                m_handler->handleInputEvent(UIEvent{FocusedTagChange{m_tagsMenu->selected()}});
-            },
+        .entries = &m_tagMenuItems.getDisplayTexts(),
+        .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedTagChange{}}); },
     };
     return WindowedMenu::make(option);
 }
@@ -133,12 +130,8 @@ std::shared_ptr<WindowedMenu> AnnualView::makeTagsMenu() {
 std::shared_ptr<WindowedMenu> AnnualView::makeSectionsMenu() {
     WindowedMenuOption option = {
         .title = "Sections",
-        .entries = &m_sectionMenuItems,
-        .onChange =
-            [this] {
-                m_handler->handleInputEvent(
-                    UIEvent{FocusedSectionChange{m_sectionsMenu->selected()}});
-            },
+        .entries = &m_sectionMenuItems.getDisplayTexts(),
+        .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedSectionChange{}}); },
     };
     return WindowedMenu::make(option);
 }

@@ -1,5 +1,7 @@
 add_executable(
   caps-log
+  app.hpp
+  app.cpp
   config.cpp
   config.hpp
   main.cpp

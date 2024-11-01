@@ -2,7 +2,10 @@
 
 #include "utils/string.hpp"
 #include <functional>
+#include <iostream>
+#include <ranges>
 #include <regex>
+#include <sstream>
 
 namespace caps_log::log {
 
@@ -31,7 +34,6 @@ void forEachLogLine(std::istream &input, const std::function<void(const std::str
     bool isInsideCodeBlock = false;
     while (getline(input, line)) {
         line = utils::lowercase(utils::trim(line));
-
         if (line.substr(0, 3) == "```") {
             isInsideCodeBlock = !isInsideCodeBlock;
         }
@@ -39,42 +41,50 @@ void forEachLogLine(std::istream &input, const std::function<void(const std::str
         if (isInsideCodeBlock) {
             continue;
         }
-
         func(line);
     }
 }
 
 } // namespace
 
-std::vector<std::string> LogFile::readTagTitles() const {
-    std::vector<std::string> result;
+LogFile &LogFile::parse(bool skipFirstLine) {
     std::stringstream sstream{m_content};
 
-    forEachLogLine(sstream, [&](const auto &line) {
-        if (std::smatch smatch; std::regex_match(line, smatch, kTagRegex)) {
-            result.push_back(utils::trim(smatch[kTagTitleMatch]));
-        }
-    });
-
-    return result;
-}
-
-std::vector<std::string> LogFile::readSectionTitles(bool skipFirstLine) const {
-    std::stringstream sstream{m_content};
-    std::vector<std::string> result;
-
-    if (skipFirstLine) {
-        std::string line;
-        getline(sstream, line);
-    }
+    std::string lastSection = kRootSectionKey.data();
 
     forEachLogLine(sstream, [&](const auto &line) {
         if (std::smatch smatch; std::regex_match(line, smatch, kSectionTitleRegex)) {
-            result.push_back(utils::trim(smatch[kSectionTitleMatch]));
+            if (not skipFirstLine) {
+                lastSection = utils::trim(smatch[kSectionTitleMatch]);
+                m_tagsPerSection[lastSection] = {};
+            }
+        } else if (std::smatch smatch; std::regex_match(line, smatch, kTagRegex)) {
+            m_tagsPerSection[lastSection].insert(utils::trim(smatch[kTagTitleMatch]));
         }
+        skipFirstLine = false;
     });
 
-    return result;
+    return *this;
+}
+
+std::set<std::string> LogFile::getTagTitles() const {
+    std::set<std::string> tags;
+    for (const auto &tagsPerSection : std::views::values(m_tagsPerSection)) {
+        tags.insert(tagsPerSection.begin(), tagsPerSection.end());
+    }
+    return tags;
+}
+
+std::set<std::string> LogFile::getSectionTitles() const {
+    std::set<std::string> sections;
+    for (const auto &section : std::views::keys(m_tagsPerSection)) {
+        sections.insert(section);
+    }
+    return sections;
+}
+
+std::map<std::string, std::set<std::string>> LogFile::getTagsPerSection() const {
+    return m_tagsPerSection;
 }
 
 } // namespace caps_log::log

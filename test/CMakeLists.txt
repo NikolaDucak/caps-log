@@ -25,6 +25,7 @@ set(TEST_SOURCES
 )
 
 set(SOURCE_FILES
+  ./../source/app.cpp
   ./../source/config.cpp
   ./../source/log/log_file.cpp
   ./../source/log/log_repository_crypto_applier.cpp

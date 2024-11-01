@@ -9,9 +9,11 @@
 Daily entries are saved locally as Markdown files. Level 1 headers are
 interpreted as 'sections', and unordered lists beginning with the '*' character
 are interpreted as 'tags'. Titles of these sections and tags are then displayed
-in two menus. Selecting an item in these menus highlights the dates with
-mentions of that tag or title in the calendar. This feature provides a visual
-representation of how (in)consistent your habits and activities are.
+in two menus. When selecting a section, tag menu will list out only the tags 
+found under the selected section. If no section is selected, tag menu will 
+display all tags found. Selecting an item in these menus highlights the dates 
+with mentions of that tag or title in the calendar. This feature provides a 
+visual representation of how (in)consistent your habits and activities are.
 
 Clicking on a date or pressing enter when a date is focused will open that log
 file in an editor, if possible. Currently, `Caps-Log` uses your `$EDITOR`
@@ -62,15 +64,17 @@ what constitutes a section and what a tag.
 _Sections_
 
 To mark a section, use: `# Section Name`. All text below until the next section
-is considered part of it, although `Caps-Log` currently does not process that
-text, focusing only on the section title. By default, the first line of the file
+is considered part of it. By default, the first line of the file
 is ignored when identifying section titles, as it's commonly used for the date
 of the entry. This behavior can be configured via command line arguments or a
 config file.
 
 _Tags_
 
-Tags apply to the entire log entry file, not specific sections.
+Tags can be added to the log entry by starting a line with `* Tag Name`. Tags
+can belong to a section, but they don't have to. If they don't belong to a
+section, they are considered to belong under a `<root section>` which is 
+displayed in the section menu.
 
 - `* Tag Name`
 - `* Tag Name (Additional Information)`

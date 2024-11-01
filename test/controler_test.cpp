@@ -17,35 +17,48 @@ using namespace testing;
 class ControllerTest : public testing::Test {
   protected:
     // NOLINTNEXTLINE
-    static constexpr std::chrono::year_month_day selectedDate{
-        std::chrono::year{2000}, std::chrono::month{5}, std::chrono::day{25}};
+    static constexpr std::chrono::year_month_day day1{std::chrono::year{2000},
+                                                      std::chrono::month{5}, std::chrono::day{10}};
     // NOLINTNEXTLINE
-    static constexpr std::chrono::year_month_day dayAfterSelectedDate{
-        selectedDate.year(), selectedDate.month(), ++selectedDate.day()};
+    static constexpr std::chrono::year_month_day day2{std::chrono::year{2000},
+                                                      std::chrono::month{5}, std::chrono::day{11}};
+    // NOLINTNEXTLINE
+    static constexpr std::chrono::year_month_day day3{std::chrono::year{2000},
+                                                      std::chrono::month{5}, std::chrono::day{12}};
 
-    std::shared_ptr<NiceMock<DMockYearView>> mock_view = // NOLINT
+    std::shared_ptr<NiceMock<DMockYearView>> mockView = // NOLINT
         std::make_shared<NiceMock<DMockYearView>>();
     // NOLINTNEXTLINE
-    std::shared_ptr<NiceMock<DMockRepo>> mock_repo = std::make_shared<NiceMock<DMockRepo>>();
-    std::shared_ptr<MockEditor> mock_editor = std::make_shared<MockEditor>(); // NOLINT
+    std::shared_ptr<NiceMock<DMockRepo>> mockRepo = std::make_shared<NiceMock<DMockRepo>>();
+    std::shared_ptr<MockEditor> mockEditor = std::make_shared<MockEditor>(); // NOLINT
 
     /**
      * @brief Create a caps_log::App object with the mock objects and selected year.
      */
     auto makeCapsLog() {
-        return App{mock_view, mock_repo, mock_editor, true, std::nullopt, selectedDate.year()};
+        return App{mockView, mockRepo, mockEditor, true, std::nullopt, day1.year()};
+    }
+
+    void verifyTagMenuItems(const std::vector<std::string> &expected) {
+        const auto &tagMenuItems = mockView->getDummyView().m_tagMenuItems;
+        EXPECT_EQ(tagMenuItems.getDisplayTexts(), expected);
+    }
+
+    void verifySectionMenuItems(const std::vector<std::string> &expected) {
+        const auto &sectionMenuItems = mockView->getDummyView().m_sectionMenuItems;
+        EXPECT_EQ(sectionMenuItems.getDisplayTexts(), expected);
     }
 
   public:
-    ControllerTest() { mock_view->getDummyView().m_focusedDate = selectedDate; }
+    ControllerTest() { mockView->getDummyView().m_focusedDate = day1; }
 };
 
 TEST_F(ControllerTest, EscQuits) {
     auto capsLog = makeCapsLog();
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_view, stop());
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        EXPECT_CALL(*mockView, stop());
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::Escape.input()}});
     });
     capsLog.run();
@@ -54,9 +67,9 @@ TEST_F(ControllerTest, EscQuits) {
 TEST_F(ControllerTest, SpecialCharsDontQuit) {
     auto capsLog = makeCapsLog();
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
-        ON_CALL(*mock_view, stop).WillByDefault([] {
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        ON_CALL(*mockView, stop).WillByDefault([] {
             ASSERT_FALSE(true) << "Expected to not quit.";
         });
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowDown.input()}});
@@ -71,120 +84,112 @@ TEST_F(ControllerTest, SpecialCharsDontQuit) {
 }
 
 TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
-    mock_repo->write(LogFile{selectedDate, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
+    mockRepo->write(LogFile{day1, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
     auto capsLog = makeCapsLog();
 
-    // Expect dummy data has been propagated to view
-    // ignoring first item '-----' that represents nothing
-    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
-    ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
-    EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems[1],
-              view::makeMenuItemTitle("dummy section", 1));
-    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems[1], view::makeMenuItemTitle("dummy tag", 1));
+    verifyTagMenuItems({"<select none>", "(1) - dummy tag"});
+    verifySectionMenuItems({"<select none>", "(1) - dummy section"});
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_view, prompt(_, _));
-        ON_CALL(*mock_view, prompt).WillByDefault([&](auto, auto callback) {
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        EXPECT_CALL(*mockView, prompt(_, _));
+        ON_CALL(*mockView, prompt).WillByDefault([&](const auto &, const auto &callback) {
             // trigger callback as if user clicked 'yes'
             callback();
         });
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{"d"}});
         // assert that it has indeed been removed
-        EXPECT_FALSE(mock_repo->read(selectedDate));
+        EXPECT_FALSE(mockRepo->read(day1));
         // and that the view things have been updated
-        EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
-        EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
+        verifyTagMenuItems({"<select none>"});
+        verifySectionMenuItems({"<select none>"});
     });
     capsLog.run();
 }
 
 TEST_F(ControllerTest, OnFocusedDateChange_UpdatePreviewString) {
-    auto dummyLog1 = LogFile{selectedDate, "dummy content 1"};
-    auto dummyLog2 = LogFile{dayAfterSelectedDate, "dummy content 2"};
-    mock_repo->write(dummyLog1);
-    mock_repo->write(dummyLog2);
+    auto dummyLog1 = LogFile{day1, "dummy content 1"};
+    auto dummyLog2 = LogFile{day2, "dummy content 2"};
+    mockRepo->write(dummyLog1);
+    mockRepo->write(dummyLog2);
     auto capsLog = makeCapsLog();
-    ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog1.getContent());
-    ASSERT_EQ(mock_view->getDummyView().m_focusedDate, dummyLog1.getDate());
+    ASSERT_EQ(mockView->getDummyView().m_previewString, dummyLog1.getContent());
+    ASSERT_EQ(mockView->getDummyView().m_focusedDate, dummyLog1.getDate());
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
-        mock_view->getDummyView().m_focusedDate = dummyLog2.getDate();
-        capsLog.handleInputEvent(UIEvent{FocusedDateChange{dummyLog2.getDate()}});
-        ASSERT_EQ(mock_view->getDummyView().m_previewString, dummyLog2.getContent());
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        mockView->getDummyView().m_focusedDate = dummyLog2.getDate();
+        capsLog.handleInputEvent(UIEvent{FocusedDateChange{}});
+        ASSERT_EQ(mockView->getDummyView().m_previewString, dummyLog2.getContent());
     });
 
     capsLog.run();
 }
 
 TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
-    auto dummyLog1 = LogFile{selectedDate, "\n# sectone \n* tagone"};
-    auto dummyLog2 = LogFile{dayAfterSelectedDate, "\n# secttwo \n* tagtwo"};
-    mock_repo->getDummyRepo().write(dummyLog1);
-    mock_repo->getDummyRepo().write(dummyLog2);
+    auto dummyLog1 = LogFile{day1, "\n# sectone \n* tagone"};
+    auto dummyLog2 = LogFile{day2, "\n# secttwo \n* tagtwo"};
+    mockRepo->getDummyRepo().write(dummyLog1);
+    mockRepo->getDummyRepo().write(dummyLog2);
     auto capsLog = makeCapsLog();
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&]() { // NOLINT
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&]() { // NOLINT
         // Tags and sections are passed from the view as an index in the section/tagMenuItem
         // vector 0 = '------' aka nothing selected
-        capsLog.handleInputEvent(UIEvent{FocusedTagChange{1}});
-        auto *dummyView = &mock_view->getDummyView();
 
-        using utils::date::monthDay;
+        auto &dummyView = mockView->getDummyView();
+
+        dummyView.m_selectedTag = "tagone";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+
+        using date::monthDay;
         // Tags
-        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
-        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
-        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
+        ASSERT_NE(dummyView.m_highlightedDates, nullptr);
+        ASSERT_TRUE(dummyView.m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_FALSE(dummyView.m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
 
-        capsLog.handleInputEvent(UIEvent{FocusedTagChange{2}});
-        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
-        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
-        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
+        dummyView.m_selectedTag = "tagtwo";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+        ASSERT_NE(dummyView.m_highlightedDates, nullptr);
+        ASSERT_FALSE(dummyView.m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_TRUE(dummyView.m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
 
         // Sections
-        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{1}});
-        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
-        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
-        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
+        dummyView.m_selectedSection = "sectone";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        ASSERT_NE(dummyView.m_highlightedDates, nullptr);
+        ASSERT_TRUE(dummyView.m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_FALSE(dummyView.m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
 
-        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{2}});
-        ASSERT_NE(dummyView->m_highlightedDates, nullptr);
-        ASSERT_FALSE(dummyView->m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
-        ASSERT_TRUE(dummyView->m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
+        dummyView.m_selectedSection = "secttwo";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        ASSERT_NE(dummyView.m_highlightedDates, nullptr);
+        ASSERT_FALSE(dummyView.m_highlightedDates->contains(monthDay(dummyLog1.getDate())));
+        ASSERT_TRUE(dummyView.m_highlightedDates->contains(monthDay(dummyLog2.getDate())));
     });
     capsLog.run();
 }
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     auto capsLog = makeCapsLog();
-    // +1 for '-----' aka no section
-    ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 1);
-    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
-    ASSERT_NE(mock_view->getDummyView().m_datesWithLogs, nullptr);
-    EXPECT_FALSE(
-        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
+    verifyTagMenuItems({"<select none>"});
+    verifySectionMenuItems({"<select none>"});
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
         // expect editor to open
-        EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](auto) {
-            auto log =
-                LogFile{selectedDate, "\n# section title \nsome dummy content\n * tag title"};
-            mock_repo->getDummyRepo().write(log);
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const auto &) {
+            auto log = LogFile{day1, "\n# section title \nsome dummy content\n * tag title"};
+            mockRepo->getDummyRepo().write(log);
         });
 
         // on callendar button click
-        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
 
         // expect the initialy set availability map pointer to still be valid
-        EXPECT_TRUE(mock_view->getDummyView().m_datesWithLogs->contains(
-            utils::date::monthDay(selectedDate)));
-        ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
-        EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.at(1), "(1) - section title");
-        ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
-        EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.at(1), "(1) - tag title");
+        verifyTagMenuItems({"<select none>", "(1) - tag title"});
+        verifySectionMenuItems({"<select none>", "(1) - section title"});
     });
 
     capsLog.run();
@@ -192,17 +197,15 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
 
 TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
     auto capsLog = makeCapsLog();
-    EXPECT_FALSE(
-        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
+    EXPECT_FALSE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
 
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](auto) {
-            auto baseLog = mock_repo->getDummyRepo().read(selectedDate);
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const auto &) {
+            const auto baseLog = mockRepo->getDummyRepo().read(day1);
             ASSERT_TRUE(baseLog);
-            EXPECT_EQ(baseLog->getContent(),
-                      utils::date::formatToString(selectedDate, kLogBaseTemplate));
+            EXPECT_EQ(baseLog->getContent(), date::formatToString(day1, kLogBaseTemplate));
         });
-        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
     });
 
     capsLog.run();
@@ -210,73 +213,279 @@ TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
 
 TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
     auto capsLog = makeCapsLog();
-    EXPECT_FALSE(
-        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
+    EXPECT_FALSE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
 
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
-        EXPECT_CALL(*mock_editor, openEditor(_))
-            .WillOnce([&](auto) {
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        EXPECT_CALL(*mockEditor, openEditor(_))
+            .WillOnce([&](const auto &) {
                 // Assert only base template has been written
-                auto baseLog = mock_repo->getDummyRepo().read(selectedDate);
+                auto baseLog = mockRepo->getDummyRepo().read(day1);
                 ASSERT_TRUE(baseLog);
-                EXPECT_EQ(baseLog->getContent(),
-                          utils::date::formatToString(selectedDate, kLogBaseTemplate));
+                EXPECT_EQ(baseLog->getContent(), date::formatToString(day1, kLogBaseTemplate));
             })
-            .WillOnce([&](auto) {
+            .WillOnce([&](const auto &) {
                 // Write an empty log
-                mock_repo->getDummyRepo().write({selectedDate, ""});
+                mockRepo->getDummyRepo().write({day1, ""});
             });
 
-        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
-        EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_FALSE(mockRepo->getDummyRepo().read(day1));
 
-        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
-        EXPECT_FALSE(mock_repo->getDummyRepo().read(selectedDate));
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_FALSE(mockRepo->getDummyRepo().read(day1));
     });
     capsLog.run();
 }
 
 TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
-    auto capsLog = makeCapsLog();
-    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
-    mock_repo->write(LogFile{selectedDate, "# Dummy section"});
-    auto capsLog2 =
-        App{mock_view, mock_repo, mock_editor, false, std::nullopt, selectedDate.year()};
+    {
+        auto capsLog = makeCapsLog();
+        verifySectionMenuItems({"<select none>"});
+    }
+    mockRepo->write(LogFile{day1, "# Dummy section"});
+    {
+        auto capsLog2 = App{mockView, mockRepo, mockEditor, false, std::nullopt, day1.year()};
 
-    // +1 for '-----' aka no section
-    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
+        // +1 for '-----' aka no section
+        verifySectionMenuItems({"<select none>", "(1) - dummy section"});
+    }
 }
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMapsAfterRemove) {
-    mock_repo->write(LogFile{selectedDate, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
+    mockRepo->write(LogFile{day1, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
     auto capsLog = makeCapsLog();
+    verifyTagMenuItems({"<select none>", "(1) - dummy tag"});
+    verifySectionMenuItems({"<select none>", "(1) - dummy section"});
 
-    // +1 for '-----' aka no section
-    ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
-    EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.at(1), "(1) - dummy tag");
-    ASSERT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 2);
-    EXPECT_TRUE(
-        mock_view->getDummyView().m_datesWithLogs->contains(utils::date::monthDay(selectedDate)));
+    EXPECT_TRUE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
 
-    EXPECT_CALL(*mock_view, run());
-    ON_CALL(*mock_view, run()).WillByDefault([&] {
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
         // expect editor to open
-        EXPECT_CALL(*mock_editor, openEditor(_)).WillRepeatedly([&](const auto &) {
-            const auto log = LogFile{selectedDate, "\n* tag title"};
-            mock_repo->getDummyRepo().write(log);
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const auto &) {
+            const auto log = LogFile{day1, "\n* tag title"};
+            mockRepo->getDummyRepo().write(log);
         });
 
-        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{1}});
-        capsLog.handleInputEvent(UIEvent{OpenLogFile{selectedDate}});
+        mockView->getDummyView().m_selectedSection = "dummy section";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
 
-        EXPECT_EQ(mock_view->getDummyView().m_highlightedDates, nullptr);
-        EXPECT_TRUE(mock_view->getDummyView().m_datesWithLogs->contains(
-            utils::date::monthDay(selectedDate)));
-        EXPECT_EQ(mock_view->getDummyView().m_sectionMenuItems.size(), 1);
-        ASSERT_EQ(mock_view->getDummyView().m_tagMenuItems.size(), 2);
-        EXPECT_EQ(mock_view->getDummyView().m_tagMenuItems.at(1), "(1) - tag title");
+        EXPECT_EQ(mockView->getDummyView().m_highlightedDates, nullptr);
+        EXPECT_TRUE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
+        verifyTagMenuItems({"<select none>", "(1) - tag title"});
+        verifySectionMenuItems({"<select none>", "(1) - <root section>"});
     });
 
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, TagsPerSection_NoSectionMeansAllTagsListed) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* tag 1"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 2 \n* tag 2"});
+    auto capsLog = makeCapsLog();
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        verifyTagMenuItems({"<select none>", "(1) - tag 1", "(1) - tag 2"});
+        verifySectionMenuItems({"<select none>", "(1) - section 1", "(1) - section 2"});
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, TagsPerSection_SelectingASectionShowsOnlyTagsAfterThatSection) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* tag 1"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 2 \n* tag 2"});
+    auto capsLog = makeCapsLog();
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        mockView->getDummyView().m_selectedSection = "section 1";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        verifyTagMenuItems({"<select none>", "(1) - tag 1"});
+        EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), std::set{date::monthDay(day1)});
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, TagsPerSection_RootSectionShownWhenTagsInRootSectionArePresent) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n* tag 1"});
+    auto capsLog = makeCapsLog();
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        verifySectionMenuItems({"<select none>", "(1) - <root section>"});
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, TagsPerSection_RootSectionNotShownWhenTagsInRootSectionNotPresent) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section\n* tag 1"});
+    auto capsLog = makeCapsLog();
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        verifySectionMenuItems({"<select none>", "(1) - section"});
+    });
+    capsLog.run();
+}
+
+TEST_F(
+    ControllerTest,
+    DISABLED_TagsPerSection_SelectingATagPerSectionHighlightsOnlyTheDatesWhereTagIsUnderThatSection) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* tag"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 1 \nno tag"});
+    mockRepo->write(LogFile{day3, "# DummyContent \n# section 2 \n* tag"});
+    auto capsLog = makeCapsLog();
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        // before selection
+        verifyTagMenuItems({"<select none>", "(2) - tag"});
+        verifySectionMenuItems({"<select none>", "(2) - section 1", "(1) - section 2"});
+        EXPECT_EQ(mockView->getDummyView().m_highlightedDates, nullptr);
+        EXPECT_EQ(mockView->getDummyView().m_datesWithLogs->size(), 3);
+
+        // after selection
+        mockView->getDummyView().m_selectedSection = "section 1";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        verifyTagMenuItems({"<select none>", "(1) - tag"});
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "<select none>");
+        const auto expecedDates = std::set{date::monthDay(day1), date::monthDay(day2)};
+        EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), expecedDates);
+
+        // after selection of tag
+        mockView->getDummyView().m_selectedTag = "tag";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "tag");
+        EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), std::set{date::monthDay(day1)});
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, DISABLED_SectionWithNoTagIsListedInMenuItems) {
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 1 \nno tag"});
+    auto capsLog = makeCapsLog();
+    EXPECT_CALL(*mockView, run());
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        // before selection
+        verifySectionMenuItems({"<select none>", "(1) - section 1"});
+    });
+    capsLog.run();
+}
+
+TEST_F(
+    ControllerTest,
+    TagsPerSection_WhenSectionAndTagSelected_WhenLogEdited_WhenTagIsNoLongerPresent_NoneTagUnderSameSectionSelected) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* target tag"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 1 \nno tag"});
+    auto capsLog = makeCapsLog();
+
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        mockView->getDummyView().m_selectedSection = "section 1";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        mockView->getDummyView().m_selectedTag = "target tag";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const LogFile &log) {
+            const auto newLog = LogFile(log.getDate(), "# DummyContent \n# section 1 \nno tag");
+            mockRepo->getDummyRepo().write(newLog);
+        });
+
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
+        const auto expectedTags = std::vector<std::string>{"<select none>", "(1) - target tag"};
+        EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTags);
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "<select none>");
+        const auto expectedTagsAfter = std::vector<std::string>{"<select none>"};
+        EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTagsAfter);
+    });
+    capsLog.run();
+}
+
+TEST_F(
+    ControllerTest,
+    TagsPerSection_WhenSectionAndTagSelected_WhenLogEdited_WhenSectionIsNoLongerPresent_TagStillPresent_TagSelected) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* target tag"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 2 \nno tag"});
+    auto capsLog = makeCapsLog();
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        mockView->getDummyView().m_selectedSection = "section 1";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        mockView->getDummyView().m_selectedTag = "target tag";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const LogFile &log) {
+            const auto newLog =
+                LogFile(log.getDate(), "# DummyContent \n# section new \n* target tag");
+            mockRepo->getDummyRepo().write(newLog);
+        });
+
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
+        const auto expectedTags = std::vector<std::string>{"<select none>", "(1) - target tag"};
+        EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTags);
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "<select none>");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
+    });
+    capsLog.run();
+}
+
+TEST_F(
+    ControllerTest,
+    TagsPerSection_WhenSectionAndTagSelected_WhenLogEdited_WhenSectionIsNoLongerPresent_TagNotPresent_TagSelected) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* target tag"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 2 \nno tag"});
+    auto capsLog = makeCapsLog();
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        mockView->getDummyView().m_selectedSection = "section 1";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        mockView->getDummyView().m_selectedTag = "target tag";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const LogFile &log) {
+            const auto newLog =
+                LogFile(log.getDate(), "# DummyContent \n# section new \n* target tag 2");
+            mockRepo->getDummyRepo().write(newLog);
+        });
+
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
+        const auto expectedTags = std::vector<std::string>{"<select none>", "(1) - target tag"};
+        EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTags);
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "<select none>");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "<select none>");
+    });
+    capsLog.run();
+}
+
+TEST_F(
+    ControllerTest,
+    TagsPerSection_WhenSectionAndTagSelected_WhenLogEdited_WhenSectionPresentButMoved_TagPresent_SameSectionSelected) {
+    mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* target tag"});
+    mockRepo->write(LogFile{day2, "# DummyContent \n# section 2 \n* tag 2"});
+    auto capsLog = makeCapsLog();
+
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        mockView->getDummyView().m_selectedSection = "section 2";
+        capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
+        mockView->getDummyView().m_selectedTag = "tag 2";
+        capsLog.handleInputEvent(UIEvent{FocusedTagChange{}});
+
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 2");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "tag 2");
+        verifyTagMenuItems({"<select none>", "(1) - tag 2"});
+        verifySectionMenuItems({"<select none>", "(1) - section 1", "(1) - section 2"});
+
+        EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const LogFile &log) {
+            const auto newLog =
+                LogFile(log.getDate(), "# DummyContent \n# section 3 \n* target tag 2");
+            mockRepo->getDummyRepo().write(newLog);
+        });
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+
+        EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 2");
+        EXPECT_EQ(mockView->getDummyView().m_selectedTag, "tag 2");
+        verifyTagMenuItems({"<select none>", "(1) - tag 2"});
+        verifySectionMenuItems({"<select none>", "(1) - section 2", "(1) - section 3"});
+    });
     capsLog.run();
 }
 
