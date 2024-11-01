@@ -11,7 +11,9 @@
 #include <cassert>
 #include <cstddef>
 #include <functional>
+#include <iostream>
 #include <memory>
+#include <ranges>
 #include <vector>
 
 namespace caps_log {
@@ -28,7 +30,7 @@ static const std::string kLogBaseTemplate{"# %d. %m. %y."};
  * functionality while executing real git log repo stuff on ThreadedTaskExecutor.
  * It ensures that only one thread is touching the repo.
  */
-class AsyncGitRepo {
+class AsyncGitRepo final {
     GitRepo m_repo;
     utils::ThreadedTaskExecutor m_taskExec;
 
@@ -57,42 +59,65 @@ class AsyncGitRepo {
     }
 };
 
-class MenuListItemMaintainer {
+class MenuListItemMaintainer final {
     std::shared_ptr<AnnualViewBase> m_view;
     std::vector<const utils::date::Dates *> m_tagMaps;
     std::vector<const utils::date::Dates *> m_sectionMaps;
     std::vector<std::string> m_tagMenuItems;
     std::vector<std::string> m_sectionMenuItems;
+    std::vector<std::vector<std::string>> m_tagMenuItemsPerSection;
+    std::map<int, std::map<int, const utils::date::Dates *>> m_tagsPerSection;
+    bool m_useTagsPerSection;
+    const AnnualLogData &m_data;
+
+    int m_currentSection;
+    int m_currentTag;
 
   public:
-    MenuListItemMaintainer(std::shared_ptr<AnnualViewBase> view) : m_view{std::move(view)} {}
+    explicit MenuListItemMaintainer(std::shared_ptr<AnnualViewBase> view, bool useTagsPerSection,
+                                    const AnnualLogData &data)
+        : m_view{std::move(view)}, m_useTagsPerSection{useTagsPerSection}, m_data{data} {}
 
     void handleFocusedTagChange(int newTag) {
-        m_view->selectedSection() = 0;
-        const auto *const highlighMap = m_tagMaps.at(newTag);
-        m_view->setHighlightedDates(highlighMap);
+        if (not m_useTagsPerSection) {
+            m_view->selectedSection() = 0;
+            const auto *const highlighMap = m_tagMaps.at(newTag);
+            m_view->setHighlightedDates(highlighMap);
+        } else {
+            m_currentTag = newTag;
+            const auto *const highlighMap = m_tagsPerSection.at(m_currentSection).at(m_currentTag);
+            m_view->setHighlightedDates(highlighMap);
+        }
     }
 
     void handleFocusedSectionChange(int newSection) {
-        m_view->selectedTag() = 0;
-        const auto *const highlighMap = m_sectionMaps.at(newSection);
-        m_view->setHighlightedDates(highlighMap);
+        if (not m_useTagsPerSection) {
+            m_view->selectedTag() = 0;
+            const auto *const highlighMap = m_sectionMaps.at(newSection);
+            m_view->setHighlightedDates(highlighMap);
+        } else {
+            m_currentSection = newSection;
+            m_view->selectedTag() = 0;
+            m_view->setTagMenuItems(m_tagMenuItemsPerSection.at(newSection));
+            const auto *const highlighMap = m_sectionMaps.at(newSection);
+            m_view->setHighlightedDates(highlighMap);
+        }
     }
 
-    void reselect(int &selected, const std::vector<std::string> &oldMenuItems,
-                  const std::vector<std::string> &newMenuItems) {
+    int reselect(int selected, const std::vector<std::string> &oldMenuItems,
+                 const std::vector<std::string> &newMenuItems) {
         if (newMenuItems != oldMenuItems) {
             const auto &currentlySelectedTag = oldMenuItems[selected];
             const auto isStillInMenu = std::find(newMenuItems.begin(), newMenuItems.end(),
                                                  currentlySelectedTag) != newMenuItems.end();
             if (isStillInMenu) {
-                selected = std::distance(
+                return std::distance(
                     newMenuItems.begin(),
                     std::find(newMenuItems.begin(), newMenuItems.end(), currentlySelectedTag));
-            } else {
-                selected = 0;
             }
+            return 0;
         }
+        return selected;
     }
 
     void updateViewSectionsAndTagsAfterLogChange(const AnnualLogData &data,
@@ -101,10 +126,12 @@ class MenuListItemMaintainer {
         const auto newSectionMenuItems = makeMenuTitles(data.datesWithSection);
 
         if (not m_tagMenuItems.empty()) {
-            reselect(m_view->selectedTag(), m_tagMenuItems, newTagMenuItems);
+            m_view->selectedTag() =
+                reselect(m_view->selectedTag(), m_tagMenuItems, newTagMenuItems);
         }
         if (not m_sectionMenuItems.empty()) {
-            reselect(m_view->selectedSection(), m_sectionMenuItems, newSectionMenuItems);
+            m_view->selectedTag() =
+                reselect(m_view->selectedSection(), m_sectionMenuItems, newSectionMenuItems);
         }
 
         m_tagMenuItems = newTagMenuItems;
@@ -116,16 +143,33 @@ class MenuListItemMaintainer {
         updatePointersForHighlightMaps(m_tagMaps, data.datesWithTag);
         updatePointersForHighlightMaps(m_sectionMaps, data.datesWithSection);
 
-        assert(m_view->selectedTag() == 0 ||
-               m_view->selectedSection() == 0 && "Only one can be selected");
+        m_tagMenuItemsPerSection.clear();
+        m_tagMenuItemsPerSection.push_back(std::vector<std::string>{" ----- "});
+
+        for (const auto &sect : std::views::keys(data.datesWithSection)) {
+            m_tagMenuItemsPerSection.push_back(makeMenuTitles(data.tagsPerSection.at(sect)));
+        }
+
+
+        // update m_tagsPerSection
+        m_tagsPerSection.clear();
+        for (const auto &[section, tags] : data.tagsPerSection) {
+            for (const auto &[tag, dates] : tags) {
+                m_tagsPerSection[std::distance(data.tagsPerSection.begin(),
+                                               data.tagsPerSection.find(section)) +
+                                 1][std::distance(tags.begin(), tags.find(tag)) + 1] = &dates;
+            }
+        }
+
         if (m_view->selectedTag() == 0 && m_view->selectedSection() == 0) {
             m_view->setHighlightedDates(nullptr);
         }
-        if (m_view->selectedTag() != 0) {
-            m_view->setHighlightedDates(m_tagMaps.at(m_view->selectedTag()));
-        }
         if (m_view->selectedSection() != 0) {
             m_view->setHighlightedDates(m_sectionMaps.at(m_view->selectedSection()));
+        }
+        if (m_view->selectedTag() != 0) {
+            m_view->setHighlightedDates(m_tagsPerSection.at(m_view->selectedSection()).at(
+                m_view->selectedTag()));
         }
 
         m_view->setPreviewString(previewString);
@@ -200,11 +244,11 @@ class App : public InputHandlerBase {
     App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor, bool skipFirstLine = true,
         std::optional<GitRepo> gitRepo = std::nullopt,
-        std::chrono::year year = date::getToday().year())
+        std::chrono::year year = date::getToday().year(), bool useTagsPerSection = false)
         : m_displayedYear{year}, m_view{std::move(view)}, m_repo{std::move(repo)},
           m_editor{std::move(editor)},
           m_data{AnnualLogData::collect(m_repo, m_displayedYear, skipFirstLine)},
-          m_skipFirstLine{skipFirstLine}, m_menuListItemMaintainer{m_view} {
+          m_skipFirstLine{skipFirstLine}, m_menuListItemMaintainer{m_view, true, m_data} {
         m_view->setInputHandler(this);
         m_view->setDatesWithLogs(&m_data.datesWithLogs);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
