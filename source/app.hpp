@@ -9,6 +9,7 @@
 #include "view/input_handler.hpp"
 
 #include <cassert>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -56,6 +57,120 @@ class AsyncGitRepo {
     }
 };
 
+class MenuListItemMaintainer {
+    std::shared_ptr<AnnualViewBase> m_view;
+    std::vector<const utils::date::Dates *> m_tagMaps;
+    std::vector<const utils::date::Dates *> m_sectionMaps;
+    std::vector<std::string> m_tagMenuItems;
+    std::vector<std::string> m_sectionMenuItems;
+
+  public:
+    MenuListItemMaintainer(std::shared_ptr<AnnualViewBase> view) : m_view{std::move(view)} {}
+
+    void handleFocusedTagChange(int newTag) {
+        m_view->selectedSection() = 0;
+        const auto *const highlighMap = m_tagMaps.at(newTag);
+        m_view->setHighlightedDates(highlighMap);
+    }
+
+    void handleFocusedSectionChange(int newSection) {
+        m_view->selectedTag() = 0;
+        const auto *const highlighMap = m_sectionMaps.at(newSection);
+        m_view->setHighlightedDates(highlighMap);
+    }
+
+    void reselect(int &selected, const std::vector<std::string> &oldMenuItems,
+                  const std::vector<std::string> &newMenuItems) {
+        if (newMenuItems != oldMenuItems) {
+            const auto &currentlySelectedTag = oldMenuItems[selected];
+            const auto isStillInMenu = std::find(newMenuItems.begin(), newMenuItems.end(),
+                                                 currentlySelectedTag) != newMenuItems.end();
+            if (isStillInMenu) {
+                selected = std::distance(
+                    newMenuItems.begin(),
+                    std::find(newMenuItems.begin(), newMenuItems.end(), currentlySelectedTag));
+            } else {
+                selected = 0;
+            }
+        }
+    }
+
+    void updateViewSectionsAndTagsAfterLogChange(const AnnualLogData &data,
+                                                 const std::string &previewString) {
+        const auto newTagMenuItems = makeMenuTitles(data.datesWithTag);
+        const auto newSectionMenuItems = makeMenuTitles(data.datesWithSection);
+
+        if (not m_tagMenuItems.empty()) {
+            reselect(m_view->selectedTag(), m_tagMenuItems, newTagMenuItems);
+        }
+        if (not m_sectionMenuItems.empty()) {
+            reselect(m_view->selectedSection(), m_sectionMenuItems, newSectionMenuItems);
+        }
+
+        m_tagMenuItems = newTagMenuItems;
+        m_sectionMenuItems = newSectionMenuItems;
+
+        m_view->setTagMenuItems(newTagMenuItems);
+        m_view->setSectionMenuItems(newSectionMenuItems);
+
+        updatePointersForHighlightMaps(m_tagMaps, data.datesWithTag);
+        updatePointersForHighlightMaps(m_sectionMaps, data.datesWithSection);
+
+        assert(m_view->selectedTag() == 0 ||
+               m_view->selectedSection() == 0 && "Only one can be selected");
+        if (m_view->selectedTag() == 0 && m_view->selectedSection() == 0) {
+            m_view->setHighlightedDates(nullptr);
+        }
+        if (m_view->selectedTag() != 0) {
+            m_view->setHighlightedDates(m_tagMaps.at(m_view->selectedTag()));
+        }
+        if (m_view->selectedSection() != 0) {
+            m_view->setHighlightedDates(m_sectionMaps.at(m_view->selectedSection()));
+        }
+
+        m_view->setPreviewString(previewString);
+    }
+
+    /**
+     *
+     * A trick to optimize looking up selected menu item. View gives us an index
+     * in the provided array of strings, we can use that index to lookup which availability
+     * map for said menu item is appropriate. Alternative would getting the string and looking up
+     * in the map.
+     */
+    static void
+    updatePointersForHighlightMaps(std::vector<const utils::date::Dates *> &vec,
+                                   const std::map<std::string, utils::date::Dates> &map) {
+        vec.clear();
+        vec.reserve(map.size());
+        vec.push_back(nullptr); // 0 index = no highlighted days
+        for (auto const &[_, dates] : map) {
+            vec.emplace_back(&dates);
+        }
+    }
+
+    /**
+     * Generates a list of strings that will be displayed as menu items. Each item
+     * title will be made of a key in the @p map and the number of days it has been
+     * mantioned (days set).
+     */
+    static std::vector<std::string>
+    makeMenuTitles(const std::map<std::string, utils::date::Dates> &map) {
+        std::vector<std::string> strs;
+        strs.reserve(map.size());
+        strs.push_back(" ----- ");
+        for (auto const &[str, annual_map] : map) {
+            strs.push_back(std::string{"("} + std::to_string(annual_map.size()) + ") - " + str);
+        }
+        return std::move(strs);
+    }
+
+    auto &tagMenuItems() { return m_tagMenuItems; }
+    auto &sectionMenuItems() { return m_sectionMenuItems; }
+    auto &tagMaps() { return m_tagMaps; }
+    auto &sectionMaps() { return m_sectionMaps; }
+};
+
 class App : public InputHandlerBase {
     std::chrono::year m_displayedYear;
     std::shared_ptr<AnnualViewBase> m_view;
@@ -63,27 +178,22 @@ class App : public InputHandlerBase {
     std::shared_ptr<EditorBase> m_editor;
     AnnualLogData m_data;
 
-    std::vector<const utils::date::Dates *> m_tagMaps;
-    std::vector<const utils::date::Dates *> m_sectionMaps;
     bool m_skipFirstLine;
 
     std::optional<AsyncGitRepo> m_gitRepo;
 
+    MenuListItemMaintainer m_menuListItemMaintainer;
+
     void
     updateViewSectionsAndTagsAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {
         m_data.collect(m_repo, dateOfChangedLog, m_skipFirstLine);
-        m_view->setTagMenuItems(makeMenuTitles(m_data.datesWithTag));
-        m_view->setSectionMenuItems(makeMenuTitles(m_data.datesWithSection));
-
-        updatePointersForHighlightMaps(m_tagMaps, m_data.datesWithTag);
-        updatePointersForHighlightMaps(m_sectionMaps, m_data.datesWithSection);
+        std::string previewString = "";
         if (dateOfChangedLog == m_view->getFocusedDate()) {
             if (auto log = m_repo->read(m_view->getFocusedDate())) {
-                m_view->setPreviewString(log->getContent());
-            } else {
-                m_view->setPreviewString("");
+                previewString = log->getContent();
             }
         }
+        m_menuListItemMaintainer.updateViewSectionsAndTagsAfterLogChange(m_data, previewString);
     }
 
   public:
@@ -94,7 +204,7 @@ class App : public InputHandlerBase {
         : m_displayedYear{year}, m_view{std::move(view)}, m_repo{std::move(repo)},
           m_editor{std::move(editor)},
           m_data{AnnualLogData::collect(m_repo, m_displayedYear, skipFirstLine)},
-          m_skipFirstLine{skipFirstLine} {
+          m_skipFirstLine{skipFirstLine}, m_menuListItemMaintainer{m_view} {
         m_view->setInputHandler(this);
         m_view->setDatesWithLogs(&m_data.datesWithLogs);
         updateViewSectionsAndTagsAfterLogChange(m_view->getFocusedDate());
@@ -156,15 +266,11 @@ class App : public InputHandlerBase {
     }
 
     void handleFocusedTagChange(int newTag) {
-        m_view->selectedSection() = 0;
-        const auto *const highlighMap = m_tagMaps.at(newTag);
-        m_view->setHighlightedDates(highlighMap);
+        m_menuListItemMaintainer.handleFocusedTagChange(newTag);
     }
 
     void handleFocusedSectionChange(int newSection) {
-        m_view->selectedTag() = 0;
-        const auto *const highlighMap = m_sectionMaps.at(newSection);
-        m_view->setHighlightedDates(highlighMap);
+        m_menuListItemMaintainer.handleFocusedSectionChange(newSection);
     }
 
     void handleUiStarted() {
@@ -176,7 +282,7 @@ class App : public InputHandlerBase {
 
     void quit() {
         if (m_gitRepo) {
-            m_view->loadingScreen("Commiting & pushing...");
+            m_view->loadingScreen("Committing & pushing...");
             m_gitRepo->commitAll([this](bool somethingCommited) {
                 if (somethingCommited) {
                     m_gitRepo->push([this] { m_view->stop(); });
@@ -232,48 +338,6 @@ class App : public InputHandlerBase {
     static bool noMeaningfullContent(const std::string &content,
                                      const std::chrono::year_month_day &date) {
         return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
-    }
-
-    static const utils::date::Dates *
-    findOrNull(const std::map<std::string, utils::date::Dates> &map, const std::string &key) {
-        auto result = map.find(key);
-        if (result == map.end()) {
-            return nullptr;
-        }
-        return &result->second;
-    }
-
-    /**
-     * A trick to optimize looking up selected menu item. View gives us an index
-     * in the provided array of strings, we can use that index to lookup which availability
-     * map for said menu item is appropriate. Alternative would getting the string and looking up
-     * in the map.
-     */
-    static void
-    updatePointersForHighlightMaps(std::vector<const utils::date::Dates *> &vec,
-                                   const std::map<std::string, utils::date::Dates> &map) {
-        vec.clear();
-        vec.reserve(map.size());
-        vec.push_back(nullptr); // 0 index = no highlighted days
-        for (auto const &[_, dates] : map) {
-            vec.emplace_back(&dates);
-        }
-    }
-
-    /**
-     * Generates a list of strings that will be displayed as menu items. Each item
-     * title will be made of a key in the @p map and the number of days it has been
-     * mantioned (days set).
-     */
-    static std::vector<std::string>
-    makeMenuTitles(const std::map<std::string, utils::date::Dates> &map) {
-        std::vector<std::string> strs;
-        strs.reserve(map.size());
-        strs.push_back(" ----- ");
-        for (auto const &[str, annual_map] : map) {
-            strs.push_back(std::string{"("} + std::to_string(annual_map.size()) + ") - " + str);
-        }
-        return std::move(strs);
     }
 };
 } // namespace caps_log
