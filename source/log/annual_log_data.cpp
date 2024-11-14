@@ -21,8 +21,8 @@ void collectEmpty(AnnualLogData &data, const std::shared_ptr<LogRepositoryBase> 
 
     const auto monthDayDate = monthDay(date);
     for (const auto &[section, tags] : input->getTagsPerSection()) {
-        data.tagsPerSection[section][AnnualLogData::kAnyTag].insert(monthDayDate);
-        data.tagsPerSection[AnnualLogData::kAnySection][AnnualLogData::kAnyTag].insert(
+        data.tagsPerSection[section][AnnualLogData::kAnyOrNoTag].insert(monthDayDate);
+        data.tagsPerSection[AnnualLogData::kAnySection][AnnualLogData::kAnyOrNoTag].insert(
             monthDayDate);
         for (const auto &tag : tags) {
             data.tagsPerSection[section][tag].insert(monthDayDate);
@@ -57,18 +57,17 @@ void AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
     const auto monthDayDate = monthDay(date);
     std::erase_if(tagsPerSection, [monthDayDate](auto &item) {
         auto &[section, tags] = item;
-        const auto numOfErased = std::erase_if(tags, [monthDayDate, section](auto &tagAndDates) {
+        // remove all tags that after removal of this date would be empty (except for <any tag>)
+        std::erase_if(tags, [monthDayDate, section](auto &tagAndDates) {
             auto &[tag, dates] = tagAndDates;
             dates.erase(monthDayDate);
-            if (tag == kAnyTag) {
-                return false;
-            }
-            return dates.size() == 0;
+            return tag != kAnyOrNoTag && dates.size() == 0;
         });
         if (section == kAnySection) {
             return false;
         }
-        return tags.size() <= 1; // 1 because of the kAnyTag
+        assert(tags.contains(kAnyOrNoTag)); // <any tag> should always be present
+        return section != kAnyOrNoTag && tags.size() == 1 && tags.at(kAnyOrNoTag).empty();
     });
 
     // collect as if it was empty

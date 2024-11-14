@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fmt/format.h>
 #include <memory>
+#include <ranges>
 
 namespace caps_log {
 
@@ -26,7 +27,7 @@ void ViewDataUpdater::handleFocusedTagChange() {
         }
     } else if (newTag == kSelectNoneMenuEntryText) {
         m_view->setHighlightedDates(
-            &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(AnnualLogData::kAnyTag));
+            &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(AnnualLogData::kAnyOrNoTag));
     } else {
         const auto *const highlighMap =
             &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(newTag);
@@ -43,7 +44,7 @@ void ViewDataUpdater::handleFocusedSectionChange() {
     } else {
         m_view->tagMenuItems() = m_tagMenuItemsPerSection.at(newSection);
         m_view->setHighlightedDates(
-            &m_data.tagsPerSection.at(newSection).at(AnnualLogData::kAnyTag));
+            &m_data.tagsPerSection.at(newSection).at(AnnualLogData::kAnyOrNoTag));
     }
 }
 
@@ -52,18 +53,10 @@ void ViewDataUpdater::updateTagMenuItemsPerSection() {
 
     // update menu items
     const auto allTags = m_data.getAllTags();
-    m_tagMenuItemsPerSection[kSelectNoneMenuEntryText] =
-        makeTagMenuItems(allTags, kSelectNoneMenuEntryText);
+    m_tagMenuItemsPerSection[kSelectNoneMenuEntryText] = makeTagMenuItems(kSelectNoneMenuEntryText);
 
-    // NOTE: gotta itterate over datesWithSection to include sections that do not have tags as they
-    // are not included in tagsPerSection
     for (const auto &section : m_data.getAllSections()) {
-        if (m_data.tagsPerSection.contains(section)) {
-            m_tagMenuItemsPerSection[section] =
-                makeTagMenuItems(m_data.getAllTagsForSection(section), section);
-        } else {
-            m_tagMenuItemsPerSection[section] = makeTagMenuItems({}, section);
-        }
+        m_tagMenuItemsPerSection[section] = makeTagMenuItems(section);
     }
 }
 
@@ -72,11 +65,11 @@ void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString
     {
         const auto oldSections = m_view->sectionMenuItems().getKeys();
         if (oldSections.empty()) { // initial start
-            m_view->sectionMenuItems() = makeSectionMenuItems(m_data.getAllSections());
+            m_view->sectionMenuItems() = makeSectionMenuItems();
             m_view->setSelectedSection(kSelectNoneMenuEntryText);
         } else {
             const auto oldSelectedSection = m_view->getSelectedSection();
-            m_view->sectionMenuItems() = makeSectionMenuItems(m_data.getAllSections());
+            m_view->sectionMenuItems() = makeSectionMenuItems();
 
             // restore selected section
             if (std::ranges::find(m_view->sectionMenuItems().getKeys(), oldSelectedSection) !=
@@ -117,7 +110,7 @@ void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString
         m_view->setHighlightedDates(nullptr);
     } else if (m_view->getSelectedTag() == kSelectNoneMenuEntryText) {
         m_view->setHighlightedDates(
-            &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(AnnualLogData::kAnyTag));
+            &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(AnnualLogData::kAnyOrNoTag));
     } else {
         m_view->setHighlightedDates(
             &m_data.tagsPerSection.at(AnnualLogData::kAnySection).at(m_view->getSelectedTag()));
@@ -125,6 +118,46 @@ void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString
 
     // update preview string
     m_view->setPreviewString(previewString);
+}
+
+MenuItems ViewDataUpdater::makeTagMenuItems(const std::string &section) {
+    std::vector<std::string> menuItems;
+    std::vector<std::string> keys;
+
+    // prepend select none
+    menuItems.push_back(kSelectNoneMenuEntryText);
+    keys.push_back(kSelectNoneMenuEntryText);
+
+    const auto sect = section == kSelectNoneMenuEntryText ? AnnualLogData::kAnySection : section;
+    for (const auto &[tag, dates] : m_data.tagsPerSection.at(sect)) {
+        if (tag == AnnualLogData::kAnyOrNoTag) {
+            continue;
+        }
+        menuItems.push_back(makeMenuItemTitle(tag, dates.size()));
+        keys.push_back(tag);
+    }
+    return {menuItems, keys};
+}
+
+MenuItems ViewDataUpdater::makeSectionMenuItems() {
+    std::vector<std::string> menuItems;
+    std::vector<std::string> keys;
+    menuItems.reserve(m_data.tagsPerSection.size());
+    keys.reserve(m_data.tagsPerSection.size());
+
+    // prepend select none
+    menuItems.push_back(kSelectNoneMenuEntryText);
+    keys.push_back(kSelectNoneMenuEntryText);
+
+    for (const auto &section : m_data.tagsPerSection | std::views::keys) {
+        if (section == AnnualLogData::kAnySection) {
+            continue;
+        }
+        menuItems.push_back(makeMenuItemTitle(
+            section, m_data.tagsPerSection.at(section).at(AnnualLogData::kAnyOrNoTag).size()));
+        keys.push_back(section);
+    }
+    return {menuItems, keys};
 }
 
 void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {

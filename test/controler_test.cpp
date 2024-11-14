@@ -332,9 +332,8 @@ TEST_F(ControllerTest, TagsPerSection_RootSectionNotShownWhenTagsInRootSectionNo
     capsLog.run();
 }
 
-TEST_F(
-    ControllerTest,
-    DISABLED_TagsPerSection_SelectingATagPerSectionHighlightsOnlyTheDatesWhereTagIsUnderThatSection) {
+TEST_F(ControllerTest,
+       TagsPerSection_SelectingATagPerSectionHighlightsOnlyTheDatesWhereTagIsUnderThatSection) {
     mockRepo->write(LogFile{day1, "# DummyContent \n# section 1 \n* tag"});
     mockRepo->write(LogFile{day2, "# DummyContent \n# section 1 \nno tag"});
     mockRepo->write(LogFile{day3, "# DummyContent \n# section 2 \n* tag"});
@@ -365,7 +364,7 @@ TEST_F(
     capsLog.run();
 }
 
-TEST_F(ControllerTest, DISABLED_SectionWithNoTagIsListedInMenuItems) {
+TEST_F(ControllerTest, SectionWithNoTagIsListedInMenuItems) {
     mockRepo->write(LogFile{day2, "# DummyContent \n# section 1 \nno tag"});
     auto capsLog = makeCapsLog();
     EXPECT_CALL(*mockView, run());

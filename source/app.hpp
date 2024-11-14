@@ -44,49 +44,8 @@ class ViewDataUpdater final {
   private:
     void updateTagMenuItemsPerSection();
 
-    MenuItems makeTagMenuItems(const std::vector<std::string> &tags, const std::string &section) {
-        std::vector<std::string> menuItems;
-        std::vector<std::string> keys;
-        menuItems.reserve(tags.size());
-        keys.reserve(tags.size());
-
-        // prepend select none
-        menuItems.push_back(kSelectNoneMenuEntryText);
-        keys.push_back(kSelectNoneMenuEntryText);
-
-        const auto sect =
-            section == kSelectNoneMenuEntryText ? AnnualLogData::kAnySection : section;
-        for (const auto &tag : tags) {
-            if (tag == AnnualLogData::kAnyTag) {
-                continue;
-            }
-            menuItems.push_back(
-                makeMenuItemTitle(tag, m_data.tagsPerSection.at(sect).at(tag).size()));
-            keys.push_back(tag);
-        }
-        return {menuItems, keys};
-    }
-
-    MenuItems makeSectionMenuItems(const std::vector<std::string> &sections) {
-        std::vector<std::string> menuItems;
-        std::vector<std::string> keys;
-        menuItems.reserve(sections.size());
-        keys.reserve(sections.size());
-
-        // prepend select none
-        menuItems.push_back(kSelectNoneMenuEntryText);
-        keys.push_back(kSelectNoneMenuEntryText);
-
-        for (const auto &section : sections) {
-            if (section == AnnualLogData::kAnySection) {
-                continue;
-            }
-            menuItems.push_back(makeMenuItemTitle(
-                section, m_data.tagsPerSection.at(section).at(AnnualLogData::kAnyTag).size()));
-            keys.push_back(section);
-        }
-        return {menuItems, keys};
-    }
+    MenuItems makeTagMenuItems(const std::string &section);
+    MenuItems makeSectionMenuItems();
 };
 
 struct AppConfig {
