@@ -41,6 +41,14 @@ class MenuItems {
     std::vector<std::string> keys;
 };
 
+struct CalendarEvent {
+    std::string name;
+    std::chrono::month_day date;
+    auto operator<=>(const CalendarEvent &other) const = default;
+};
+
+using CalendarEvents = std::map<std::string, std::set<CalendarEvent>>;
+
 class AnnualViewBase { // NOLINT
   public:
     virtual ~AnnualViewBase() = default;
@@ -64,6 +72,7 @@ class AnnualViewBase { // NOLINT
     // the map allows for having precoputed maps and switching
     virtual void setDatesWithLogs(const utils::date::Dates *map) = 0;
     virtual void setHighlightedDates(const utils::date::Dates *map) = 0;
+    virtual void setEventDates(const CalendarEvents *map) {};
 
     // can't use a pointer here because some FTXUI menu limitations
     virtual MenuItems &tagMenuItems() = 0;

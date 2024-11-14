@@ -44,6 +44,7 @@ TEST(ConfigTest, DefaultConfigurations) {
               Config::kDefaultIgnoreFirstLineWhenParsingSections);
     EXPECT_EQ(config.password, "");
     EXPECT_FALSE(config.repoConfig.has_value());
+    EXPECT_TRUE(config.calendarEvents.empty());
 }
 
 TEST(ConfigTest, ConfigFileOverrides) {
@@ -176,4 +177,60 @@ TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
     auto cmdLineArgs = parseArgs({"caps-log"});
     auto fileReader = mockFileReader(configContent);
     ASSERT_NO_THROW(Config::make(fileReader, cmdLineArgs));
+}
+
+TEST(ConfigTest, CalendarEventsParsing) {
+    std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
+                                "[calendar-events]\n"
+                                "recent-events-window=42\n"
+                                "[calendar-events.birthdays.0]\n"
+                                "name=John Doe\n"
+                                "date=02.02.\n"
+                                "[calendar-events.holidays.0]\n"
+                                "name=Christmas\n"
+                                "date=25.12.\n";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    Config config = Config::make(fileReader, cmdLineArgs);
+
+    EXPECT_EQ(config.recentEventsWindow, 42);
+    EXPECT_EQ(config.calendarEvents.size(), 2);
+    EXPECT_EQ(config.calendarEvents["birthdays"].size(), 1);
+    EXPECT_EQ(config.calendarEvents["holidays"].size(), 1);
+    EXPECT_EQ(config.calendarEvents["birthdays"].begin()->name, "John Doe");
+    const auto date1 = std::chrono::month_day{std::chrono::month{2}, std::chrono::day{2}};
+    EXPECT_EQ(config.calendarEvents["birthdays"].begin()->date, date1);
+    EXPECT_EQ(config.calendarEvents["holidays"].begin()->name, "Christmas");
+    const auto date2 = std::chrono::month_day{std::chrono::month{12}, std::chrono::day{25}};
+    EXPECT_EQ(config.calendarEvents["holidays"].begin()->date, date2);
+}
+
+TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenNoId) {
+    std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
+                                "[calendar-events]\n"
+                                "recent-events-window=42\n"
+                                "[calendar-events.birthdays]\n"
+                                "name=John Doe\n"
+                                "date=02.02.\n"
+                                "[calendar-events.holidays.0]\n"
+                                "name=Christmas\n"
+                                "date=12.25.\n";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    ASSERT_THROW(Config::make(fileReader, cmdLineArgs), std::runtime_error);
+}
+
+TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
+    std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
+                                "[calendar-events]\n"
+                                "recent-events-window=42\n"
+                                "[calendar-events.birthdays.0]\n"
+                                "name=John Doe\n"
+                                "date=02-02-02\n"
+                                "[calendar-events.holidays.0]\n"
+                                "name=Christmas\n"
+                                "date=12.25.\n";
+    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto fileReader = mockFileReader(configContent);
+    ASSERT_THROW(Config::make(fileReader, cmdLineArgs), std::runtime_error);
 }

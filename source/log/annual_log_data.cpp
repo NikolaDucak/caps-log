@@ -1,6 +1,5 @@
 #include "annual_log_data.hpp"
 #include "utils/date.hpp"
-#include <iostream>
 
 namespace caps_log::log {
 
@@ -18,12 +17,10 @@ void collectEmpty(AnnualLogData &data, const std::shared_ptr<LogRepositoryBase> 
     }
     input->parse(skipFirstLine);
 
-    std::cout << "COLLECT " << utils::date::formatToString(date) << std::endl;
     data.datesWithLogs.insert(monthDay(date));
 
     const auto monthDayDate = monthDay(date);
     for (const auto &[section, tags] : input->getTagsPerSection()) {
-        std::cout << "COLLECT section: " << section << std::endl;
         data.tagsPerSection[section][AnnualLogData::kAnyTag].insert(monthDayDate);
         data.tagsPerSection[AnnualLogData::kAnySection][AnnualLogData::kAnyTag].insert(
             monthDayDate);

@@ -17,6 +17,70 @@ const bool Config::kDefaultIgnoreFirstLineWhenParsingSections = true;
 
 namespace {
 
+std::optional<std::chrono::month_day> parseDate(const std::string &date_str) {
+    int day, month;
+    char dot1, dot2;
+
+    std::istringstream iss(date_str);
+    if (iss >> std::setw(2) >> day >> dot1 >> std::setw(2) >> month >> dot2 && dot1 == '.' &&
+        dot2 == '.' && day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        return std::chrono::month_day{std::chrono::month(month), std::chrono::day(day)};
+    }
+    return std::nullopt; // Return empty optional if parsing fails
+}
+
+view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &pt) {
+    // CalendarEvents structure to store all events
+    view::CalendarEvents calendar_events;
+
+    // Iterate over each section in the property tree
+    for (const auto &section : pt) {
+        const std::string &key = section.first; // e.g., "calendar-events.birthdays.0"
+        const boost::property_tree::ptree &data = section.second;
+
+        // Check if the key starts with "calendar-events."
+        if (key.rfind("calendar-events.", 0) != 0) {
+            // Not a calendar event section, skip it
+            continue;
+        }
+
+        // Split the key to extract event type
+        std::stringstream ss(key);
+        std::string item;
+        std::vector<std::string> tokens;
+        while (std::getline(ss, item, '.')) {
+            tokens.push_back(item);
+        }
+
+        if (tokens.size() != 3) {
+            throw std::runtime_error("Invalid calendar event key: " + key);
+        }
+
+        // Extract the category (e.g., "birthdays", "holidays", "anniversaries")
+        std::string category = tokens[1];
+
+        // Get the name and date from the section
+        std::string name = data.get<std::string>("name");
+        std::string date_str = data.get<std::string>("date");
+
+        // Parse the date string into day and month
+        int day, month;
+        if (sscanf(date_str.c_str(), "%02d.%02d.", &day, &month) != 2) {
+            throw std::runtime_error("Invalid date format: " + date_str);
+        }
+
+        // Create a month_day object
+        std::chrono::month_day date{std::chrono::month{static_cast<unsigned>(month)},
+                                    std::chrono::day{static_cast<unsigned>(day)}};
+
+        // Create a CalendarEvent and insert it into the map
+        view::CalendarEvent event{name, date};
+        calendar_events[category].insert(event);
+    }
+
+    return calendar_events;
+}
+
 std::filesystem::path removeTrailingSlash(const std::filesystem::path &path) {
     std::string pathStr = path.string();
     if (!pathStr.empty() && pathStr.back() == '/') {
@@ -33,8 +97,8 @@ void setIfValue(boost::property_tree::ptree &ptree, const std::string &key, U &d
 }
 
 bool isParentOf(const std::filesystem::path &parent, const std::filesystem::path &child) {
-    auto nParent = removeTrailingSlash(parent.lexically_normal());
-    auto nChild = removeTrailingSlash(child.lexically_normal());
+    const auto nParent = removeTrailingSlash(parent.lexically_normal());
+    const auto nChild = removeTrailingSlash(child.lexically_normal());
     auto parentIter = nParent.begin();
     auto childIter = nChild.begin();
 
@@ -49,7 +113,6 @@ bool isParentOf(const std::filesystem::path &parent, const std::filesystem::path
     return parentIter == nParent.end() && childIter != nChild.end();
 }
 
-// Your existing function with modifications to use Boost Program Options' variables_map
 void applyCommandlineOverrides(Config &config,
                                const boost::program_options::variables_map &commandLineArgs) {
 
@@ -70,34 +133,18 @@ void applyCommandlineOverrides(Config &config,
     }
 }
 
-// Refactored function that modifies the passed config reference
 void applyConfigFileOverrides(Config &config, boost::property_tree::ptree &ptree) {
-    // Update the config object with values from the file if they are present
-    auto logDirPathOpt = ptree.get_optional<std::string>("log-dir-path");
-    if (logDirPathOpt) {
-        config.logDirPath = logDirPathOpt.get();
-    }
+    setIfValue<std::string>(ptree, "log-dir-path", config.logDirPath);
+    setIfValue<std::string>(ptree, "log-filename-format", config.logFilenameFormat);
+    setIfValue<bool>(ptree, "sunday-start", config.sundayStart);
+    setIfValue<bool>(ptree, "first-line-section", config.ignoreFirstLineWhenParsingSections);
+    setIfValue<std::string>(ptree, "password", config.password);
+    setIfValue<unsigned>(ptree, "calendar-events.recent-events-window", config.recentEventsWindow);
 
-    auto logFilenameFormatOpt = ptree.get_optional<std::string>("log-filename-format");
-    if (logFilenameFormatOpt) {
-        config.logFilenameFormat = logFilenameFormatOpt.get();
-    }
-
-    auto sundayStartOpt = ptree.get_optional<bool>("sunday-start");
-    if (sundayStartOpt) {
-        config.sundayStart = sundayStartOpt.get();
-    }
-
-    auto ignoreFirstLineWhenParsingSectionsOpt = ptree.get_optional<bool>("first-line-section");
-    if (ignoreFirstLineWhenParsingSectionsOpt) {
-        config.ignoreFirstLineWhenParsingSections = ignoreFirstLineWhenParsingSectionsOpt.get();
-    }
-
-    auto passwordOpt = ptree.get_optional<std::string>("password");
-    if (passwordOpt) {
-        config.password = passwordOpt.get();
-    }
+    // Parse and update calendar events
+    config.calendarEvents = parseCalendarEvents(ptree);
 }
+
 void applyGitConfigIfEnabled(Config &config, boost::property_tree::ptree &ptree) {
     if (ptree.get_optional<bool>("git.enable-git-log-repo").value_or(false)) {
         GitRepoConfig gitConf;
