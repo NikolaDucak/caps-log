@@ -30,12 +30,16 @@ class AnnualView : public AnnualViewBase {
     // Maps that help m_calendarButtons highlight certain logs.
     const utils::date::Dates *m_highlightedDates = nullptr;
     const utils::date::Dates *m_datesWithLogs = nullptr;
+    const CalendarEvents *m_eventDates = nullptr;
 
     // Menu items for m_tagsMenu & m_sectionsMenu
     MenuItems m_tagMenuItems, m_sectionMenuItems;
 
+    unsigned m_recentEventsWindow;
+
   public:
-    AnnualView(const std::chrono::year_month_day &today, bool sundayStart);
+    AnnualView(const std::chrono::year_month_day &today, bool sundayStart,
+               unsigned recentEventsWindow);
 
     void run() override;
     void stop() override;
@@ -53,6 +57,7 @@ class AnnualView : public AnnualViewBase {
 
     void setDatesWithLogs(const utils::date::Dates *map) override { m_datesWithLogs = map; }
     void setHighlightedDates(const utils::date::Dates *map) override { m_highlightedDates = map; }
+    void setEventDates(const CalendarEvents *events) override { m_eventDates = events; }
 
     void setPreviewString(const std::string &string) override { m_preview->setContent(string); }
 

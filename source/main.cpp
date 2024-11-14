@@ -17,6 +17,10 @@
 #include "view/annual_view.hpp"
 #include <boost/program_options.hpp>
 
+auto md(unsigned char month, unsigned int day) {
+    return std::chrono::month_day{std::chrono::month{month}, std::chrono::day{day}};
+}
+
 std::string promptPassword(const caps_log::Config &config) {
     using namespace ftxui;
     auto screen = ScreenInteractive::Fullscreen();
@@ -55,7 +59,8 @@ auto makeCapsLog(const caps_log::Config &conf) {
     using namespace caps_log;
     const auto password = getPasswordFromTUIIfNeededAndNotProvided(conf);
     auto pathProvider = log::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
-    auto view = std::make_shared<view::AnnualView>(utils::date::getToday(), conf.sundayStart);
+    auto view = std::make_shared<view::AnnualView>(utils::date::getToday(), conf.sundayStart,
+                                                   conf.recentEventsWindow);
     auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, password);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
         const auto envEditor = std::getenv("EDITOR");
@@ -77,8 +82,12 @@ auto makeCapsLog(const caps_log::Config &conf) {
         return std::nullopt;
     }();
 
-    return caps_log::App{std::move(view), std::move(repo), std::move(editor),
-                         conf.ignoreFirstLineWhenParsingSections, std::move(gitRepo)};
+    AppConfig appConf;
+    appConf.skipFirstLine = conf.ignoreFirstLineWhenParsingSections;
+    appConf.events = conf.calendarEvents;
+    appConf.currentYear = utils::date::getToday().year();
+    return caps_log::App{std::move(view), std::move(repo), std::move(editor), std::move(gitRepo),
+                         std::move(appConf)};
 }
 
 void migrateToNewRepo() {

@@ -1,3 +1,4 @@
+#include "view/annual_view_base.hpp"
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -35,6 +36,9 @@ struct Config {
     std::string password;
 
     std::optional<GitRepoConfig> repoConfig;
+
+    unsigned recentEventsWindow = 14;
+    view::CalendarEvents calendarEvents;
 };
 
 // NOLINTNEXTLINE

@@ -8,8 +8,8 @@
 #include "view/input_handler.hpp"
 
 #include <cassert>
+#include <chrono>
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -76,10 +76,8 @@ class ViewDataUpdater final {
         // prepend select none
         menuItems.push_back(kSelectNoneMenuEntryText);
         keys.push_back(kSelectNoneMenuEntryText);
-        std::cout << "section: " << sections.size() << std::endl;
 
         for (const auto &section : sections) {
-            std::cout << "section: " << section << std::endl;
             if (section == AnnualLogData::kAnySection) {
                 continue;
             }
@@ -91,24 +89,29 @@ class ViewDataUpdater final {
     }
 };
 
+struct AppConfig {
+  public:
+    bool skipFirstLine;
+    std::chrono::year currentYear;
+    CalendarEvents events;
+};
+
 /**
  * The main application class that orchestrates the view, the data and the editor.
  */
 class App final : public InputHandlerBase {
-    std::chrono::year m_displayedYear;
+    AppConfig m_config;
     std::shared_ptr<AnnualViewBase> m_view;
     std::shared_ptr<LogRepositoryBase> m_repo;
     std::shared_ptr<EditorBase> m_editor;
     AnnualLogData m_data;
-    bool m_skipFirstLine;
     std::optional<AsyncGitRepo> m_gitRepo;
     ViewDataUpdater m_viewDataUpdater;
 
   public:
     App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-        std::shared_ptr<EditorBase> editor, bool skipFirstLine = true,
-        std::optional<GitRepo> gitRepo = std::nullopt,
-        std::chrono::year year = date::getToday().year());
+        std::shared_ptr<EditorBase> editor, std::optional<GitRepo> gitRepo = std::nullopt,
+        AppConfig config = {});
 
     void run();
     bool handleInputEvent(const UIEvent &event) override;

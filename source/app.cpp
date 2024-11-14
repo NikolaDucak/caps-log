@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <fmt/format.h>
-#include <iostream>
 #include <memory>
 
 namespace caps_log {
@@ -73,7 +72,6 @@ void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString
     {
         const auto oldSections = m_view->sectionMenuItems().getKeys();
         if (oldSections.empty()) { // initial start
-            std::cout << "initial start" << m_data.tagsPerSection.begin()->first << std::endl;
             m_view->sectionMenuItems() = makeSectionMenuItems(m_data.getAllSections());
             m_view->setSelectedSection(kSelectNoneMenuEntryText);
         } else {
@@ -130,10 +128,7 @@ void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString
 }
 
 void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {
-    std::cout << "PRE " << m_data.tagsPerSection.size() << std::endl;
-    std::cout << "date " << date::formatToString(dateOfChangedLog) << std::endl;
-    m_data.collect(m_repo, dateOfChangedLog, m_skipFirstLine);
-    std::cout << "POST " << m_data.tagsPerSection.size() << std::endl;
+    m_data.collect(m_repo, dateOfChangedLog, m_config.skipFirstLine);
     std::string previewString = "";
     if (dateOfChangedLog == m_view->getFocusedDate()) {
         if (auto log = m_repo->read(m_view->getFocusedDate())) {
@@ -144,14 +139,14 @@ void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dat
 }
 
 App::App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-         std::shared_ptr<EditorBase> editor, bool skipFirstLine, std::optional<GitRepo> gitRepo,
-         std::chrono::year year)
-    : m_displayedYear{year}, m_view{std::move(view)}, m_repo{std::move(repo)},
+         std::shared_ptr<EditorBase> editor, std::optional<GitRepo> gitRepo, AppConfig config)
+    : m_config{std::move(config)}, m_view{std::move(view)}, m_repo{std::move(repo)},
       m_editor{std::move(editor)},
-      m_data{AnnualLogData::collect(m_repo, m_displayedYear, skipFirstLine)},
-      m_skipFirstLine{skipFirstLine}, m_viewDataUpdater{m_view, m_data} {
+      m_data{AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine)},
+      m_viewDataUpdater{m_view, m_data} {
     m_view->setInputHandler(this);
     m_view->setDatesWithLogs(&m_data.datesWithLogs);
+    m_view->setEventDates(&m_config.events);
     updateDataAndViewAfterLogChange(m_view->getFocusedDate());
 
     if (gitRepo) {
@@ -218,7 +213,8 @@ void App::handleUiStarted() {
         m_view->loadingScreen("Pulling from remote...");
         m_gitRepo->pull([this] {
             m_view->post([this] {
-                m_data = AnnualLogData::collect(m_repo, m_displayedYear, m_skipFirstLine);
+                m_data =
+                    AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
                 updateDataAndViewAfterLogChange(m_view->getFocusedDate());
                 m_view->loadingScreenOff();
             });
@@ -252,9 +248,9 @@ void App::deleteFocusedLog() {
 }
 
 void App::handleDisplayedYearChange(int diff) {
-    m_displayedYear = std::chrono::year{static_cast<int>(m_displayedYear) + diff};
-    m_data = AnnualLogData::collect(m_repo, m_displayedYear, m_skipFirstLine);
-    m_view->showCalendarForYear(m_displayedYear);
+    m_config.currentYear = std::chrono::year{static_cast<int>(m_config.currentYear) + diff};
+    m_data = AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
+    m_view->showCalendarForYear(m_config.currentYear);
     m_view->setHighlightedDates(nullptr);
     updateDataAndViewAfterLogChange(m_view->getFocusedDate());
 }

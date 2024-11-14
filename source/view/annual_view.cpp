@@ -9,19 +9,29 @@
 #include "view/input_handler.hpp"
 #include "view/windowed_menu.hpp"
 
+#include <chrono>
 #include <ftxui/screen/terminal.hpp>
 
+#include <ranges>
 #include <string>
 
 namespace caps_log::view {
 
+namespace {
+int daysDifference(std::chrono::year_month_day from, std::chrono::year_month_day to) {
+    std::chrono::sys_days fromSys{from};
+    std::chrono::sys_days toSys{to};
+    return (toSys - fromSys).count();
+}
+} // namespace
 using namespace ftxui;
 
-AnnualView::AnnualView(const std::chrono::year_month_day &today, bool sundayStart)
+AnnualView::AnnualView(const std::chrono::year_month_day &today, bool sundayStart,
+                       unsigned recentEventsWindow)
     : m_screen{ScreenInteractive::Fullscreen()},
       m_calendarButtons{Calendar::make(m_screen, today, makeCalendarOptions(today, sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
-      m_rootComponent{makeFullUIComponent()} {}
+      m_rootComponent{makeFullUIComponent()}, m_recentEventsWindow{recentEventsWindow} {}
 
 void AnnualView::run() { m_screen.Loop(m_rootComponent); }
 
@@ -39,35 +49,74 @@ std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
             m_calendarButtons,
             m_preview,
         },
-        Event::Tab, Event::TabReverse);
+        ftxui::Event::Tab, ftxui::Event::TabReverse);
 
-    const auto wholeUiRenderer =
-        Renderer(container, [this, container, firstRender = true]() mutable {
-            // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
-            // them centered while the preview window changes and stretches this vbox container than
-            // to keep the preview window size fixed
-            const auto dateStr =
-                utils::date::formatToString(utils::date::getToday(), "%d. %m. %Y.");
-            const auto titleText =
-                fmt::format("Today is: {} -- There are {} log entries for year {}.", dateStr,
-                            m_datesWithLogs != nullptr ? m_datesWithLogs->size() : 0,
-                            static_cast<int>(m_calendarButtons->getFocusedDate().year()));
-            const auto mainSection =
-                hbox(m_sectionsMenu->Render(), m_tagsMenu->Render(), m_calendarButtons->Render());
-
-            static const auto kHelpString =
-                std::string{"hjkl/arrow keys - navigation | d - delete log "
-                            "| tab - move focus between menus and calendar"};
-            if (firstRender) {
-                firstRender = false;
-                m_screen.Post([this]() { m_handler->handleInputEvent(UIEvent{UiStarted{}}); });
+    const auto wholeUiRenderer = Renderer(container, [this, container,
+                                                      firstRender = true]() mutable {
+        // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
+        // them centered while the preview window changes and stretches this vbox container than
+        // to keep the preview window size fixed
+        const auto dateStr = utils::date::formatToString(utils::date::getToday(), "%d. %m. %Y.");
+        const auto todaysEvent = [this] {
+            if (m_eventDates) {
+                for (const auto &[group, events] : *m_eventDates) {
+                    const auto it = std::ranges::find_if(events, [](const auto &event) {
+                        return event.date == utils::date::monthDay(utils::date::getToday());
+                    });
+                    if (it != events.end()) {
+                        return fmt::format("{} - {}", group, it->name);
+                    }
+                }
             }
-            return vbox(text(titleText) | center, mainSection | center, m_preview->Render(),
-                        text(kHelpString) | dim | center) |
-                   center;
-        });
+            return std::string{};
+        }();
+        const auto titleText =
+            fmt::format("Today is: {} {} -- There are {} log entries for year {}.", dateStr,
+                        todaysEvent.empty() ? "" : fmt::format("({})", todaysEvent),
+                        m_datesWithLogs != nullptr ? m_datesWithLogs->size() : 0,
+                        static_cast<int>(m_calendarButtons->getFocusedDate().year()));
 
-    const auto eventHandler = CatchEvent(wholeUiRenderer, [&](const Event &event) {
+        Elements eventItems;
+        for (const auto &[group, events] : *m_eventDates) {
+            Elements groupItems;
+            for (const auto &event : events) {
+                const auto today = utils::date::getToday();
+                const auto daysToEvent =
+                    daysDifference(today, std::chrono::year_month_day(
+                                              today.year(), event.date.month(), event.date.day()));
+                if (std::abs(daysToEvent) > m_recentEventsWindow) {
+                    continue;
+                }
+                const auto daysStr = daysToEvent > 0 ? fmt::format("in {} days", daysToEvent)
+                                                     : fmt::format("{} days ago", -daysToEvent);
+                const auto dateStr = fmt::format("{:02}.{:02}.", (unsigned)event.date.month(),
+                                                 (unsigned)event.date.day());
+                groupItems.push_back(
+                    text(fmt::format("  - {} {} ({})", event.name, dateStr, daysStr)));
+            }
+            if (not groupItems.empty()) {
+                eventItems.push_back(text(group) | bold);
+                eventItems.push_back(vbox(std::move(groupItems)));
+            }
+        }
+
+        const auto mainSection = hbox(
+            vbox(hbox(m_sectionsMenu->Render(), m_tagsMenu->Render()), vbox(eventItems) | border),
+            m_calendarButtons->Render());
+
+        static const auto kHelpString =
+            std::string{"hjkl/arrow keys - navigation | d - delete log "
+                        "| tab - move focus between menus and calendar"};
+        if (firstRender) {
+            firstRender = false;
+            m_screen.Post([this]() { m_handler->handleInputEvent(UIEvent{UiStarted{}}); });
+        }
+        return vbox(text(titleText) | bold | underlined | center, mainSection | center,
+                    m_preview->Render(), text(kHelpString) | dim | center) |
+               center;
+    });
+
+    const auto eventHandler = CatchEvent(wholeUiRenderer, [&](const ftxui::Event &event) {
         // controller does not care about mouse events
         if (not event.is_mouse()) {
             return m_handler->handleInputEvent(UIEvent{UnhandledRootEvent{event.input()}});
@@ -105,6 +154,18 @@ CalendarOption AnnualView::makeCalendarOptions(const std::chrono::year_month_day
             }
         }
 
+        if (m_eventDates) {
+            for (const auto &[_, events] : *m_eventDates) {
+                const auto isEvent = std::ranges::any_of(events, [date](const auto &event) {
+                    return event.date == utils::date::monthDay(date);
+                });
+                if (isEvent) {
+                    element = element | bgcolor(Color::Green);
+                    break;
+                }
+            }
+        }
+
         return element | center;
     };
     option.focusChange = [this](const auto &date) {
@@ -138,17 +199,21 @@ std::shared_ptr<WindowedMenu> AnnualView::makeSectionsMenu() {
 
 void AnnualView::post(Task task) {
     m_screen.Post([task, this]() { std::get<Closure>(task)(); });
-    m_screen.Post(Event::Custom);
+    m_screen.Post(ftxui::Event::Custom);
 }
+
 void AnnualView::prompt(std::string message, std::function<void()> onYesCallback) {
     m_rootComponent->prompt(message, onYesCallback);
 }
+
 void AnnualView::promptOk(std::string message, std::function<void()> callback) {
     m_rootComponent->promptOk(message, callback);
 }
+
 void AnnualView::loadingScreen(const std::string &message) {
     m_rootComponent->loadingScreen(message);
 }
+
 void AnnualView::loadingScreenOff() { m_rootComponent->resetToMain(); }
 
 } // namespace caps_log::view

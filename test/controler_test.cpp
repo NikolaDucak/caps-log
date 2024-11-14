@@ -36,7 +36,10 @@ class ControllerTest : public testing::Test {
      * @brief Create a caps_log::App object with the mock objects and selected year.
      */
     auto makeCapsLog() {
-        return App{mockView, mockRepo, mockEditor, true, std::nullopt, day1.year()};
+        AppConfig c;
+        c.currentYear = day1.year();
+        c.skipFirstLine = true;
+        return App{mockView, mockRepo, mockEditor, std::nullopt, std::move(c)};
     }
 
     void verifyTagMenuItems(const std::vector<std::string> &expected) {
@@ -244,7 +247,10 @@ TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
     }
     mockRepo->write(LogFile{day1, "# Dummy section"});
     {
-        auto capsLog2 = App{mockView, mockRepo, mockEditor, false, std::nullopt, day1.year()};
+        AppConfig c;
+        c.skipFirstLine = false;
+        c.currentYear = day1.year();
+        auto capsLog2 = App{mockView, mockRepo, mockEditor, std::nullopt, std::move(c)};
 
         // +1 for '-----' aka no section
         verifySectionMenuItems({"<select none>", "(1) - dummy section"});

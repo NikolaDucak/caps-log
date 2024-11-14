@@ -156,6 +156,30 @@ ssh-pub-key-path=/Users/me/.ssh/id_rsa.pub # required
 repo-root=/Users/me/.caps-log/clog-entries/
 remote-name=something # 'origin' is the default
 main-branch-name=main # 'master' is the default
+
+```
+
+__Annual events__
+Caps-log can also be configured to display annual events in the calendar. They 
+will be highlighted with green color and number of days since or until the event (if the 
+total number of days is less that `recent-events-window` days) will be displayed in the
+small box to the left of the calendar.
+```ini
+[calendar-events]
+recent-events-window=60
+
+[calendar-events.birthadays.0]
+name=Joe
+date=18.07
+[calendar-events.birthadays.1]
+name=Jane
+date=03.07.
+[calendar-events.holidays.0]
+name=New Years eve
+date=01.01.
+[calendar-events.holidays.1]
+name=New Year
+date=31.12.
 ```
 
 ## Building & Installing
