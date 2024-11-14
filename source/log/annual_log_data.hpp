@@ -16,7 +16,7 @@ namespace caps_log::log {
 class AnnualLogData {
   public:
     static constexpr auto kAnySection = "<any section>";
-    static constexpr auto kAnyTag = "<any tag>";
+    static constexpr auto kAnyOrNoTag = "<any tag>";
 
     utils::date::Dates datesWithLogs;
     std::map<std::string, std::map<std::string, utils::date::Dates>> tagsPerSection;
@@ -35,7 +35,7 @@ class AnnualLogData {
         std::set<std::string> tags;
         for (const auto &[_, tagsMap] : tagsPerSection) {
             for (const auto &[tag, _] : tagsMap) {
-                if (tag == kAnyTag) {
+                if (tag == kAnyOrNoTag) {
                     continue;
                 }
                 tags.insert(tag);
@@ -52,11 +52,11 @@ class AnnualLogData {
             tags.push_back(tag);
         }
         // remove <any tag> from the list
-        tags.erase(std::remove(tags.begin(), tags.end(), kAnyTag), tags.end());
+        tags.erase(std::remove(tags.begin(), tags.end(), kAnyOrNoTag), tags.end());
         return tags;
     }
 
-    AnnualLogData() { tagsPerSection[kAnySection][kAnyTag] = {}; }
+    AnnualLogData() { tagsPerSection[kAnySection][kAnyOrNoTag] = {}; }
 
     /**
      * Constructs YearOverviewData from logs in a given year.

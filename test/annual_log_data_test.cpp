@@ -11,7 +11,7 @@ namespace caps_log::log::test {
 namespace {
 using utils::date::monthDay;
 const auto &kAnySection = AnnualLogData::kAnySection;
-const auto &kAnyTag = AnnualLogData::kAnyTag;
+const auto &kAnyTag = AnnualLogData::kAnyOrNoTag;
 const auto dummyDate1 = std::chrono::year_month_day{std::chrono::year{2020}, std::chrono::month{2},
                                                     std::chrono::day{3}};
 const auto dummyDate2 = std::chrono::year_month_day{std::chrono::year{2020}, std::chrono::month{2},
