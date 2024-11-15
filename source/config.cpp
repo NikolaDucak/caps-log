@@ -4,6 +4,7 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <filesystem>
+#include <fmt/format.h>
 #include <iostream>
 
 namespace caps_log {
@@ -171,20 +172,24 @@ Config Config::make(const FileReader &fileReader,
     auto selectedConfigFilePath = cmdLineArgs.count("config") != 0U
                                       ? cmdLineArgs["config"].as<std::string>()
                                       : Config::kDefaultConfigLocation;
+    try {
+        auto config = Config{};
 
-    auto config = Config{};
+        if (auto configFile = fileReader(selectedConfigFilePath)) {
+            boost::property_tree::ptree ptree;
+            boost::property_tree::ini_parser::read_ini(*configFile, ptree);
 
-    if (auto configFile = fileReader(selectedConfigFilePath)) {
-        boost::property_tree::ptree ptree;
-        boost::property_tree::ini_parser::read_ini(*configFile, ptree);
+            applyConfigFileOverrides(config, ptree);
+            applyGitConfigIfEnabled(config, ptree);
+        }
 
-        applyConfigFileOverrides(config, ptree);
-        applyGitConfigIfEnabled(config, ptree);
+        applyCommandlineOverrides(config, cmdLineArgs);
+
+        return config;
+    } catch (const std::exception &e) {
+        throw ConfigParsingException{
+            fmt::format("Error parsing config file ({}): {}", selectedConfigFilePath, e.what())};
     }
-
-    applyCommandlineOverrides(config, cmdLineArgs);
-
-    return config;
 }
 
 boost::program_options::variables_map parseCLIOptions(int argc, const char **argv) {
@@ -199,7 +204,7 @@ boost::program_options::variables_map parseCLIOptions(int argc, const char **arg
       ("log-name-format", po::value<std::string>()->default_value("d%Y_%m_%d.md"), "format in which log entry markdown files are saved")
       ("sunday-start", "have the calendar display sunday as first day of the week")
       ("first-line-section", "if a section mark is placed on the first line, by default it is ignored as it's left for log title, this overrides this behaviour")
-      ("password", po::value<std::string>(), "password for encrypted log repositores or to be used with --encrypt/--decrypt")
+      ("password", po::value<std::string>(), "password for encrypted log repositories or to be used with --encrypt/--decrypt")
       ("encrypt", "apply encryption to all logs in log dir path (needs --password)")
       ("decrypt", "apply decryption to all logs in log dir path (needs --password)");
     // clang-format on
@@ -209,10 +214,10 @@ boost::program_options::variables_map parseCLIOptions(int argc, const char **arg
     po::notify(vmap);
 
     if (vmap.count("help") != 0U) {
-        std::cout << "Capstains Log (caps-log)! A CLI journalig tool." << '\n';
-        std::cout << "Version: " << CAPS_LOG_VERSION_STRING << std::endl;
+        std::cout << "Captain's Log (caps-log)! A CLI journalig tool." << '\n';
+        std::cout << "Version: " << CAPS_LOG_VERSION_STRING << '\n';
         std::cout << desc;
-        std::cout.flush();
+        std::cout << std::flush;
         exit(0);
     }
 

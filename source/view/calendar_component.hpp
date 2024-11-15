@@ -1,8 +1,5 @@
 #pragma once
 
-#include "utils/date.hpp"
-#include "view/ftxui_ext/extended_containers.hpp"
-
 #include <chrono>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -41,7 +38,7 @@ class Calendar : public ftxui::ComponentBase {
 
     /**
      * @brief A utility factory method to create a shared pointer to a Calendar instance. This is
-     * usefull as FTXUI works with shared pointers to ComponentBase instances.
+     * useful as FTXUI works with shared pointers to ComponentBase instances.
      */
     static inline auto make(const ftxui::Screen &screen, const std::chrono::year_month_day &today,
                             CalendarOption option = {}) {

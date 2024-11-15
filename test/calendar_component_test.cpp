@@ -1,3 +1,4 @@
+#include "utils/date.hpp"
 #include "view/calendar_component.hpp"
 #include <filesystem>
 #include <fstream>

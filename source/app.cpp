@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <memory>
 #include <ranges>
 
@@ -16,23 +17,30 @@ using namespace utils;
 namespace {
 
 std::string makePreviewTitle(std::chrono::year_month_day date, const CalendarEvents &events) {
-    auto eventForDate = [&]() -> std::optional<std::tuple<std::string, CalendarEvent>> {
-        for (const auto &[groupName, events] : events) {
-            for (const auto &event : events) {
+    auto eventsForDate = [&]() -> std::map<std::string, std::set<std::string>> {
+        std::map<std::string, std::set<std::string>> filteredEvents;
+
+        for (const auto &[groupName, groupEvents] : events) {
+            for (const auto &event : groupEvents) {
                 if (event.date == date::monthDay(date)) {
-                    return std::make_tuple(groupName, event);
+                    filteredEvents[groupName].insert(event.name);
                 }
             }
         }
-        return std::nullopt;
+        return filteredEvents;
     }();
 
-    const auto eventStr =
-        eventForDate.has_value()
-            ? fmt::format("({} - {})", std::get<0>(*eventForDate), std::get<1>(*eventForDate).name)
-            : "";
-    const auto title =
-        fmt::format("log preview for {} {}", utils::date::formatToString(date), eventStr);
+    // join in format: "birthdays: alice, bob; holidays: christmas"
+    std::string eventString;
+    for (const auto &[group, events] : eventsForDate) {
+        if (not eventString.empty()) {
+            eventString += "; ";
+        }
+        eventString += fmt::format("{}: {}", group, fmt::join(events, ", "));
+    }
+
+    const auto title = fmt::format("log preview for {} {}", utils::date::formatToString(date),
+                                   eventString.empty() ? "" : " - " + eventString);
     return title;
 }
 
@@ -54,9 +62,9 @@ void ViewDataUpdater::handleFocusedTagChange() {
         m_view->setHighlightedDates(
             &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(AnnualLogData::kAnyOrNoTag));
     } else {
-        const auto *const highlighMap =
+        const auto *const highlightedDates =
             &m_data.tagsPerSection.at(m_view->getSelectedSection()).at(newTag);
-        m_view->setHighlightedDates(highlighMap);
+        m_view->setHighlightedDates(highlightedDates);
     }
 }
 
@@ -288,8 +296,8 @@ void App::handleUiStarted() {
 void App::quit() {
     if (m_gitRepo) {
         m_view->loadingScreen("Committing & pushing...");
-        m_gitRepo->commitAll([this](bool somethingCommited) {
-            if (somethingCommited) {
+        m_gitRepo->commitAll([this](bool somethingCommitted) {
+            if (somethingCommitted) {
                 m_gitRepo->push([this] { m_view->stop(); });
             } else {
                 m_view->stop();
@@ -336,15 +344,14 @@ void App::handleCalendarButtonClick() {
 
         // check that after editing still exists
         log = m_repo->read(date);
-        if (log && noMeaningfullContent(log->getContent(), date)) {
+        if (log && noMeaningfulContent(log->getContent(), date)) {
             m_repo->remove(date);
         }
         updateDataAndViewAfterLogChange(date);
     });
 }
 
-bool App::noMeaningfullContent(const std::string &content,
-                               const std::chrono::year_month_day &date) {
+bool App::noMeaningfulContent(const std::string &content, const std::chrono::year_month_day &date) {
     return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
 }
 } // namespace caps_log

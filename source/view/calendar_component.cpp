@@ -1,8 +1,10 @@
 #include "calendar_component.hpp"
 
 #include "ftxui/dom/elements.hpp"
+#include "utils/date.hpp"
+#include "view/ftxui_ext/extended_containers.hpp"
+
 #include <ftxui/screen/screen.hpp>
-#include <iostream>
 
 namespace caps_log::view {
 using namespace ftxui;
@@ -12,7 +14,7 @@ namespace {
  * @brief Utility class that allows for the arrangement of month components in a calendar.
  * It distributes 12 months into 2 or more rows of equal elements.
  * @Note This class had to be implemented to allow for fetching the screen size at runtime to
- * avoid relying on "Terimal::GetDimensions()" which is troublign in test environment.
+ * avoid relying on "Terminal::GetDimensions()" which is troubling in test environment.
  * @Note the class makes some assumptions about the width of the rendered month components. Like
  * that month component day buttons have a border and such
  */

@@ -22,7 +22,7 @@ using namespace utils;
 static const std::string kLogBaseTemplate{"# %d. %m. %y."};
 
 /**
- * A helper class that updatest the view components after the data in the AnnualLogData has changed.
+ * A helper class that updates the view components after the data in the AnnualLogData has changed.
  * It updates the menus, the highlighted dates and the preview string, other elements of the view
  * are not part of it's set of responsibilities. This happens when the user deletes a log or adds a
  * new one or update an existing one.
@@ -88,7 +88,7 @@ class App final : public InputHandlerBase {
     void deleteFocusedLog();
     void quit();
 
-    static bool noMeaningfullContent(const std::string &content,
-                                     const std::chrono::year_month_day &date);
+    static bool noMeaningfulContent(const std::string &content,
+                                    const std::chrono::year_month_day &date);
 };
 } // namespace caps_log

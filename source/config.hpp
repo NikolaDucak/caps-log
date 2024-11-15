@@ -19,6 +19,11 @@ struct GitRepoConfig {
     std::string remoteName = "origin";
 };
 
+class ConfigParsingException : public std::runtime_error {
+  public:
+    explicit ConfigParsingException(const std::string &what) : std::runtime_error{what} {}
+};
+
 struct Config {
     static Config make(const FileReader &fileReader,
                        const boost::program_options::variables_map &cmdLineArgs);
