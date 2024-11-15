@@ -4,6 +4,7 @@
 #include "utils/date.hpp"
 
 #include <filesystem>
+#include <fmt/format.h>
 #include <optional>
 
 namespace caps_log::log {
@@ -17,7 +18,8 @@ class LocalFSLogFilePathProvider {
         : m_logDirectory{logDir}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
 
     inline std::filesystem::path path(const std::chrono::year_month_day &date) const {
-        return {m_logDirectory / utils::date::formatToString(date, m_logFilenameFormat)};
+        return {m_logDirectory / fmt::format("y{}", (int)date.year()) /
+                utils::date::formatToString(date, m_logFilenameFormat)};
     }
 
     inline std::filesystem::path getLogDirPath() const { return m_logDirectory; }

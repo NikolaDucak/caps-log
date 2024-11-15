@@ -1,7 +1,9 @@
 #include "log_repository_crypto_applier.hpp"
 #include "utils/crypto.hpp"
 
+#include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <sstream>
 #include <vector>
@@ -45,7 +47,7 @@ std::optional<std::ofstream> openOutputFileStream(const std::filesystem::path &p
     return std::move(ofs);
 }
 
-bool fileMatchesLogFilenamePatter(const std::filesystem::directory_entry &entry,
+bool fileMatchesLogFilenameFormat(const std::filesystem::directory_entry &entry,
                                   const std::string &logFilenameFormat) {
     std::tm time{};
     std::istringstream iss(entry.path().filename().string());
@@ -105,11 +107,25 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
         }
     };
 
+    const auto isYearDir = [&](const std::filesystem::directory_entry &entry) {
+        const auto filename = entry.path().filename().string();
+        return entry.is_directory() && filename.size() == 5 /* yYYYY */ && filename[0] == 'y' &&
+               std::all_of(filename.begin() + 1, filename.end(),
+                           [](char c) { return std::isdigit(c); });
+    };
+
     // Iterate over all files in the directory
     for (const auto &entry : std::filesystem::directory_iterator{logDirPath}) {
-        if (entry.is_regular_file() && fileMatchesLogFilenamePatter(entry, logFilenameFormat)) {
+        if (!isYearDir(entry)) {
+            continue;
+        }
+        for (const auto &subEntry : std::filesystem::directory_iterator{entry.path()}) {
+            if (!(subEntry.is_regular_file() &&
+                  fileMatchesLogFilenameFormat(subEntry, logFilenameFormat))) {
+                continue;
+            }
             try {
-                processLogFile(entry);
+                processLogFile(subEntry);
             } catch (const std::exception &e) {
                 // Do not throw here, accumulate errors instead
                 errors.push_back(e);

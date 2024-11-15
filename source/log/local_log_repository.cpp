@@ -46,11 +46,14 @@ std::optional<LogFile> LocalLogRepository::read(const std::chrono::year_month_da
 }
 
 void LocalLogRepository::write(const LogFile &log) {
+    const auto path = m_pathProvider.path(log.getDate());
+    std::filesystem::create_directories(path.parent_path());
+
     if (not m_password.empty()) {
         std::istringstream iss{log.getContent()};
-        std::ofstream{m_pathProvider.path(log.getDate())} << utils::encrypt(m_password, iss);
+        std::ofstream{path} << utils::encrypt(m_password, iss);
     } else {
-        std::ofstream{m_pathProvider.path(log.getDate())} << log.getContent();
+        std::ofstream{path} << log.getContent();
     }
 }
 
