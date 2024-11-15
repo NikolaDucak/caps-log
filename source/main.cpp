@@ -40,7 +40,7 @@ std::string promptPassword(const caps_log::Config &config) {
     const auto container = Container::Vertical({input, buttonSubmit, buttonQuit});
 
     const Component renderer = Renderer(container, [container]() {
-        return window(text("Pasword required!"), container->Render()) | center;
+        return window(text("Password required!"), container->Render()) | center;
     });
 
     screen.Loop(renderer);
@@ -119,6 +119,6 @@ int main(int argc, const char **argv) try {
 
     return 0;
 } catch (const std::exception &e) {
-    std::cerr << "Captains log encountered an error: \n " << e.what() << '\n' << std::flush;
+    std::cerr << "Captain's log encountered an error: \n " << e.what() << '\n' << std::flush;
     return 1;
 }

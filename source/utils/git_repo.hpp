@@ -8,7 +8,7 @@ namespace caps_log::utils {
 /**
  * A utility class that manages the initialization of libgit2 and other required interactions with
  * the library. It deals with commit the files, pulling and pushing. It expect that the repository
- * has an innitial commit, remote added and ssh communication.
+ * has an initial commit, remote added and ssh communication.
  */
 class GitRepo {
     class GitLibRaii {

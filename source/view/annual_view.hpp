@@ -21,7 +21,7 @@ class AnnualView : public AnnualViewBase {
     InputHandlerBase *m_handler{nullptr};
     ftxui::ScreenInteractive m_screen;
 
-    // UI compontents visible to the user
+    // UI components visible to the user
     std::shared_ptr<Calendar> m_calendarButtons;
     std::shared_ptr<WindowedMenu> m_tagsMenu, m_sectionsMenu;
     std::shared_ptr<Preview> m_preview = std::make_unique<Preview>();

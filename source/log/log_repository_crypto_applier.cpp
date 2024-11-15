@@ -16,7 +16,7 @@ void updateEncryptionMarkerfile(Crypto crypto, const std::filesystem::path &logD
     if (crypto == Crypto::Encrypt) {
         std::ofstream cle{markerFilePath, std::ios::binary};
         if (not cle.is_open()) {
-            // This would be an unfortuane situation, the repo has already been encrypted
+            // This would be an unfortunate situation, the repo has already been encrypted
             // but the encryption marker file is not added.
             // TODO: figure something out
             throw std::runtime_error{"Failed writing encryption marker file"};

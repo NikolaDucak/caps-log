@@ -78,7 +78,7 @@ std::string encrypt(const std::string &password, std::istream &file) {
     }
 
     if (EVP_EncryptFinal_ex(ctx.get(), outBuffer.data(), &outLength) != 1) {
-        throw std::runtime_error{"Encryption failed: failed to finaleze encryption!"};
+        throw std::runtime_error{"Encryption failed: failed to finalize encryption!"};
     }
     output += std::string{outBuffer.begin(), outBuffer.begin() + outLength};
 

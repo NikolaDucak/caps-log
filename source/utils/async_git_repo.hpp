@@ -33,8 +33,8 @@ class AsyncGitRepo final {
 
     void commitAll(std::function<void(bool)> acallback) {
         m_taskExec.post([this, callback = std::move(acallback)]() {
-            auto somethingCommited = m_repo.commitAll();
-            callback(somethingCommited);
+            auto somethingCommitted = m_repo.commitAll();
+            callback(somethingCommitted);
         });
     }
 };

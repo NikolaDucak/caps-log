@@ -8,7 +8,7 @@
 namespace caps_log::log {
 
 /*
- * Only class that actualy interacts with physical files on the drive
+ * Only class that actually interacts with physical files on the drive
  */
 class LogRepositoryBase {
   public:

@@ -2,7 +2,6 @@
 
 #include "log/log_repository_crypto_applier.hpp"
 #include <fstream>
-#include <iostream>
 #include <sstream>
 #include <utility>
 #include <utils/crypto.hpp>

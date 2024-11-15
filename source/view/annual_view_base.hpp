@@ -69,7 +69,7 @@ class AnnualViewBase { // NOLINT
     virtual void loadingScreenOff() = 0;
 
     // passing only a pointer and having a view have no ownership of
-    // the map allows for having precoputed maps and switching
+    // the map allows for having precomputed maps and switching
     virtual void setDatesWithLogs(const utils::date::Dates *map) = 0;
     virtual void setHighlightedDates(const utils::date::Dates *map) = 0;
     virtual void setEventDates(const CalendarEvents *map) {};

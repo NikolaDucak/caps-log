@@ -112,7 +112,7 @@ TEST(ConfigTest, GitConfigWorks) {
     auto fileReader = mockFileReader(configContent);
     Config config = Config::make(fileReader, cmdLineArgs);
 
-    ASSERT_TRUE(config.repoConfig.has_value());
+    EXPECT_TRUE(config.repoConfig.has_value());
     EXPECT_EQ(config.repoConfig->root, "/path/to/repo/");
     EXPECT_EQ(config.repoConfig->sshKeyPath, "/path/to/key");
     EXPECT_EQ(config.repoConfig->sshPubKeyPath, "/path/to/pub-key");
@@ -132,7 +132,7 @@ TEST(ConfigTest, GitConfigDisabledIfUnset) {
     auto fileReader = mockFileReader(configContent);
     Config config = Config::make(fileReader, cmdLineArgs);
 
-    ASSERT_FALSE(config.repoConfig.has_value());
+    EXPECT_FALSE(config.repoConfig.has_value());
 }
 
 TEST(ConfigTest, GitConfigDisabled) {
@@ -148,7 +148,7 @@ TEST(ConfigTest, GitConfigDisabled) {
     auto fileReader = mockFileReader(configContent);
     Config config = Config::make(fileReader, cmdLineArgs);
 
-    ASSERT_FALSE(config.repoConfig.has_value());
+    EXPECT_FALSE(config.repoConfig.has_value());
 }
 
 TEST(ConfigTest, GitConfigThrowsIfLogDirIsNotInsideRepoRoot) {
@@ -162,7 +162,7 @@ TEST(ConfigTest, GitConfigThrowsIfLogDirIsNotInsideRepoRoot) {
                                 "remote-name=remote-name";
     auto cmdLineArgs = parseArgs({"caps-log"});
     auto fileReader = mockFileReader(configContent);
-    ASSERT_THROW(Config::make(fileReader, cmdLineArgs), std::invalid_argument);
+    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
 }
 
 TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
@@ -176,7 +176,7 @@ TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
                                 "remote-name=remote-name";
     auto cmdLineArgs = parseArgs({"caps-log"});
     auto fileReader = mockFileReader(configContent);
-    ASSERT_NO_THROW(Config::make(fileReader, cmdLineArgs));
+    EXPECT_NO_THROW(Config::make(fileReader, cmdLineArgs));
 }
 
 TEST(ConfigTest, CalendarEventsParsing) {
@@ -217,7 +217,7 @@ TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenNoId) {
                                 "date=12.25.\n";
     auto cmdLineArgs = parseArgs({"caps-log"});
     auto fileReader = mockFileReader(configContent);
-    ASSERT_THROW(Config::make(fileReader, cmdLineArgs), std::runtime_error);
+    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
 }
 
 TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
@@ -232,5 +232,5 @@ TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
                                 "date=12.25.\n";
     auto cmdLineArgs = parseArgs({"caps-log"});
     auto fileReader = mockFileReader(configContent);
-    ASSERT_THROW(Config::make(fileReader, cmdLineArgs), std::runtime_error);
+    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
 }
