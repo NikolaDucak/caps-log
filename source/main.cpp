@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <fstream>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -19,6 +20,66 @@
 
 auto md(unsigned char month, unsigned int day) {
     return std::chrono::month_day{std::chrono::month{month}, std::chrono::day{day}};
+}
+
+/**
+ * If the curret log dir has a structure like
+ * /
+ *   - 2021-01-01.md
+ *   - 2021-01-02.md
+ *   - ..
+ *   - 2024-12-31.md
+ * then migrate to
+ * /
+ *   - 2021/
+ *     - 2021-01-01.md
+ *     - 2021-01-02.md
+ *   - 2022/
+ *    - 2022-01-01.md
+ */
+void migrateToNewRepoStructureIfNeeded(
+    const caps_log::log::LocalFSLogFilePathProvider &pathProvider) {
+
+    const auto logDirPath = pathProvider.getLogDirPath();
+    const auto logFilenameFormat = pathProvider.getLogFilenameFormat();
+
+    const auto parseDate =
+        [logFilenameFormat](
+            const std::filesystem::path &path) -> std::optional<std::chrono::year_month_day> {
+        const auto filenameStr = path.filename().string();
+        std::tm dateTime = {};
+        std::istringstream ss{filenameStr};
+        if (!(ss >> std::get_time(&dateTime, logFilenameFormat.c_str()))) {
+            return std::nullopt;
+        }
+
+        std::string remaining;
+        std::getline(ss, remaining);
+        if (!remaining.empty()) {
+            return std::nullopt;
+        }
+        return std::chrono::year_month_day{
+            std::chrono::year{dateTime.tm_year + 1900},
+            std::chrono::month{static_cast<unsigned int>(dateTime.tm_mon + 1)},
+            std::chrono::day{static_cast<unsigned int>(dateTime.tm_mday)}};
+    };
+
+    for (const auto &entry : std::filesystem::directory_iterator{logDirPath}) {
+        const auto date = parseDate(entry.path());
+        if (!date.has_value()) {
+            continue;
+        }
+        const auto newPath = pathProvider.path(date.value());
+        if (entry.path() == newPath) {
+            throw std::runtime_error{"Log file already in correct location!"};
+        }
+        if (std::filesystem::exists(newPath)) {
+            throw std::runtime_error{
+                fmt::format("Log file already exists at: {}", newPath.string())};
+        }
+        std::filesystem::create_directories(newPath.parent_path());
+        std::filesystem::rename(entry.path(), newPath);
+    }
 }
 
 std::string promptPassword(const caps_log::Config &config) {
@@ -81,6 +142,8 @@ auto makeCapsLog(const caps_log::Config &conf) {
         }
         return std::nullopt;
     }();
+
+    migrateToNewRepoStructureIfNeeded(pathProvider);
 
     AppConfig appConf;
     appConf.skipFirstLine = conf.ignoreFirstLineWhenParsingSections;

@@ -37,7 +37,9 @@ class LocalLogRepositoryTest : public ::testing::Test {
     void SetUp() override { std::filesystem::create_directory(kTestLogDirectory); }
     void TearDown() override { std::filesystem::remove_all(kTestLogDirectory); }
     void writeDummyLog(const std::chrono::year_month_day &date, const std::string &content) const {
-        std::ofstream ofs(TMPDirPathProvider.path(date));
+        const auto path = TMPDirPathProvider.path(date);
+        std::filesystem::create_directories(path.parent_path());
+        std::ofstream ofs{path};
         ofs << content;
     }
     static void writeDummyFile(const std::string &path, const std::string &content) {
