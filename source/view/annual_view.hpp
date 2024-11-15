@@ -59,7 +59,9 @@ class AnnualView : public AnnualViewBase {
     void setHighlightedDates(const utils::date::Dates *map) override { m_highlightedDates = map; }
     void setEventDates(const CalendarEvents *events) override { m_eventDates = events; }
 
-    void setPreviewString(const std::string &string) override { m_preview->setContent(string); }
+    void setPreviewString(const std::string &title, const std::string &string) override {
+        m_preview->setContent(title, string);
+    }
 
     void withRestoredIO(std::function<void()> func) override { m_screen.WithRestoredIO(func)(); }
 

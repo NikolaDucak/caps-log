@@ -13,6 +13,31 @@ using namespace log;
 using namespace view;
 using namespace utils;
 
+namespace {
+
+std::string makePreviewTitle(std::chrono::year_month_day date, const CalendarEvents &events) {
+    auto eventForDate = [&]() -> std::optional<std::tuple<std::string, CalendarEvent>> {
+        for (const auto &[groupName, events] : events) {
+            for (const auto &event : events) {
+                if (event.date == date::monthDay(date)) {
+                    return std::make_tuple(groupName, event);
+                }
+            }
+        }
+        return std::nullopt;
+    }();
+
+    const auto eventStr =
+        eventForDate.has_value()
+            ? fmt::format("({} - {})", std::get<0>(*eventForDate), std::get<1>(*eventForDate).name)
+            : "";
+    const auto title =
+        fmt::format("log preview for {} {}", utils::date::formatToString(date), eventStr);
+    return title;
+}
+
+} // namespace
+
 ViewDataUpdater::ViewDataUpdater(std::shared_ptr<AnnualViewBase> view, const AnnualLogData &data)
     : m_view{std::move(view)}, m_data{data} {}
 
@@ -60,7 +85,8 @@ void ViewDataUpdater::updateTagMenuItemsPerSection() {
     }
 }
 
-void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString) {
+void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewTitle,
+                                                const std::string &previewString) {
     // update sections menu items
     {
         const auto oldSections = m_view->sectionMenuItems().getKeys();
@@ -117,7 +143,7 @@ void ViewDataUpdater::updateViewAfterDataChange(const std::string &previewString
     }
 
     // update preview string
-    m_view->setPreviewString(previewString);
+    m_view->setPreviewString(previewTitle, previewString);
 }
 
 MenuItems ViewDataUpdater::makeTagMenuItems(const std::string &section) {
@@ -168,7 +194,9 @@ void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dat
             previewString = log->getContent();
         }
     }
-    m_viewDataUpdater.updateViewAfterDataChange(previewString);
+
+    m_viewDataUpdater.updateViewAfterDataChange(makePreviewTitle(dateOfChangedLog, m_config.events),
+                                                previewString);
 }
 
 App::App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
@@ -230,10 +258,12 @@ bool App::handleRootEvent(const std::string &input) {
 }
 
 void App::handleFocusedDateChange() {
+
+    const auto title = makePreviewTitle(m_view->getFocusedDate(), m_config.events);
     if (auto log = m_repo->read(m_view->getFocusedDate())) {
-        m_view->setPreviewString(log->getContent());
+        m_view->setPreviewString(title, log->getContent());
     } else {
-        m_view->setPreviewString("");
+        m_view->setPreviewString(title, "");
     }
 }
 

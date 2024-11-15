@@ -11,7 +11,6 @@
 #include <chrono>
 #include <cstddef>
 #include <memory>
-#include <vector>
 
 namespace caps_log {
 
@@ -39,7 +38,8 @@ class ViewDataUpdater final {
 
     void handleFocusedTagChange();
     void handleFocusedSectionChange();
-    void updateViewAfterDataChange(const std::string &previewString);
+    void updateViewAfterDataChange(const std::string &previewTitle,
+                                   const std::string &previewString);
 
   private:
     void updateTagMenuItemsPerSection();

@@ -78,7 +78,7 @@ class AnnualViewBase { // NOLINT
     virtual MenuItems &tagMenuItems() = 0;
     virtual MenuItems &sectionMenuItems() = 0;
 
-    virtual void setPreviewString(const std::string &string) = 0;
+    virtual void setPreviewString(const std::string &title, const std::string &string) = 0;
 
     virtual void withRestoredIO(std::function<void()> func) = 0;
 
