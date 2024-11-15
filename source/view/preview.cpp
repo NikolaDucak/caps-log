@@ -11,10 +11,8 @@ Element Preview::Render() {
     }
 
     constexpr auto kHeight = 14;
-    if (Focused()) {
-        return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, kHeight);
-    }
-    return vbox(visibleLines) | borderRounded | flex_shrink | size(HEIGHT, EQUAL, kHeight) | dim;
+    auto element = window(m_title, vbox(visibleLines)) | flex_shrink | size(HEIGHT, EQUAL, kHeight);
+    return Focused() ? element : element | dim;
 }
 
 bool Preview::Focusable() const { return true; }
@@ -42,7 +40,8 @@ bool Preview::OnEvent(Event event) {
 
 void Preview::resetScroll() { m_topLineIndex = 0; }
 
-void Preview::setContent(const std::string &str) {
+void Preview::setContent(const std::string &title, const std::string &str) {
+    m_title = text(title) | underlined | center;
     Elements lines;
     std::istringstream input{str};
     for (std::string line; std::getline(input, line);) {

@@ -17,7 +17,7 @@ class DummyYearView : public caps_log::view::AnnualViewBase {
     std::chrono::year m_displayedYear{};
     std::chrono::year_month_day m_focusedDate{std::chrono::year{2005}, std::chrono::month{1},
                                               std::chrono::day{1}};
-    std::string m_previewString;
+    std::string m_previewString, m_previewTitle;
     const caps_log::utils::date::Dates *m_datesWithLogs{}, *m_highlightedDates{};
     caps_log::view::MenuItems m_tagMenuItems, m_sectionMenuItems;
     std::string m_selectedTag, m_selectedSection;
@@ -48,7 +48,10 @@ class DummyYearView : public caps_log::view::AnnualViewBase {
         m_highlightedDates = map;
     }
 
-    void setPreviewString(const std::string &string) override { m_previewString = string; }
+    void setPreviewString(const std::string &title, const std::string &string) override {
+        m_previewString = string;
+        m_previewTitle = title;
+    }
     void withRestoredIO(std::function<void()> func) override { func(); }
 
     caps_log::view::MenuItems &tagMenuItems() override { return m_tagMenuItems; }
@@ -81,8 +84,8 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
         ON_CALL(*this, prompt).WillByDefault([&](auto msg, auto callback) {
             m_view.prompt(std::move(msg), std::move(callback));
         });
-        ON_CALL(*this, setPreviewString).WillByDefault([&](const auto &str) {
-            m_view.setPreviewString(str);
+        ON_CALL(*this, setPreviewString).WillByDefault([&](const auto &title, const auto &str) {
+            m_view.setPreviewString(title, str);
         });
 
         ON_CALL(*this, tagMenuItems).WillByDefault([&]() -> auto & {
@@ -124,7 +127,8 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
     MOCK_METHOD(void, setDatesWithLogs, (const caps_log::utils::date::Dates *map), (override));
     MOCK_METHOD(void, setHighlightedDates, (const caps_log::utils::date::Dates *map), (override));
 
-    MOCK_METHOD(void, setPreviewString, (const std::string &string), (override));
+    MOCK_METHOD(void, setPreviewString, (const std::string &titile, const std::string &string),
+                (override));
     MOCK_METHOD(void, withRestoredIO, (std::function<void()> func), (override));
 
     MOCK_METHOD(caps_log::view::MenuItems &, tagMenuItems, (), (override));
