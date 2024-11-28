@@ -5,6 +5,8 @@
 #include "view/ftxui_ext/extended_containers.hpp"
 
 #include <ftxui/screen/screen.hpp>
+#include <ftxui/screen/terminal.hpp>
+#include <memory>
 
 namespace caps_log::view {
 using namespace ftxui;
@@ -20,9 +22,9 @@ namespace {
  */
 class MonthComponentArranger {
   public:
-    static Element arrange(const Screen &screen, const Components &monthComponents,
+    static Element arrange(const Dimensions screenDimensions, const Components &monthComponents,
                            std::chrono::year displayedYear) {
-        const auto availableMonthColumns = computeNumberOfMonthsPerRow(screen);
+        const auto availableMonthColumns = computeNumberOfMonthsPerRow(screenDimensions);
         const auto renderData = arrangeMonthsInCalendar(monthComponents, availableMonthColumns);
         return window(text(std::to_string(static_cast<int>(displayedYear))),
                       vbox(renderData) | frame) |
@@ -40,8 +42,8 @@ class MonthComponentArranger {
     /**
      * @brief Computes the number of months that can be displayed in a row.
      */
-    static int computeNumberOfMonthsPerRow(const Screen &screen) {
-        int availableMonthColumns = screen.dimx() / kCharsPerMonthComponet;
+    static int computeNumberOfMonthsPerRow(const Dimensions &screenDimensions) {
+        int availableMonthColumns = screenDimensions.dimx / kCharsPerMonthComponet;
         // prevent spliting 12 months into 2 rows of unequal elements
         if (availableMonthColumns == 5) { // NOLINT
             availableMonthColumns = 4;
@@ -70,9 +72,10 @@ class MonthComponentArranger {
 
 } // namespace
 
-Calendar::Calendar(const Screen &screen, const std::chrono::year_month_day &today,
-                   CalendarOption option)
-    : m_screen{&screen}, m_option(std::move(option)), m_today(today),
+Calendar::Calendar(std::unique_ptr<ScreenSizeProvider> screenSizeProvider,
+                   const std::chrono::year_month_day &today, CalendarOption option)
+    : m_screenSizeProvider{std::move(screenSizeProvider)}, m_option(std::move(option)),
+      m_today(today),
       // TODO: SetActiveChild does nothing, this is the only
       // way to focus a specific date on startup. Investigate.
       m_selectedMonthComponentIdx{(static_cast<int>(static_cast<unsigned>(today.month()))) - 1},
@@ -130,7 +133,8 @@ Component Calendar::createYear(std::chrono::year year) {
     const auto container = ftxui_ext::AnyDir(monthComponents, &m_selectedMonthComponentIdx);
 
     return Renderer(container, [this, monthComponents]() {
-        return MonthComponentArranger::arrange(*m_screen, monthComponents, m_displayedYear);
+        return MonthComponentArranger::arrange(m_screenSizeProvider->getScreenSize(),
+                                               monthComponents, m_displayedYear);
     });
 }
 

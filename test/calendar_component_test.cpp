@@ -18,6 +18,16 @@ std::string readFile(const std::string &path) {
     buffer << ifs.rdbuf();
     return buffer.str();
 }
+
+class MockScreenSizeProvider : public caps_log::view::ScreenSizeProvider {
+  public:
+    MockScreenSizeProvider(ftxui::Dimensions size) : m_size{size} {}
+    ftxui::Dimensions getScreenSize() const override { return m_size; }
+
+  private:
+    ftxui::Dimensions m_size;
+};
+
 } // namespace
 
 TEST(CalnedarComponentTest, Render) {
@@ -37,13 +47,16 @@ TEST(CalnedarComponentTest, Render) {
     };
     // NOLINTEND
     for (const auto &data : testData) {
-        ftxui::Screen screen{data.screen_width, 41};                                  // NOLINT
-        caps_log::view::Calendar calendar{screen, {2024y, std::chrono::January, 1d}}; // NOLINT
-
+        ftxui::Dimensions dimensions{data.screen_width, 41}; // NOLINT
+        ftxui::Screen screen{data.screen_width, 41};         // NOLINT
+        auto sizeProvider = std::make_unique<MockScreenSizeProvider>(dimensions);
+        caps_log::view::Calendar calendar{std::move(sizeProvider),
+                                          {2024y, std::chrono::January, 1d}}; // NOLINT
         ftxui::Render(screen, calendar.Render());
         const auto screenRender = screen.ToString();
         std::string expectedOutput = readFile(filePath(data));
-        EXPECT_EQ(screenRender, expectedOutput) << "Got: " << screenRender;
+        EXPECT_EQ(screenRender, expectedOutput) << "Expected" << expectedOutput << "\n\n"
+                                                << "Got: " << screenRender;
     }
 }
 
@@ -52,15 +65,20 @@ TEST(CalnedarComponentTest, EventHandling) {
     std::chrono::year_month_day next{2024y, std::chrono::January, 2d};        // NOLINT
     std::chrono::year_month_day next_month{2024y, std::chrono::February, 1d}; // NOLINT
     ftxui::Screen screen{184, 41};                                            // NOLINT
-    caps_log::view::Calendar calendar{screen, start};                         // NOLINT
+    auto sizeProvider = std::make_unique<MockScreenSizeProvider>(ftxui::Dimensions{184, 41});
+
+    caps_log::view::Calendar calendar{std::move(sizeProvider), start};
+
     calendar.OnEvent(ftxui::Event::ArrowRight);
     EXPECT_EQ(calendar.getFocusedDate(), next)
         << "Got date: " << caps_log::utils::date::formatToString(calendar.getFocusedDate());
+
     calendar.OnEvent(ftxui::Event::ArrowDown);
     calendar.OnEvent(ftxui::Event::ArrowDown);
     calendar.OnEvent(ftxui::Event::ArrowDown);
     calendar.OnEvent(ftxui::Event::ArrowDown);
     calendar.OnEvent(ftxui::Event::ArrowDown);
+
     EXPECT_EQ(calendar.getFocusedDate(), next_month)
         << "Got date: " << caps_log::utils::date::formatToString(calendar.getFocusedDate());
 }

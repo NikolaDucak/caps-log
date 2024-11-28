@@ -15,8 +15,24 @@ struct CalendarOption {
     bool sundayStart = false;
 };
 
+class ScreenSizeProvider {
+  public:
+    virtual ~ScreenSizeProvider() = default;
+    virtual ftxui::Dimensions getScreenSize() const = 0;
+
+    static std::unique_ptr<ScreenSizeProvider> makeDefault() {
+        // Caps-log runs only in full screen mode, so we can use the terminal size as the screen
+        // size
+        class DefaultScreenSizeProvider : public ScreenSizeProvider {
+          public:
+            ftxui::Dimensions getScreenSize() const override { return ftxui::Terminal::Size(); }
+        };
+        return std::make_unique<DefaultScreenSizeProvider>();
+    }
+};
+
 class Calendar : public ftxui::ComponentBase {
-    const ftxui::Screen *m_screen;
+    std::unique_ptr<ScreenSizeProvider> m_screenSizeProvider;
     CalendarOption m_option;
     std::chrono::year_month_day m_today;
     ftxui::Component m_root;
@@ -27,8 +43,8 @@ class Calendar : public ftxui::ComponentBase {
     std::chrono::year m_displayedYear;
 
   public:
-    Calendar(const ftxui::Screen &screen, const std::chrono::year_month_day &today,
-             CalendarOption option = {});
+    Calendar(std::unique_ptr<ScreenSizeProvider> ScreenSizeProvider,
+             const std::chrono::year_month_day &today, CalendarOption option = {});
 
     bool OnEvent(ftxui::Event event) override;
     ftxui::Element Render() override;
@@ -40,9 +56,9 @@ class Calendar : public ftxui::ComponentBase {
      * @brief A utility factory method to create a shared pointer to a Calendar instance. This is
      * useful as FTXUI works with shared pointers to ComponentBase instances.
      */
-    static inline auto make(const ftxui::Screen &screen, const std::chrono::year_month_day &today,
-                            CalendarOption option = {}) {
-        return std::make_shared<Calendar>(screen, today, option);
+    static inline auto make(std::unique_ptr<ScreenSizeProvider> screenSizeProvider,
+                            const std::chrono::year_month_day &today, CalendarOption option = {}) {
+        return std::make_shared<Calendar>(std::move(screenSizeProvider), today, option);
     }
 
   private:
