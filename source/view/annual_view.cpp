@@ -29,11 +29,16 @@ using namespace ftxui;
 AnnualView::AnnualView(const std::chrono::year_month_day &today, bool sundayStart,
                        unsigned recentEventsWindow)
     : m_screen{ScreenInteractive::Fullscreen()},
-      m_calendarButtons{Calendar::make(m_screen, today, makeCalendarOptions(today, sundayStart))},
+      m_calendarButtons{Calendar::make(ScreenSizeProvider::makeDefault(), today,
+                                       makeCalendarOptions(today, sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
       m_rootComponent{makeFullUIComponent()}, m_recentEventsWindow{recentEventsWindow} {}
 
-void AnnualView::run() { m_screen.Loop(m_rootComponent); }
+void AnnualView::run() {
+    // Caps-log expects the terminal to be at least 80x24
+    Terminal::SetFallbackSize(Dimensions{/*dimx=*/80, /*dimy=*/24});
+    m_screen.Loop(m_rootComponent);
+}
 
 void AnnualView::stop() { m_screen.ExitLoopClosure()(); }
 
