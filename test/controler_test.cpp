@@ -61,10 +61,13 @@ TEST_F(ControllerTest, EscQuits) {
 
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
-        EXPECT_CALL(*mockView, stop());
+        EXPECT_CALL(*mockView, stop()).Times(1);
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::Escape.input()}});
     });
     capsLog.run();
+    // clear expectation for stop so to not trigger the failure during destruction of the
+    // caps log instance
+    ::testing::Mock::VerifyAndClearExpectations(mockView.get());
 }
 
 TEST_F(ControllerTest, SpecialCharsDontQuit) {
@@ -72,9 +75,7 @@ TEST_F(ControllerTest, SpecialCharsDontQuit) {
 
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
-        ON_CALL(*mockView, stop).WillByDefault([] {
-            ASSERT_FALSE(true) << "Expected to not quit.";
-        });
+        EXPECT_CALL(*mockView, stop).Times(0);
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowDown.input()}});
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowUp.input()}});
         capsLog.handleInputEvent(UIEvent{UnhandledRootEvent{ftxui::Event::ArrowLeft.input()}});
@@ -84,6 +85,9 @@ TEST_F(ControllerTest, SpecialCharsDontQuit) {
     });
 
     capsLog.run();
+    // clear expectation for stop so to not trigger the failure during destruction of the
+    // caps log instance
+    ::testing::Mock::VerifyAndClearExpectations(mockView.get());
 }
 
 TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {

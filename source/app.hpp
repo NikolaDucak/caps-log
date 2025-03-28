@@ -71,6 +71,7 @@ class App final : public InputHandlerBase {
     App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
         std::shared_ptr<EditorBase> editor, std::optional<GitRepo> gitRepo = std::nullopt,
         AppConfig config = {});
+    ~App() { quit(); }
 
     void run();
     bool handleInputEvent(const UIEvent &event) override;
