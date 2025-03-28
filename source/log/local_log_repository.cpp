@@ -47,7 +47,13 @@ std::optional<LogFile> LocalLogRepository::read(const std::chrono::year_month_da
 
 void LocalLogRepository::write(const LogFile &log) {
     const auto path = m_pathProvider.path(log.getDate());
-    std::filesystem::create_directories(path.parent_path());
+    if (not std::filesystem::exists(path.parent_path())) {
+        std::error_code error;
+        if (not std::filesystem::create_directories(path.parent_path(), error)) {
+            throw std::runtime_error{"Failed to create directories for log file: " +
+                                     error.message()};
+        }
+    }
 
     if (not m_password.empty()) {
         std::istringstream iss{log.getContent()};

@@ -18,6 +18,25 @@ const bool Config::kDefaultIgnoreFirstLineWhenParsingSections = true;
 
 namespace {
 
+std::filesystem::path expandTilde(const std::filesystem::path &input) {
+    std::string str = input.string();
+
+    if (!str.empty() && str[0] == '~') {
+        const char *home = std::getenv("HOME");
+        if (!home) {
+#ifdef _WIN32
+            home = std::getenv("USERPROFILE");
+#endif
+        }
+        if (home) {
+            // drop `~/` (note: must drop '/', otherwise it is an absolute path and the path
+            // concatenation wont work)
+            return std::filesystem::path(home) / str.substr(2);
+        }
+    }
+    return input;
+}
+
 std::optional<std::chrono::month_day> parseDate(const std::string &date_str) {
     int day, month;
     char dot1, dot2;
@@ -118,7 +137,7 @@ void applyCommandlineOverrides(Config &config,
                                const boost::program_options::variables_map &commandLineArgs) {
 
     if (not commandLineArgs["log-dir-path"].defaulted()) {
-        config.logDirPath = commandLineArgs["log-dir-path"].as<std::string>();
+        config.logDirPath = expandTilde(commandLineArgs["log-dir-path"].as<std::string>());
     }
     if (not commandLineArgs["log-name-format"].defaulted()) {
         config.logFilenameFormat = commandLineArgs["log-name-format"].as<std::string>();
@@ -144,6 +163,9 @@ void applyConfigFileOverrides(Config &config, boost::property_tree::ptree &ptree
 
     // Parse and update calendar events
     config.calendarEvents = parseCalendarEvents(ptree);
+
+    // sanitize log dir path
+    config.logDirPath = expandTilde(config.logDirPath);
 }
 
 void applyGitConfigIfEnabled(Config &config, boost::property_tree::ptree &ptree) {
@@ -160,6 +182,10 @@ void applyGitConfigIfEnabled(Config &config, boost::property_tree::ptree &ptree)
                                         ") is not parent of log dir (" +
                                         config.logDirPath.string() + ")!"};
         }
+
+        // sanitize paths
+        gitConf.sshKeyPath = expandTilde(gitConf.sshKeyPath);
+        gitConf.sshPubKeyPath = expandTilde(gitConf.sshPubKeyPath);
 
         config.repoConfig = gitConf;
     }
@@ -180,10 +206,11 @@ Config Config::make(const FileReader &fileReader,
             boost::property_tree::ini_parser::read_ini(*configFile, ptree);
 
             applyConfigFileOverrides(config, ptree);
+            applyCommandlineOverrides(config, cmdLineArgs);
             applyGitConfigIfEnabled(config, ptree);
+        } else {
+            applyCommandlineOverrides(config, cmdLineArgs);
         }
-
-        applyCommandlineOverrides(config, cmdLineArgs);
 
         return config;
     } catch (const std::exception &e) {

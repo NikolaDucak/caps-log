@@ -179,6 +179,24 @@ TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
     EXPECT_NO_THROW(Config::make(fileReader, cmdLineArgs));
 }
 
+TEST(ConfigTest, GitConfigIsAppliedAfterCommandLineOverrides) {
+    std::string configContent = "log-dir-path=/path/to/repo/\n"
+                                "[git]\n"
+                                "enable-git-log-repo=true\n"
+                                "repo-root=/path/to/repo/\n"
+                                "ssh-key-path=/path/to/key\n"
+                                "ssh-pub-key-path=/path/to/pub-key\n"
+                                "main-branch-name=main-name\n"
+                                "remote-name=remote-name";
+    auto cmdLineArgs = parseArgs({
+        "caps-log",
+        "--log-dir-path",
+        "/cmd/override/path/",
+    });
+    auto fileReader = mockFileReader(configContent);
+    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
+}
+
 TEST(ConfigTest, CalendarEventsParsing) {
     std::string configContent = "log-dir-path=/path/to/repo/log-dir\n"
                                 "[calendar-events]\n"
@@ -230,7 +248,10 @@ TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
                                 "[calendar-events.holidays.0]\n"
                                 "name=Christmas\n"
                                 "date=12.25.\n";
-    auto cmdLineArgs = parseArgs({"caps-log"});
+    auto cmdLineArgs = parseArgs({
+        "caps-log",
+
+    });
     auto fileReader = mockFileReader(configContent);
     EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
 }
