@@ -7,9 +7,9 @@ namespace caps_log::view::ftxui_ext {
 /**
  * @brief A list of components, drawn in a grid and navigated * using up/down &
  * left/right arrow key or 'j'/'k' & 'h'/'l' keys.
- * @note Only width is neccesary for basic gird container functionality. It
+ * @note Only width is necessary for basic gird container functionality. It
  * represents the number of elements that are skipped when moving focus
- * verticaly
+ * vertically
  * @note This is not supposed to be an actual FTXUI feature extension, but an
  * extension for this specific projects use.
  */

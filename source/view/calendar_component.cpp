@@ -36,15 +36,15 @@ class MonthComponentArranger {
     static constexpr auto kCharsPerDay = 4;
     static constexpr auto kDaysPerWeek = 7;
     static constexpr auto kRenderedMonthPaddingAndBorderChars = 6;
-    static constexpr auto kCharsPerMonthComponet =
+    static constexpr auto kCharsPerMonthComponent =
         kCharsPerDay * kDaysPerWeek + kRenderedMonthPaddingAndBorderChars;
 
     /**
      * @brief Computes the number of months that can be displayed in a row.
      */
     static int computeNumberOfMonthsPerRow(const Dimensions &screenDimensions) {
-        int availableMonthColumns = screenDimensions.dimx / kCharsPerMonthComponet;
-        // prevent spliting 12 months into 2 rows of unequal elements
+        int availableMonthColumns = screenDimensions.dimx / kCharsPerMonthComponent;
+        // prevent splitting 12 months into 2 rows of unequal elements
         if (availableMonthColumns == 5) { // NOLINT
             availableMonthColumns = 4;
         }
@@ -171,18 +171,18 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
         const auto startingWeekday =
             utils::date::getStartingWeekdayForMonth({displayedYear, yearMonth.month()}) +
             sundayStart;
-        unsigned currenWeekday = startingWeekday - 1;
+        unsigned currentWeekday = startingWeekday - 1;
         unsigned calendarDay = 1;
         for (int i = 1; i < startingWeekday; i++) {
             renderData.back().push_back(filler());
         }
         for (const auto &btn : buttons) {
-            if (currenWeekday % kDaysPerWeek == 0) {
+            if (currentWeekday % kDaysPerWeek == 0) {
                 renderData.push_back({});
             }
             renderData.back().push_back(btn->Render());
             calendarDay++;
-            currenWeekday++;
+            currentWeekday++;
         }
         return window(text(utils::date::getStringNameForMonth(yearMonth.month())),
                       gridbox(renderData));
