@@ -194,7 +194,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
         // on callendar button click
         capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
 
-        // expect the initialy set availability map pointer to still be valid
+        // expect the initially set availability map pointer to still be valid
         verifyTagMenuItems({"<select none>", "(1) - tag title"});
         verifySectionMenuItems({"<select none>", "(1) - section title"});
     });
@@ -202,7 +202,7 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     capsLog.run();
 }
 
-TEST_F(ControllerTest, AddLog_WritesABaslineTemplateForEmptyLog) {
+TEST_F(ControllerTest, AddLog_WritesABaselineTemplateForEmptyLog) {
     auto capsLog = makeCapsLog();
     EXPECT_FALSE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
 
@@ -355,8 +355,8 @@ TEST_F(ControllerTest,
         capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
         verifyTagMenuItems({"<select none>", "(1) - tag"});
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "<select none>");
-        const auto expecedDates = std::set{date::monthDay(day1), date::monthDay(day2)};
-        EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), expecedDates);
+        const auto expectedDates = std::set{date::monthDay(day1), date::monthDay(day2)};
+        EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), expectedDates);
 
         // after selection of tag
         mockView->getDummyView().m_selectedTag = "tag";

@@ -21,7 +21,7 @@ environment variable to start the editor, if set. Otherwise, this functionality
 is disabled. This integration looks particularly impressive with terminal-based
 editors.
 
-Additionaly, `caps-log` also has a primitive 'remote storage' feture in the form
+Additionally, `caps-log` also has a primitive 'remote storage' feture in the form
 of using a git repository with a remote to push and pull data. (See
 [Configuration & Command Line Options](#configuration--command-line-options)
 section below)
@@ -37,12 +37,12 @@ section below)
 
 # Getting It
 
-It is recomended that you build and install it manualy, see 
+It is recommended that you build and install it manually, see 
 [Building and installing](#building--installing) section.
 
 Or you can visit the [releases page](https://github.com/nikoladucak/caps-log/releases)
 and download a `caps-log-<platform>.tar.gz` file that contains a prebuilt binary, but 
-for now only x86 Linux and intel MacOS platfroms are supported. This will be 
+for now only x86 Linux and intel MacOS platforms are supported. This will be 
 improved in the future.
 
 ## Keybindings

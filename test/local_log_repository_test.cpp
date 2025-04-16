@@ -176,14 +176,14 @@ TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplier) {
     EXPECT_EQ(kDummyLogContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(kDummyLogContent, readFile(TMPDirPathProvider.path(date2)));
 
-    // encrypt them & verify encription
+    // encrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(kDummyPassword, TMPDirPathProvider.getLogDirPath(),
                                                 TMPDirPathProvider.getLogFilenameFormat(),
                                                 caps_log::Crypto::Encrypt);
     EXPECT_EQ(kEncryptedDummyLogContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(kEncryptedDummyLogContent, readFile(TMPDirPathProvider.path(date2)));
 
-    // decrypt them & verify encription
+    // decrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(kDummyPassword, TMPDirPathProvider.getLogDirPath(),
                                                 TMPDirPathProvider.getLogFilenameFormat(),
                                                 caps_log::Crypto::Decrypt);
@@ -199,7 +199,7 @@ TEST_F(LogRepositoryCryptoApplierTest, IgnoresFilesNotMatchingTheLogFilenamePatt
     EXPECT_EQ(kDummyLogContent, readFile(TMPDirPathProvider.path(kSelectedDate)));
     EXPECT_EQ(kDummyLogContent, readFile(kTestLogDirectory / dummyfileName));
 
-    // encrypt them & verify encription
+    // encrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(kDummyPassword, TMPDirPathProvider.getLogDirPath(),
                                                 TMPDirPathProvider.getLogFilenameFormat(),
                                                 caps_log::Crypto::Encrypt);

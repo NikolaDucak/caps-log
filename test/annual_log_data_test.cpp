@@ -68,7 +68,7 @@ TEST(YearOverviewDataTest, Collect) {
 
     auto data = AnnualLogData::collect(dummyRepo, dummyDate1.year());
 
-    // inital collection
+    // initial collection
     const std::set<std::chrono::month_day> allLogs{md1, md2, md3};
     EXPECT_EQ(data.datesWithLogs, allLogs);
 

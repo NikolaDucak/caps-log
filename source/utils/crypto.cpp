@@ -92,7 +92,7 @@ std::string decrypt(const std::string &password, std::istream &file) {
     const auto [key, iv] = getKeyAndIv(password);
 
     if (EVP_DecryptInit_ex(ctx.get(), cipher, nullptr, key.data(), iv.data()) != 1) {
-        throw std::runtime_error{"Decryption failed: failed to initialze decryption!"};
+        throw std::runtime_error{"Decryption failed: failed to initialize decryption!"};
     }
 
     std::array<unsigned char, kBufferSize + EVP_MAX_BLOCK_LENGTH> inBuffer{};

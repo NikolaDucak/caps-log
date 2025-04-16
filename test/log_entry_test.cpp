@@ -122,7 +122,7 @@ TEST(LogEntry, ParseTagsPerSection) {
     EXPECT_TRUE(parsedTagsPerSection.at("empty section").empty());
 }
 
-TEST(LogEntry, ParseSectionTitels_IgnoreSectionsInCodeBlocks) {
+TEST(LogEntry, ParseSectionTitles_IgnoreSectionsInCodeBlocks) {
     const auto *sectionInCodeBlock = R"(
 ```
 # section title

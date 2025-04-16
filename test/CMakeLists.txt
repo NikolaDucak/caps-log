@@ -17,7 +17,7 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_SOURCES
   ./config_test.cpp
-  ./controler_test.cpp
+  ./controller_test.cpp
   ./local_log_repository_test.cpp
   ./log_entry_test.cpp
   ./annual_log_data_test.cpp
@@ -60,7 +60,7 @@ target_include_directories(tests PRIVATE
 )
 
 target_include_directories(
-  tests 
+  tests
   PRIVATE
   ${Boost_INCLUDE_DIRS}
 )

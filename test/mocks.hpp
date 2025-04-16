@@ -127,7 +127,7 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
     MOCK_METHOD(void, setDatesWithLogs, (const caps_log::utils::date::Dates *map), (override));
     MOCK_METHOD(void, setHighlightedDates, (const caps_log::utils::date::Dates *map), (override));
 
-    MOCK_METHOD(void, setPreviewString, (const std::string &titile, const std::string &string),
+    MOCK_METHOD(void, setPreviewString, (const std::string &title, const std::string &string),
                 (override));
     MOCK_METHOD(void, withRestoredIO, (std::function<void()> func), (override));
 
