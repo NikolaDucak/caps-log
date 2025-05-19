@@ -16,7 +16,13 @@ using namespace utils;
 
 namespace {
 
-std::string makePreviewTitle(std::chrono::year_month_day date, const CalendarEvents &events) {
+[[nodiscard]] bool noMeaningfulContent(const std::string &content,
+                                       const std::chrono::year_month_day &date) {
+    return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
+}
+
+[[nodiscard]] std::string makePreviewTitle(std::chrono::year_month_day date,
+                                           const CalendarEvents &events) {
     auto eventsForDate = [&]() -> std::map<std::string, std::set<std::string>> {
         std::map<std::string, std::set<std::string>> filteredEvents;
 
@@ -196,7 +202,7 @@ MenuItems ViewDataUpdater::makeSectionMenuItems() {
 
 void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {
     m_data.collect(m_repo, dateOfChangedLog, m_config.skipFirstLine);
-    std::string previewString = "";
+    std::string previewString;
     if (dateOfChangedLog == m_view->getFocusedDate()) {
         if (auto log = m_repo->read(m_view->getFocusedDate())) {
             previewString = log->getContent();
@@ -351,7 +357,4 @@ void App::handleCalendarButtonClick() {
     });
 }
 
-bool App::noMeaningfulContent(const std::string &content, const std::chrono::year_month_day &date) {
-    return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
-}
 } // namespace caps_log

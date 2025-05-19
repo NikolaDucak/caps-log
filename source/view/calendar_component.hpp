@@ -17,10 +17,16 @@ struct CalendarOption {
 
 class ScreenSizeProvider {
   public:
+    ScreenSizeProvider() = default;
+    ScreenSizeProvider(const ScreenSizeProvider &) = default;
+    ScreenSizeProvider(ScreenSizeProvider &&) = default;
+    ScreenSizeProvider &operator=(const ScreenSizeProvider &) = default;
+    ScreenSizeProvider &operator=(ScreenSizeProvider &&) = default;
     virtual ~ScreenSizeProvider() = default;
+
     virtual ftxui::Dimensions getScreenSize() const = 0;
 
-    static std::unique_ptr<ScreenSizeProvider> makeDefault() {
+    [[nodiscard]] static std::unique_ptr<ScreenSizeProvider> makeDefault() {
         // Caps-log runs only in full screen mode, so we can use the terminal size as the screen
         // size
         class DefaultScreenSizeProvider : public ScreenSizeProvider {
@@ -50,14 +56,15 @@ class Calendar : public ftxui::ComponentBase {
     ftxui::Element Render() override;
 
     void displayYear(std::chrono::year year);
-    std::chrono::year_month_day getFocusedDate();
+    [[nodiscard]] std::chrono::year_month_day getFocusedDate() const;
 
     /**
      * @brief A utility factory method to create a shared pointer to a Calendar instance. This is
      * useful as FTXUI works with shared pointers to ComponentBase instances.
      */
-    static inline auto make(std::unique_ptr<ScreenSizeProvider> screenSizeProvider,
-                            const std::chrono::year_month_day &today, CalendarOption option = {}) {
+    [[nodiscard]] static auto make(std::unique_ptr<ScreenSizeProvider> screenSizeProvider,
+                                   const std::chrono::year_month_day &today,
+                                   CalendarOption option = {}) {
         return std::make_shared<Calendar>(std::move(screenSizeProvider), today, option);
     }
 

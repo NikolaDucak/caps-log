@@ -5,7 +5,7 @@
 
 namespace caps_log {
 
-enum class Crypto { Encrypt, Decrypt };
+enum class Crypto : std::uint8_t { Encrypt, Decrypt };
 
 class FileOpenError : public std::runtime_error {
   public:
@@ -28,9 +28,9 @@ class LogRepositoryCryptoApplier {
     static constexpr auto kEncryptedLogRepoMarkerFile = ".cle";
     static void apply(const std::string &password, const std::filesystem::path &logDirPath,
                       const std::string &logFilenameFormat, Crypto crypto);
-    static bool isEncrypted(const std::filesystem::path &logDirPath);
-    static bool isDecryptionPasswordValid(const std::filesystem::path &logDirPath,
-                                          const std::string &password);
+    [[nodiscard]] static bool isEncrypted(const std::filesystem::path &logDirPath);
+    [[nodiscard]] static bool isDecryptionPasswordValid(const std::filesystem::path &logDirPath,
+                                                        const std::string &password);
 
   private:
     LogRepositoryCryptoApplier() {}

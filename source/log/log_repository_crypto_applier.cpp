@@ -75,6 +75,7 @@ bool cryptoAlreadyApplied(const std::filesystem::path &logDirPath, Crypto crypto
 }
 } // namespace
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void LogRepositoryCryptoApplier::apply(const std::string &password,
                                        const std::filesystem::path &logDirPath,
                                        const std::string &logFilenameFormat, Crypto crypto) {
@@ -109,9 +110,11 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
 
     const auto isYearDir = [&](const std::filesystem::directory_entry &entry) {
         const auto filename = entry.path().filename().string();
-        return entry.is_directory() && filename.size() == 5 /* yYYYY */ && filename[0] == 'y' &&
+        static constexpr auto kNumCharsForYearDirName = 5; /* yYYYY */
+        return entry.is_directory() && filename.size() == kNumCharsForYearDirName &&
+               filename[0] == 'y' &&
                std::all_of(filename.begin() + 1, filename.end(),
-                           [](char c) { return std::isdigit(c); });
+                           [](char chr) { return std::isdigit(chr); });
     };
 
     // Iterate over all files in the directory

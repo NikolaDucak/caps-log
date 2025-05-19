@@ -23,12 +23,12 @@ std::filesystem::path expandTilde(const std::filesystem::path &input) {
 
     if (!str.empty() && str[0] == '~') {
         const char *home = std::getenv("HOME");
-        if (!home) {
+        if (home == nullptr) {
 #ifdef _WIN32
             home = std::getenv("USERPROFILE");
 #endif
         }
-        if (home) {
+        if (home != nullptr) {
             // drop `~/` (note: must drop '/', otherwise it is an absolute path and the path
             // concatenation wont work)
             return std::filesystem::path(home) / str.substr(2);
@@ -38,23 +38,27 @@ std::filesystem::path expandTilde(const std::filesystem::path &input) {
 }
 
 std::optional<std::chrono::month_day> parseDate(const std::string &date_str) {
-    int day, month;
-    char dot1, dot2;
+    int day = 0;
+    int month = 0;
+    char dot1 = 0;
+    char dot2 = 0;
 
     std::istringstream iss(date_str);
+    static constexpr auto kMaxMonths = 12;
+    static constexpr auto kMaxDays = 31;
     if (iss >> std::setw(2) >> day >> dot1 >> std::setw(2) >> month >> dot2 && dot1 == '.' &&
-        dot2 == '.' && day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        dot2 == '.' && day >= 1 && day <= kMaxDays && month >= 1 && month <= kMaxMonths) {
         return std::chrono::month_day{std::chrono::month(month), std::chrono::day(day)};
     }
     return std::nullopt; // Return empty optional if parsing fails
 }
 
-view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &pt) {
+view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &ptree) {
     // CalendarEvents structure to store all events
-    view::CalendarEvents calendar_events;
+    view::CalendarEvents calendarEvents;
 
     // Iterate over each section in the property tree
-    for (const auto &section : pt) {
+    for (const auto &section : ptree) {
         const std::string &key = section.first; // e.g., "calendar-events.birthdays.0"
         const boost::property_tree::ptree &data = section.second;
 
@@ -65,10 +69,10 @@ view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &pt) {
         }
 
         // Split the key to extract event type
-        std::stringstream ss(key);
+        std::stringstream sstream(key);
         std::string item;
         std::vector<std::string> tokens;
-        while (std::getline(ss, item, '.')) {
+        while (std::getline(sstream, item, '.')) {
             tokens.push_back(item);
         }
 
@@ -80,13 +84,15 @@ view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &pt) {
         std::string category = tokens[1];
 
         // Get the name and date from the section
-        std::string name = data.get<std::string>("name");
-        std::string date_str = data.get<std::string>("date");
+        auto name = data.get<std::string>("name");
+        auto dateStr = data.get<std::string>("date");
 
         // Parse the date string into day and month
-        int day, month;
-        if (sscanf(date_str.c_str(), "%02d.%02d.", &day, &month) != 2) {
-            throw std::runtime_error("Invalid date format: " + date_str);
+        int day{};
+        int month{};
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+        if (sscanf(dateStr.c_str(), "%02d.%02d.", &day, &month) != 2) {
+            throw std::runtime_error("Invalid date format: " + dateStr);
         }
 
         // Create a month_day object
@@ -95,10 +101,10 @@ view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &pt) {
 
         // Create a CalendarEvent and insert it into the map
         view::CalendarEvent event{name, date};
-        calendar_events[category].insert(event);
+        calendarEvents[category].insert(event);
     }
 
-    return calendar_events;
+    return calendarEvents;
 }
 
 std::filesystem::path removeTrailingSlash(const std::filesystem::path &path) {
@@ -142,13 +148,13 @@ void applyCommandlineOverrides(Config &config,
     if (not commandLineArgs["log-name-format"].defaulted()) {
         config.logFilenameFormat = commandLineArgs["log-name-format"].as<std::string>();
     }
-    if (commandLineArgs.count("sunday-start") != 0U) {
+    if (commandLineArgs.contains("sunday-start")) {
         config.sundayStart = true;
     }
-    if (commandLineArgs.count("first-line-section") != 0U) {
+    if (commandLineArgs.contains("first-line-section")) {
         config.ignoreFirstLineWhenParsingSections = true;
     }
-    if (commandLineArgs.count("password") != 0U) {
+    if (commandLineArgs.contains("password")) {
         config.password = commandLineArgs["password"].as<std::string>();
     }
 }
@@ -195,7 +201,7 @@ void applyGitConfigIfEnabled(Config &config, boost::property_tree::ptree &ptree)
 
 Config Config::make(const FileReader &fileReader,
                     const boost::program_options::variables_map &cmdLineArgs) {
-    auto selectedConfigFilePath = cmdLineArgs.count("config") != 0U
+    auto selectedConfigFilePath = cmdLineArgs.contains("config")
                                       ? cmdLineArgs["config"].as<std::string>()
                                       : Config::kDefaultConfigLocation;
     try {
@@ -219,7 +225,7 @@ Config Config::make(const FileReader &fileReader,
     }
 }
 
-boost::program_options::variables_map parseCLIOptions(int argc, const char **argv) {
+boost::program_options::variables_map parseCLIOptions(std::span<const char *> args) {
     namespace po = boost::program_options;
 
     po::options_description desc("Allowed options");
@@ -237,10 +243,10 @@ boost::program_options::variables_map parseCLIOptions(int argc, const char **arg
     // clang-format on
 
     po::variables_map vmap;
-    po::store(po::parse_command_line(argc, argv, desc), vmap);
+    po::store(po::parse_command_line(static_cast<int>(args.size()), args.data(), desc), vmap);
     po::notify(vmap);
 
-    if (vmap.count("help") != 0U) {
+    if (vmap.contains("help")) {
         std::cout << "Captain's Log (caps-log)! A CLI journalig tool." << '\n';
         std::cout << "Version: " << CAPS_LOG_VERSION_STRING << '\n';
         std::cout << desc;

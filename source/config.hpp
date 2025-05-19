@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 
 #include <boost/program_options.hpp>
@@ -33,6 +34,7 @@ struct Config {
     static const std::string kDefaultLogFilenameFormat;
     static const bool kDefaultSundayStart;
     static const bool kDefaultIgnoreFirstLineWhenParsingSections;
+    static const unsigned kDefaultRecentEventsWindow = 14;
 
     std::filesystem::path logDirPath = kDefaultLogDirPath;
     std::filesystem::path logFilenameFormat = kDefaultLogFilenameFormat;
@@ -42,11 +44,10 @@ struct Config {
 
     std::optional<GitRepoConfig> repoConfig;
 
-    unsigned recentEventsWindow = 14;
+    unsigned recentEventsWindow = kDefaultRecentEventsWindow;
     view::CalendarEvents calendarEvents;
 };
 
-// NOLINTNEXTLINE
-boost::program_options::variables_map parseCLIOptions(int argc, const char *argv[]);
+boost::program_options::variables_map parseCLIOptions(std::span<const char *> argv);
 
 } // namespace caps_log

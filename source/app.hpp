@@ -14,12 +14,7 @@
 
 namespace caps_log {
 
-using namespace editor;
-using namespace log;
-using namespace view;
-using namespace utils;
-
-static const std::string kLogBaseTemplate{"# %d. %m. %y."};
+const std::string kLogBaseTemplate{"# %d. %m. %y."};
 
 /**
  * A helper class that updates the view components after the data in the AnnualLogData has changed.
@@ -28,13 +23,14 @@ static const std::string kLogBaseTemplate{"# %d. %m. %y."};
  * new one or update an existing one.
  */
 class ViewDataUpdater final {
-    std::shared_ptr<AnnualViewBase> m_view;
-    const AnnualLogData &m_data;
-    std::map<std::string, MenuItems> m_tagMenuItemsPerSection;
+    std::shared_ptr<view::AnnualViewBase> m_view;
+    const log::AnnualLogData &m_data;
+    std::map<std::string, view::MenuItems> m_tagMenuItemsPerSection;
     static constexpr auto kSelectNoneMenuEntryText = "<select none>";
 
   public:
-    explicit ViewDataUpdater(std::shared_ptr<AnnualViewBase> view, const AnnualLogData &data);
+    explicit ViewDataUpdater(std::shared_ptr<view::AnnualViewBase> view,
+                             const log::AnnualLogData &data);
 
     void handleFocusedTagChange();
     void handleFocusedSectionChange();
@@ -44,37 +40,41 @@ class ViewDataUpdater final {
   private:
     void updateTagMenuItemsPerSection();
 
-    MenuItems makeTagMenuItems(const std::string &section);
-    MenuItems makeSectionMenuItems();
+    view::MenuItems makeTagMenuItems(const std::string &section);
+    view::MenuItems makeSectionMenuItems();
 };
 
 struct AppConfig {
   public:
     bool skipFirstLine;
     std::chrono::year currentYear;
-    CalendarEvents events;
+    view::CalendarEvents events;
 };
 
 /**
  * The main application class that orchestrates the view, the data and the editor.
  */
-class App final : public InputHandlerBase {
+class App final : public view::InputHandlerBase {
     AppConfig m_config;
-    std::shared_ptr<AnnualViewBase> m_view;
-    std::shared_ptr<LogRepositoryBase> m_repo;
-    std::shared_ptr<EditorBase> m_editor;
-    AnnualLogData m_data;
-    std::optional<AsyncGitRepo> m_gitRepo;
+    std::shared_ptr<view::AnnualViewBase> m_view;
+    std::shared_ptr<log::LogRepositoryBase> m_repo;
+    std::shared_ptr<editor::EditorBase> m_editor;
+    log::AnnualLogData m_data;
+    std::optional<utils::AsyncGitRepo> m_gitRepo;
     ViewDataUpdater m_viewDataUpdater;
 
   public:
-    App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
-        std::shared_ptr<EditorBase> editor, std::optional<GitRepo> gitRepo = std::nullopt,
-        AppConfig config = {});
-    ~App() { quit(); }
+    App(std::shared_ptr<view::AnnualViewBase> view, std::shared_ptr<log::LogRepositoryBase> repo,
+        std::shared_ptr<editor::EditorBase> editor,
+        std::optional<utils::GitRepo> gitRepo = std::nullopt, AppConfig config = {});
+    App(const App &) = delete;
+    App(App &&) = delete;
+    App &operator=(const App &) = delete;
+    App &operator=(App &&) = delete;
+    ~App() override { quit(); }
 
     void run();
-    bool handleInputEvent(const UIEvent &event) override;
+    bool handleInputEvent(const view::UIEvent &event) override;
 
   private:
     bool handleRootEvent(const std::string &input);
@@ -88,8 +88,5 @@ class App final : public InputHandlerBase {
     void updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog);
     void deleteFocusedLog();
     void quit();
-
-    static bool noMeaningfulContent(const std::string &content,
-                                    const std::chrono::year_month_day &date);
 };
 } // namespace caps_log

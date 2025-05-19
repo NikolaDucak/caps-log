@@ -6,6 +6,7 @@
 
 using namespace std::chrono_literals;
 
+// NOLINTBEGIN(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 namespace {
 const std::filesystem::path kCalendarRenderTestData = std::filesystem::path{CAPS_LOG_TEST_DATA_DIR};
 
@@ -22,7 +23,7 @@ std::string readFile(const std::string &path) {
 class MockScreenSizeProvider : public caps_log::view::ScreenSizeProvider {
   public:
     MockScreenSizeProvider(ftxui::Dimensions size) : m_size{size} {}
-    ftxui::Dimensions getScreenSize() const override { return m_size; }
+    [[nodiscard]] ftxui::Dimensions getScreenSize() const override { return m_size; }
 
   private:
     ftxui::Dimensions m_size;
@@ -40,18 +41,16 @@ TEST(CalnedarComponentTest, Render) {
         return kCalendarRenderTestData /
                ("screen_width_" + std::to_string(data.screen_width) + ".bin");
     };
-    // NOLINTBEGIN
     std::vector<TestData> testData = {
         {34, 1},  {68, 2},  {102, 3},  {136, 4},  {238, 7},
         {272, 8}, {306, 9}, {340, 10}, {374, 11}, {408, 12},
     };
-    // NOLINTEND
     for (const auto &data : testData) {
-        ftxui::Dimensions dimensions{data.screen_width, 41}; // NOLINT
-        ftxui::Screen screen{data.screen_width, 41};         // NOLINT
+        ftxui::Dimensions dimensions{data.screen_width, 41};
+        ftxui::Screen screen{data.screen_width, 41};
         auto sizeProvider = std::make_unique<MockScreenSizeProvider>(dimensions);
         caps_log::view::Calendar calendar{std::move(sizeProvider),
-                                          {2024y, std::chrono::January, 1d}}; // NOLINT
+                                          {2024y, std::chrono::January, 1d}};
         ftxui::Render(screen, calendar.Render());
         const auto screenRender = screen.ToString();
         std::string expectedOutput = readFile(filePath(data));
@@ -61,10 +60,10 @@ TEST(CalnedarComponentTest, Render) {
 }
 
 TEST(CalnedarComponentTest, EventHandling) {
-    std::chrono::year_month_day start{2024y, std::chrono::January, 1d};       // NOLINT
-    std::chrono::year_month_day next{2024y, std::chrono::January, 2d};        // NOLINT
-    std::chrono::year_month_day next_month{2024y, std::chrono::February, 1d}; // NOLINT
-    ftxui::Screen screen{184, 41};                                            // NOLINT
+    std::chrono::year_month_day start{2024y, std::chrono::January, 1d};
+    std::chrono::year_month_day next{2024y, std::chrono::January, 2d};
+    std::chrono::year_month_day nextMonth{2024y, std::chrono::February, 1d};
+    ftxui::Screen screen{184, 41};
     auto sizeProvider = std::make_unique<MockScreenSizeProvider>(ftxui::Dimensions{184, 41});
 
     caps_log::view::Calendar calendar{std::move(sizeProvider), start};
@@ -79,6 +78,7 @@ TEST(CalnedarComponentTest, EventHandling) {
     calendar.OnEvent(ftxui::Event::ArrowDown);
     calendar.OnEvent(ftxui::Event::ArrowDown);
 
-    EXPECT_EQ(calendar.getFocusedDate(), next_month)
+    EXPECT_EQ(calendar.getFocusedDate(), nextMonth)
         << "Got date: " << caps_log::utils::date::formatToString(calendar.getFocusedDate());
 }
+// NOLINTEND(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)

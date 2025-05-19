@@ -53,6 +53,7 @@ class EncryptedDefaultEditor : public EditorBase {
     }
 
   private:
+    [[nodiscard]]
     static std::string getTmpFile() {
         constexpr auto kMinRandomDistribution = 100000;
         constexpr auto kMaxRandomDistribution = 999999;

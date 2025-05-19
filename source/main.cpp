@@ -18,10 +18,6 @@
 #include "view/annual_view.hpp"
 #include <boost/program_options.hpp>
 
-auto md(unsigned char month, unsigned int day) {
-    return std::chrono::month_day{std::chrono::month{month}, std::chrono::day{day}};
-}
-
 /**
  * If the curret log dir has a structure like
  * /
@@ -48,18 +44,20 @@ void migrateToNewRepoStructureIfNeeded(
             const std::filesystem::path &path) -> std::optional<std::chrono::year_month_day> {
         const auto filenameStr = path.filename().string();
         std::tm dateTime = {};
-        std::istringstream ss{filenameStr};
-        if (!(ss >> std::get_time(&dateTime, logFilenameFormat.c_str()))) {
+        std::istringstream iss{filenameStr};
+        if (!(iss >> std::get_time(&dateTime, logFilenameFormat.c_str()))) {
             return std::nullopt;
         }
 
         std::string remaining;
-        std::getline(ss, remaining);
+        std::getline(iss, remaining);
         if (!remaining.empty()) {
             return std::nullopt;
         }
+        // The tm_year is years since 1900, so we need to add 1900 to it
+        static constexpr auto kTmYearOffset = 1900;
         return std::chrono::year_month_day{
-            std::chrono::year{dateTime.tm_year + 1900},
+            std::chrono::year{dateTime.tm_year + kTmYearOffset},
             std::chrono::month{static_cast<unsigned int>(dateTime.tm_mon + 1)},
             std::chrono::day{static_cast<unsigned int>(dateTime.tm_mday)}};
     };
@@ -124,7 +122,7 @@ auto makeCapsLog(const caps_log::Config &conf) {
                                                    conf.recentEventsWindow);
     auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, password);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
-        const auto envEditor = std::getenv("EDITOR");
+        auto *const envEditor = std::getenv("EDITOR");
         if (envEditor == nullptr) {
             return nullptr;
         }
@@ -153,26 +151,17 @@ auto makeCapsLog(const caps_log::Config &conf) {
                          std::move(appConf)};
 }
 
-void migrateToNewRepo() {
-    // TODO: implement
-    // if old repo has logs in root
-    // for each log in root
-    // parse year from title
-    // create year folder if not exists
-    // move log to year folder
-}
-
 int main(int argc, const char **argv) try {
-    auto cliOpts = caps_log::parseCLIOptions(argc, argv);
+    auto cliOpts = caps_log::parseCLIOptions(std::span(argv, argc));
 
     const auto config = caps_log::Config::make(
         [](const auto &path) { return std::make_unique<std::ifstream>(path); }, cliOpts);
 
-    if (cliOpts.count("--encrypt") != 0U) {
+    if (cliOpts.contains("--encrypt")) {
         caps_log::LogRepositoryCryptoApplier::apply(config.password, config.logDirPath,
                                                     config.logFilenameFormat,
                                                     caps_log::Crypto::Encrypt);
-    } else if (cliOpts.count("--decrypt") != 0U) {
+    } else if (cliOpts.contains("--decrypt")) {
         caps_log::LogRepositoryCryptoApplier::apply(config.password, config.logDirPath,
                                                     config.logFilenameFormat,
                                                     caps_log::Crypto::Decrypt);

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace caps_log::log {
 
@@ -21,7 +22,7 @@ class AnnualLogData {
     utils::date::Dates datesWithLogs;
     std::map<std::string, std::map<std::string, utils::date::Dates>> tagsPerSection;
 
-    std::vector<std::string> getAllSections() const {
+    [[nodiscard]] std::vector<std::string> getAllSections() const {
         std::set<std::string> sections;
         for (const auto &[section, _] : tagsPerSection) {
             sections.insert(section);
@@ -31,7 +32,7 @@ class AnnualLogData {
         return {sections.begin(), sections.end()};
     }
 
-    std::vector<std::string> getAllTags() const {
+    [[nodiscard]] std::vector<std::string> getAllTags() const {
         std::set<std::string> tags;
         for (const auto &[_, tagsMap] : tagsPerSection) {
             for (const auto &[tag, _] : tagsMap) {
@@ -45,7 +46,7 @@ class AnnualLogData {
         return {tags.begin(), tags.end()};
     }
 
-    std::vector<std::string> getAllTagsForSection(const std::string &section) const {
+    [[nodiscard]] std::vector<std::string> getAllTagsForSection(const std::string &section) const {
         std::vector<std::string> tags;
         tags.reserve(tagsPerSection.at(section).size());
         for (const auto &[tag, _] : tagsPerSection.at(section)) {
@@ -61,8 +62,8 @@ class AnnualLogData {
     /**
      * Constructs YearOverviewData from logs in a given year.
      */
-    static AnnualLogData collect(const std::shared_ptr<LogRepositoryBase> &repo,
-                                 std::chrono::year year, bool skipFirstLine = true);
+    [[nodiscard]] static AnnualLogData collect(const std::shared_ptr<LogRepositoryBase> &repo,
+                                               std::chrono::year year, bool skipFirstLine = true);
 
     /**
      * Injects/updates the current object with information parsed from a log entry form a specified

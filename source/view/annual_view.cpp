@@ -18,9 +18,9 @@
 namespace caps_log::view {
 
 namespace {
-int daysDifference(std::chrono::year_month_day from, std::chrono::year_month_day to) {
-    std::chrono::sys_days fromSys{from};
-    std::chrono::sys_days toSys{to};
+int daysDifference(std::chrono::year_month_day from_ymd, std::chrono::year_month_day to_ymd) {
+    std::chrono::sys_days fromSys{from_ymd};
+    std::chrono::sys_days toSys{to_ymd};
     return (toSys - fromSys).count();
 }
 } // namespace
@@ -36,6 +36,7 @@ AnnualView::AnnualView(const std::chrono::year_month_day &today, bool sundayStar
 
 void AnnualView::run() {
     // Caps-log expects the terminal to be at least 80x24
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
     Terminal::SetFallbackSize(Dimensions{/*dimx=*/80, /*dimy=*/24});
     m_screen.Loop(m_rootComponent);
 }
@@ -46,6 +47,7 @@ void AnnualView::showCalendarForYear(std::chrono::year year) {
     m_calendarButtons->displayYear(year);
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
     const auto container = ftxui_ext::CustomContainer(
         {
@@ -105,9 +107,12 @@ std::shared_ptr<Promptable> AnnualView::makeFullUIComponent() {
             }
         }
 
-        const auto mainSection = hbox(
-            vbox(hbox(m_sectionsMenu->Render(), m_tagsMenu->Render()), vbox(eventItems) | border),
-            m_calendarButtons->Render());
+        const auto mainSection =
+            (eventItems.empty()) ? hbox(vbox(hbox(m_sectionsMenu->Render(), m_tagsMenu->Render())),
+                                        m_calendarButtons->Render())
+                                 : hbox(vbox(hbox(m_sectionsMenu->Render(), m_tagsMenu->Render()),
+                                             vbox(eventItems) | border),
+                                        m_calendarButtons->Render());
 
         static const auto kHelpString =
             std::string{"hjkl/arrow keys - navigation | d - delete log "

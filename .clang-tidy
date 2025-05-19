@@ -1,18 +1,20 @@
 Checks: "
-  -readability-magic-numbers
-  -readability-braces-around-statements
-  readability-*, 
-  portability-*, 
-  performance-*, 
-  cppcoreguidelines-*
-  modernize-use-no-discard,
-  modernize-use-auto
+  -readability-magic-numbers,
+  -readability-braces-around-statements,
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  readability-*,
+  portability-*,
+  performance-*,
+  cppcoreguidelines-*,
+  modernize-use-nodiscard,
+  modernize-use-auto,
   clang-analyzer-cplusplus
 "
 WarningsAsErrors: '*'
 HeaderFilterRegex: ''
 
 CheckOptions:
+  - { key: readability-identifier-length.IgnoredVariableNames,    value: '^(it|id|_)$' }
   - { key: readability-identifier-naming.StaticConstantPrefix,    value: 'k' }
   - { key: readability-identifier-naming.StaticConstantCase,      value: 'CamelCase' }
   - { key: readability-identifier-naming.ConstexprVariablePrefix, value: 'k' }
@@ -21,5 +23,5 @@ CheckOptions:
   - { key: readability-identifier-naming.PrivateMemberCase,       value: 'camelBack' }
   - { key: readability-identifier-naming.VariableCase,            value: 'camelBack' }
   - { key: readability-identifier-naming.FunctionCase,            value: 'camelBack' }
-  - { key: readability-identifier-naming.ClassCase,               value: 'PascalCase' }
-  - { key: readability-identifier-naming.EnumCase,                value: 'PascalCase' }
+  - { key: readability-identifier-naming.ClassCase,               value: 'CamelCase' }
+  - { key: readability-identifier-naming.EnumCase,                value: 'CamelCase' }

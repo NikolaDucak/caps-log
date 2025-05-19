@@ -37,7 +37,7 @@ class MonthComponentArranger {
     static constexpr auto kDaysPerWeek = 7;
     static constexpr auto kRenderedMonthPaddingAndBorderChars = 6;
     static constexpr auto kCharsPerMonthComponent =
-        kCharsPerDay * kDaysPerWeek + kRenderedMonthPaddingAndBorderChars;
+        (kCharsPerDay * kDaysPerWeek) + kRenderedMonthPaddingAndBorderChars;
 
     /**
      * @brief Computes the number of months that can be displayed in a row.
@@ -45,7 +45,8 @@ class MonthComponentArranger {
     static int computeNumberOfMonthsPerRow(const Dimensions &screenDimensions) {
         int availableMonthColumns = screenDimensions.dimx / kCharsPerMonthComponent;
         // prevent splitting 12 months into 2 rows of unequal elements
-        if (availableMonthColumns == 5) { // NOLINT
+        // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+        if (availableMonthColumns == 5) {
             availableMonthColumns = 4;
         }
         return std::min(kMaxMonthComponentsPerRow, availableMonthColumns);
@@ -114,7 +115,7 @@ ftxui::Element Calendar::Render() {
     return m_root->Render() | ftxui::dim;
 }
 
-std::chrono::year_month_day Calendar::getFocusedDate() {
+std::chrono::year_month_day Calendar::getFocusedDate() const {
     using namespace std::chrono;
     return std::chrono::year_month_day(
         m_displayedYear, month{(unsigned)m_selectedMonthComponentIdx + 1},

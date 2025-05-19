@@ -14,6 +14,12 @@ namespace caps_log::test {
 
 using namespace testing;
 
+using namespace caps_log::view;
+using namespace caps_log::log;
+using namespace caps_log::editor;
+using namespace caps_log::utils::date;
+using namespace caps_log::utils;
+
 class ControllerTest : public testing::Test {
   protected:
     // NOLINTNEXTLINE
@@ -36,20 +42,30 @@ class ControllerTest : public testing::Test {
      * @brief Create a caps_log::App object with the mock objects and selected year.
      */
     auto makeCapsLog() {
-        AppConfig c;
-        c.currentYear = day1.year();
-        c.skipFirstLine = true;
-        return App{mockView, mockRepo, mockEditor, std::nullopt, std::move(c)};
+        AppConfig conf;
+        conf.currentYear = day1.year();
+        conf.skipFirstLine = true;
+        return App{mockView, mockRepo, mockEditor, std::nullopt, std::move(conf)};
     }
 
-    void verifyTagMenuItems(const std::vector<std::string> &expected) {
+    bool areTagMenuItemsEqual(const std::vector<std::string> &expected) {
         const auto &tagMenuItems = mockView->getDummyView().m_tagMenuItems;
-        EXPECT_EQ(tagMenuItems.getDisplayTexts(), expected);
+        return tagMenuItems.getDisplayTexts() == expected;
     }
 
-    void verifySectionMenuItems(const std::vector<std::string> &expected) {
+    bool areSectionMenuItemsEqual(const std::vector<std::string> &expected) {
         const auto &sectionMenuItems = mockView->getDummyView().m_sectionMenuItems;
-        EXPECT_EQ(sectionMenuItems.getDisplayTexts(), expected);
+        auto res = sectionMenuItems.getDisplayTexts() == expected;
+        if (not res) {
+            for (int i = 0; i < sectionMenuItems.size(); i++) {
+                const auto &item = sectionMenuItems.getDisplayTexts()[i];
+                const auto &expectedItem = expected[i];
+                if (item != expectedItem) {
+                    std::cout << "Expected: " << expectedItem << ", but got: " << item << "\n";
+                }
+            }
+        }
+        return res;
     }
 
   public:
@@ -94,8 +110,8 @@ TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
     mockRepo->write(LogFile{day1, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
     auto capsLog = makeCapsLog();
 
-    verifyTagMenuItems({"<select none>", "(1) - dummy tag"});
-    verifySectionMenuItems({"<select none>", "(1) - dummy section"});
+    EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("dummy tag", 1)}));
+    EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("dummy section", 1)}));
 
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
@@ -108,8 +124,8 @@ TEST_F(ControllerTest, RemoveLog_PromptsThenUpdatesSectionsTagsAndMaps) {
         // assert that it has indeed been removed
         EXPECT_FALSE(mockRepo->read(day1));
         // and that the view things have been updated
-        verifyTagMenuItems({"<select none>"});
-        verifySectionMenuItems({"<select none>"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>"}));
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>"}));
     });
     capsLog.run();
 }
@@ -180,8 +196,8 @@ TEST_F(ControllerTest, OnSelectedMenuItemChange_UpdateHighlightMap) {
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
     auto capsLog = makeCapsLog();
-    verifyTagMenuItems({"<select none>"});
-    verifySectionMenuItems({"<select none>"});
+    EXPECT_TRUE(areTagMenuItemsEqual({"<select none>"}));
+    EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>"}));
 
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
@@ -195,8 +211,9 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMaps) {
         capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
 
         // expect the initially set availability map pointer to still be valid
-        verifyTagMenuItems({"<select none>", "(1) - tag title"});
-        verifySectionMenuItems({"<select none>", "(1) - section title"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag title", 1)}));
+        EXPECT_TRUE(
+            areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section title", 1)}));
     });
 
     capsLog.run();
@@ -247,25 +264,26 @@ TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
 TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
     {
         auto capsLog = makeCapsLog();
-        verifySectionMenuItems({"<select none>"});
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>"}));
     }
     mockRepo->write(LogFile{day1, "# Dummy section"});
     {
-        AppConfig c;
-        c.skipFirstLine = false;
-        c.currentYear = day1.year();
-        auto capsLog2 = App{mockView, mockRepo, mockEditor, std::nullopt, std::move(c)};
+        AppConfig config;
+        config.skipFirstLine = false;
+        config.currentYear = day1.year();
+        auto capsLog2 = App{mockView, mockRepo, mockEditor, std::nullopt, std::move(config)};
 
         // +1 for '-----' aka no section
-        verifySectionMenuItems({"<select none>", "(1) - dummy section"});
+        EXPECT_TRUE(
+            areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("dummy section", 1)}));
     }
 }
 
 TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMapsAfterRemove) {
     mockRepo->write(LogFile{day1, "# DummyContent \n# Dummy Section\n* Dummy Tag"});
     auto capsLog = makeCapsLog();
-    verifyTagMenuItems({"<select none>", "(1) - dummy tag"});
-    verifySectionMenuItems({"<select none>", "(1) - dummy section"});
+    EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("dummy tag", 1)}));
+    EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("dummy section", 1)}));
 
     EXPECT_TRUE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
 
@@ -283,8 +301,9 @@ TEST_F(ControllerTest, AddLog_UpdatesSectionsTagsAndMapsAfterRemove) {
 
         EXPECT_EQ(mockView->getDummyView().m_highlightedDates, nullptr);
         EXPECT_TRUE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
-        verifyTagMenuItems({"<select none>", "(1) - tag title"});
-        verifySectionMenuItems({"<select none>", "(1) - <root section>"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag title", 1)}));
+        EXPECT_TRUE(
+            areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("<root section>", 1)}));
     });
 
     capsLog.run();
@@ -296,8 +315,10 @@ TEST_F(ControllerTest, TagsPerSection_NoSectionMeansAllTagsListed) {
     auto capsLog = makeCapsLog();
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
-        verifyTagMenuItems({"<select none>", "(1) - tag 1", "(1) - tag 2"});
-        verifySectionMenuItems({"<select none>", "(1) - section 1", "(1) - section 2"});
+        EXPECT_TRUE(areTagMenuItemsEqual(
+            {"<select none>", makeMenuItemTitle("tag 1", 1), makeMenuItemTitle("tag 2", 1)}));
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section 1", 1),
+                                              makeMenuItemTitle("section 2", 1)}));
     });
     capsLog.run();
 }
@@ -310,7 +331,7 @@ TEST_F(ControllerTest, TagsPerSection_SelectingASectionShowsOnlyTagsAfterThatSec
     ON_CALL(*mockView, run()).WillByDefault([&] {
         mockView->getDummyView().m_selectedSection = "section 1";
         capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
-        verifyTagMenuItems({"<select none>", "(1) - tag 1"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag 1", 1)}));
         EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), std::set{date::monthDay(day1)});
     });
     capsLog.run();
@@ -321,7 +342,8 @@ TEST_F(ControllerTest, TagsPerSection_RootSectionShownWhenTagsInRootSectionArePr
     auto capsLog = makeCapsLog();
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
-        verifySectionMenuItems({"<select none>", "(1) - <root section>"});
+        EXPECT_TRUE(
+            areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("<root section>", 1)}));
     });
     capsLog.run();
 }
@@ -331,7 +353,7 @@ TEST_F(ControllerTest, TagsPerSection_RootSectionNotShownWhenTagsInRootSectionNo
     auto capsLog = makeCapsLog();
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
-        verifySectionMenuItems({"<select none>", "(1) - section"});
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section", 1)}));
     });
     capsLog.run();
 }
@@ -343,17 +365,20 @@ TEST_F(ControllerTest,
     mockRepo->write(LogFile{day3, "# DummyContent \n# section 2 \n* tag"});
     auto capsLog = makeCapsLog();
     EXPECT_CALL(*mockView, run());
+    // NOLINTNEXTLINE
     ON_CALL(*mockView, run()).WillByDefault([&] {
         // before selection
-        verifyTagMenuItems({"<select none>", "(2) - tag"});
-        verifySectionMenuItems({"<select none>", "(2) - section 1", "(1) - section 2"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag", 2)}));
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section 1", 2),
+                                              makeMenuItemTitle("section 2", 1)}));
+
         EXPECT_EQ(mockView->getDummyView().m_highlightedDates, nullptr);
         EXPECT_EQ(mockView->getDummyView().m_datesWithLogs->size(), 3);
 
         // after selection
         mockView->getDummyView().m_selectedSection = "section 1";
         capsLog.handleInputEvent(UIEvent{FocusedSectionChange{}});
-        verifyTagMenuItems({"<select none>", "(1) - tag"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag", 1)}));
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "<select none>");
         const auto expectedDates = std::set{date::monthDay(day1), date::monthDay(day2)};
         EXPECT_EQ(*(mockView->getDummyView().m_highlightedDates), expectedDates);
@@ -374,7 +399,7 @@ TEST_F(ControllerTest, SectionWithNoTagIsListedInMenuItems) {
     EXPECT_CALL(*mockView, run());
     ON_CALL(*mockView, run()).WillByDefault([&] {
         // before selection
-        verifySectionMenuItems({"<select none>", "(1) - section 1"});
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section 1", 1)}));
     });
     capsLog.run();
 }
@@ -398,7 +423,8 @@ TEST_F(
 
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
-        const auto expectedTags = std::vector<std::string>{"<select none>", "(1) - target tag"};
+        const auto expectedTags =
+            std::vector<std::string>{"<select none>", makeMenuItemTitle("target tag", 1)};
         EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTags);
         capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
@@ -428,7 +454,8 @@ TEST_F(
 
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
-        const auto expectedTags = std::vector<std::string>{"<select none>", "(1) - target tag"};
+        const auto expectedTags =
+            std::vector<std::string>{"<select none>", makeMenuItemTitle("target tag", 1)};
         EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTags);
         capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "<select none>");
@@ -456,7 +483,8 @@ TEST_F(
 
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 1");
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "target tag");
-        const auto expectedTags = std::vector<std::string>{"<select none>", "(1) - target tag"};
+        const auto expectedTags =
+            std::vector<std::string>{"<select none>", makeMenuItemTitle("target tag", 1)};
         EXPECT_EQ(mockView->getDummyView().m_tagMenuItems.getDisplayTexts(), expectedTags);
         capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "<select none>");
@@ -480,8 +508,9 @@ TEST_F(
 
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 2");
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "tag 2");
-        verifyTagMenuItems({"<select none>", "(1) - tag 2"});
-        verifySectionMenuItems({"<select none>", "(1) - section 1", "(1) - section 2"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag 2", 1)}));
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section 1", 1),
+                                              makeMenuItemTitle("section 2", 1)}));
 
         EXPECT_CALL(*mockEditor, openEditor(_)).WillRepeatedly([&](const LogFile &log) {
             const auto newLog =
@@ -492,8 +521,9 @@ TEST_F(
 
         EXPECT_EQ(mockView->getDummyView().m_selectedSection, "section 2");
         EXPECT_EQ(mockView->getDummyView().m_selectedTag, "tag 2");
-        verifyTagMenuItems({"<select none>", "(1) - tag 2"});
-        verifySectionMenuItems({"<select none>", "(1) - section 2", "(1) - section 3"});
+        EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag 2", 1)}));
+        EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section 2", 1),
+                                              makeMenuItemTitle("section 3", 1)}));
     });
     capsLog.run();
 }

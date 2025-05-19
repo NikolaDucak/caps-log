@@ -12,6 +12,11 @@ namespace caps_log::log {
  */
 class LogRepositoryBase {
   public:
+    LogRepositoryBase() = default;
+    LogRepositoryBase(const LogRepositoryBase &) = default;
+    LogRepositoryBase(LogRepositoryBase &&) = default;
+    LogRepositoryBase &operator=(const LogRepositoryBase &) = default;
+    LogRepositoryBase &operator=(LogRepositoryBase &&) = default;
     virtual ~LogRepositoryBase() = default;
 
     virtual std::optional<LogFile> read(const std::chrono::year_month_day &date) const = 0;

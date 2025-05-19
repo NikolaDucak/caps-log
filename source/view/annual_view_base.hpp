@@ -6,6 +6,7 @@
 #include <chrono>
 #include <ftxui/component/task.hpp>
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -16,7 +17,9 @@ namespace caps_log::view {
  * and a number of mentions. eg '(10) tag title'
  */
 inline std::string makeMenuItemTitle(const std::string &title, unsigned count) {
-    return std::string{"("} + std::to_string(count) + ") - " + title;
+    std::stringstream sstream;
+    sstream << std::setw(3) << std::setfill(' ') << count << " │ " << title;
+    return sstream.str();
 }
 
 class MenuItems {
@@ -24,21 +27,21 @@ class MenuItems {
     MenuItems() = default;
 
     MenuItems(std::vector<std::string> displayTexts, std::vector<std::string> keys)
-        : displayTexts{std::move(displayTexts)}, keys{std::move(keys)} {
+        : m_displayTexts{std::move(displayTexts)}, m_keys{std::move(keys)} {
         if (displayTexts.size() != keys.size()) {
             throw std::invalid_argument(
                 "MenuItems: displayTexts and keys must have the same size.");
         }
     }
 
-    auto size() const { return displayTexts.size(); }
+    auto size() const { return m_displayTexts.size(); }
 
-    const std::vector<std::string> &getDisplayTexts() const { return displayTexts; }
-    const std::vector<std::string> &getKeys() const { return keys; }
+    const std::vector<std::string> &getDisplayTexts() const { return m_displayTexts; }
+    const std::vector<std::string> &getKeys() const { return m_keys; }
 
   private:
-    std::vector<std::string> displayTexts;
-    std::vector<std::string> keys;
+    std::vector<std::string> m_displayTexts;
+    std::vector<std::string> m_keys;
 };
 
 struct CalendarEvent {

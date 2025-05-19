@@ -61,7 +61,7 @@ highlighting in your editor. This 'syntax' was chosen based on personal
 preference. If you find flaws, please open an issue. It's up to you to decide
 what constitutes a section and what a tag.
 
-_Sections_
+__Sections__
 
 To mark a section, use: `# Section Name`. All text below until the next section
 is considered part of it. By default, the first line of the file
@@ -69,12 +69,12 @@ is ignored when identifying section titles, as it's commonly used for the date
 of the entry. This behavior can be configured via command line arguments or a
 config file.
 
-_Tags_
+__Tags__
 
 Tags can be added to the log entry by starting a line with `* Tag Name`. Tags
 can belong to a section, but they don't have to. If they don't belong to a
 section, they are considered to belong under a `<root section>` which is 
-displayed in the section menu.
+displayed in the section menu as a separate section.
 
 - `* Tag Name`
 - `* Tag Name (Additional Information)`
@@ -175,10 +175,10 @@ date=18.07
 name=Jane
 date=03.07.
 [calendar-events.holidays.0]
-name=New Years eve
+name=New Year
 date=01.01.
 [calendar-events.holidays.1]
-name=New Year
+name=New Years eve
 date=31.12.
 ```
 

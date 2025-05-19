@@ -120,7 +120,7 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
     MOCK_METHOD(void, stop, (), (override));
 
     MOCK_METHOD(void, setInputHandler, (caps_log::view::InputHandlerBase * handler), (override));
-    MOCK_METHOD(std::chrono::year_month_day, getFocusedDate, (), (const override));
+    MOCK_METHOD(std::chrono::year_month_day, getFocusedDate, (), (const, override));
     MOCK_METHOD(void, showCalendarForYear, (std::chrono::year), (override));
     MOCK_METHOD(void, prompt, (std::string message, std::function<void()> callback), (override));
 
@@ -133,8 +133,8 @@ class DMockYearView : public caps_log::view::AnnualViewBase {
 
     MOCK_METHOD(caps_log::view::MenuItems &, tagMenuItems, (), (override));
     MOCK_METHOD(caps_log::view::MenuItems &, sectionMenuItems, (), (override));
-    MOCK_METHOD(const std::string &, getSelectedTag, (), (const override));
-    MOCK_METHOD(const std::string &, getSelectedSection, (), (const override));
+    MOCK_METHOD(const std::string &, getSelectedTag, (), (const, override));
+    MOCK_METHOD(const std::string &, getSelectedSection, (), (const, override));
     MOCK_METHOD(void, setSelectedTag, (std::string tag), (override));
     MOCK_METHOD(void, setSelectedSection, (std::string section), (override));
 };
@@ -173,7 +173,7 @@ class DMockRepo : public caps_log::log::LogRepositoryBase {
     auto &getDummyRepo() { return m_repo; }
 
     MOCK_METHOD(std::optional<caps_log::log::LogFile>, read,
-                (const std::chrono::year_month_day &date), (const override));
+                (const std::chrono::year_month_day &date), (const, override));
     MOCK_METHOD(void, remove, (const std::chrono::year_month_day &date), (override));
     MOCK_METHOD(void, write, (const caps_log::log::LogFile &file), (override));
 };
