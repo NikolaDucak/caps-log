@@ -38,6 +38,8 @@ const std::vector<ParsingTestData> validTagsTestData{
     makeTagParsingData("* {}: some other information", "tag title"),
     makeTagParsingData("* {} (minor info): some other information", "tag title"),
     makeTagParsingData("* {} (minor info): some other information\non two lines", "tag title"),
+
+    makeTagParsingData("* {}", "tag-with-dashes"),
 };
 
 const std::vector<ParsingTestData> invalidTagsTestData{
