@@ -15,7 +15,7 @@ namespace {
  */
 const auto kSectionTitleRegex = std::regex{"^# \\s*(.*?)\\s*$"};
 const auto kTagRegex =
-    std::regex{R"(^( +)?\*( +)([a-z A-Z 0-9]+)(\(.+\))?(:.*)?)", std::regex_constants::extended};
+    std::regex{R"(^( +)?\*( +)([a-z A-Z 0-9 -]+)(\(.+\))?(:.*)?)", std::regex_constants::extended};
 
 const auto kTaskRegex =
     std::regex{R"(^ *(- )?\[(.)] *(\(([[a-zA-Z0-9_:]*)\))? *([\sa-zA-Z0-9_-]*)( *):?( *)(.*))",
