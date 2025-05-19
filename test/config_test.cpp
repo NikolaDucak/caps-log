@@ -19,7 +19,7 @@ boost::program_options::variables_map parseArgs(const std::vector<std::string> &
     const char **argv = argvTemp.data();
     int argc = static_cast<int>(argvTemp.size()) - 1; // argc should not count the null terminator
 
-    return parseCLIOptions(argc, argv);
+    return parseCLIOptions(std::span<const char *>(argv, argc));
 }
 
 std::function<std::unique_ptr<std::istringstream>(const std::string &)>

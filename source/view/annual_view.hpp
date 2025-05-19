@@ -69,8 +69,8 @@ class AnnualView : public AnnualViewBase {
         return m_calendarButtons->getFocusedDate();
     }
 
-    MenuItems &tagMenuItems() override { return m_tagMenuItems; }
-    MenuItems &sectionMenuItems() override { return m_sectionMenuItems; }
+    [[nodiscard]] MenuItems &tagMenuItems() override { return m_tagMenuItems; }
+    [[nodiscard]] MenuItems &sectionMenuItems() override { return m_sectionMenuItems; }
 
     void setSelectedTag(std::string tag) override {
         const auto tagInMenu =

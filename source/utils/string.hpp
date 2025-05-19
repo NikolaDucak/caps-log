@@ -5,7 +5,8 @@
 
 namespace caps_log::utils {
 
-inline std::string trim(const std::string &str, const std::string &whitespace = " \t\n") {
+[[nodiscard]] inline std::string trim(const std::string &str,
+                                      const std::string &whitespace = " \t\n") {
     const auto strBegin = str.find_first_not_of(whitespace);
     if (strBegin == std::string::npos) {
         return ""; // no content
@@ -17,7 +18,7 @@ inline std::string trim(const std::string &str, const std::string &whitespace = 
     return str.substr(strBegin, strRange);
 }
 
-inline std::string lowercase(std::string data) {
+[[nodiscard]] inline std::string lowercase(std::string data) {
     std::ranges::transform(data, data.begin(), [](char letter) { return std::tolower(letter); });
     return data;
 }

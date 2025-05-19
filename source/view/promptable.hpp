@@ -18,7 +18,7 @@ class Promptable : public ftxui::ComponentBase {
     std::function<void()> m_callback = nullptr;
 
   public:
-    Promptable(ftxui::Component main);
+    explicit Promptable(ftxui::Component main);
     void prompt(std::string message, std::function<void()> callback);
     void promptOk(std::string message, std::function<void()> callback);
     void loadingScreen(std::string message);

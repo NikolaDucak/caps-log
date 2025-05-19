@@ -20,9 +20,16 @@ struct UnhandledRootEvent {
     std::string input;
 };
 
+/**
+ * @brief A variant type that represents all possible UI events.
+ * It is used to handle different types of events in a unified way.
+ */
 using UIEvent = std::variant<UiStarted, DisplayedYearChange, OpenLogFile, FocusedSectionChange,
                              FocusedTagChange, FocusedDateChange, UnhandledRootEvent>;
 
+/**
+ * @brief A base class for handling input events in the application.
+ */
 class InputHandlerBase {
   public:
     InputHandlerBase() = default;

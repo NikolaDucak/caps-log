@@ -17,20 +17,21 @@ class LocalFSLogFilePathProvider {
     LocalFSLogFilePathProvider(const std::filesystem::path &logDir, std::string logFilenameFormat)
         : m_logDirectory{logDir}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
 
-    inline std::filesystem::path path(const std::chrono::year_month_day &date) const {
+    [[nodiscard]] inline std::filesystem::path path(const std::chrono::year_month_day &date) const {
         return {m_logDirectory / fmt::format("y{}", (int)date.year()) /
                 utils::date::formatToString(date, m_logFilenameFormat)};
     }
 
-    inline std::filesystem::path getLogDirPath() const { return m_logDirectory; }
-    inline std::string getLogFilenameFormat() const { return m_logFilenameFormat; }
+    [[nodiscard]] inline std::filesystem::path getLogDirPath() const { return m_logDirectory; }
+    [[nodiscard]] inline std::string getLogFilenameFormat() const { return m_logFilenameFormat; }
 };
 
 class LocalLogRepository : public LogRepositoryBase {
   public:
-    LocalLogRepository(LocalFSLogFilePathProvider pathProvider, std::string password = "");
+    explicit LocalLogRepository(LocalFSLogFilePathProvider pathProvider, std::string password = "");
 
-    std::optional<LogFile> read(const std::chrono::year_month_day &date) const override;
+    [[nodiscard]] std::optional<LogFile>
+    read(const std::chrono::year_month_day &date) const override;
     void remove(const std::chrono::year_month_day &date) override;
     void write(const LogFile &log) override;
 

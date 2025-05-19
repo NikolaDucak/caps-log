@@ -4,7 +4,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <vector>
 
 namespace caps_log::log {
 
@@ -24,13 +23,14 @@ class LogFile {
 
     LogFile &parse(bool skipFirstLine = true);
 
-    std::string getContent() const { return m_content; }
-    std::chrono::year_month_day getDate() const { return m_date; }
+    [[nodiscard]] std::string getContent() const { return m_content; }
+    [[nodiscard]] std::chrono::year_month_day getDate() const { return m_date; }
+
+    [[nodiscard]] std::set<std::string> getSectionTitles() const;
+    [[nodiscard]] std::set<std::string> getTagTitles() const;
+    [[nodiscard]] std::map<std::string, std::set<std::string>> getTagsPerSection() const;
 
     static constexpr std::string_view kRootSectionKey = "<root section>";
-    std::set<std::string> getSectionTitles() const;
-    std::set<std::string> getTagTitles() const;
-    std::map<std::string, std::set<std::string>> getTagsPerSection() const;
 };
 
 } // namespace caps_log::log

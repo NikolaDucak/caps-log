@@ -12,7 +12,13 @@ namespace caps_log::editor {
 
 class EditorBase {
   public:
+    EditorBase() = default;
+    EditorBase(const EditorBase &) = default;
+    EditorBase(EditorBase &&) = default;
+    EditorBase &operator=(const EditorBase &) = default;
+    EditorBase &operator=(EditorBase &&) = default;
     virtual ~EditorBase() = default;
+
     virtual void openEditor(const caps_log::log::LogFile &log) = 0;
 };
 

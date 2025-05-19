@@ -1,11 +1,9 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <cassert>
 #include <chrono>
 #include <iomanip>
-#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -15,6 +13,7 @@ namespace caps_log::utils::date {
 namespace detail {
 constexpr auto kTmYearStart = 1900;
 constexpr auto kLeapYearFebruaryDays = 29;
+[[nodiscard]]
 inline std::tm dateToTm(const std::chrono::year_month_day &date) {
     std::tm time = {};
     time.tm_year = int(date.year()) - kTmYearStart;
@@ -29,10 +28,12 @@ inline std::tm dateToTm(const std::chrono::year_month_day &date) {
 
 } // namespace detail
 
+[[nodiscard]]
 inline std::chrono::month_day monthDay(std::chrono::year_month_day date) {
     return std::chrono::month_day{date.month(), date.day()};
 }
 
+[[nodiscard]]
 inline std::string formatToString(const std::chrono::year_month_day &date,
                                   const std::string &format = "%d. %m. %y.") {
     std::ostringstream oss;
@@ -41,17 +42,20 @@ inline std::string formatToString(const std::chrono::year_month_day &date,
     return oss.str();
 }
 
+[[nodiscard]]
 inline std::chrono::year_month_day getToday() {
     auto today = std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now());
     return std::chrono::year_month_day{today};
 }
 
+[[nodiscard]]
 inline bool isWeekend(const std::chrono::year_month_day &date) {
     const auto sysDays = std::chrono::sys_days{date};
     std::chrono::weekday dayOfWeek{sysDays};
     return dayOfWeek == std::chrono::Saturday || dayOfWeek == std::chrono::Sunday;
 }
 
+[[nodiscard]]
 inline unsigned getNumberOfDaysForMonth(std::chrono::month month, std::chrono::year year) {
     static const std::array<unsigned, 13> kDays{
         0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
@@ -64,6 +68,7 @@ inline unsigned getNumberOfDaysForMonth(std::chrono::month month, std::chrono::y
     return kDays.at(static_cast<unsigned>(month));
 }
 
+[[nodiscard]]
 inline unsigned getStartingWeekdayForMonth(std::chrono::year_month year_month) {
     std::tm firstDayOfTheMonth{};
     firstDayOfTheMonth.tm_mday = 0;
@@ -79,6 +84,7 @@ inline unsigned getStartingWeekdayForMonth(std::chrono::year_month year_month) {
     return targetTimeResult->tm_wday + 1;
 }
 
+[[nodiscard]]
 inline std::string getStringNameForMonth(std::chrono::month month) {
     assert(month.ok());
     static const std::array<std::string, 13> kMonthNames{

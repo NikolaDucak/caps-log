@@ -11,7 +11,7 @@ class Preview : public ftxui::ComponentBase {
 
   public:
     ftxui::Element Render() override;
-    bool Focusable() const override;
+    [[nodiscard]] bool Focusable() const override;
     bool OnEvent(ftxui::Event event) override;
 
     void resetScroll();
