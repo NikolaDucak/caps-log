@@ -78,7 +78,7 @@ class AnnualView : public AnnualViewBase {
         const auto newSelected = tagInMenu != m_tagMenuItems.getKeys().end()
                                      ? std::distance(m_tagMenuItems.getKeys().begin(), tagInMenu)
                                      : 0;
-        m_tagsMenu->selected() = newSelected;
+        m_tagsMenu->selected() = static_cast<int>(newSelected);
     }
 
     void setSelectedSection(std::string section) override {
@@ -88,7 +88,7 @@ class AnnualView : public AnnualViewBase {
             sectionInMenu != m_sectionMenuItems.getKeys().end()
                 ? std::distance(m_sectionMenuItems.getKeys().begin(), sectionInMenu)
                 : 0;
-        m_sectionsMenu->selected() = newSelected;
+        m_sectionsMenu->selected() = static_cast<int>(newSelected);
     }
 
     const std::string &getSelectedTag() const override {

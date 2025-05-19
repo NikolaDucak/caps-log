@@ -34,10 +34,10 @@ class MenuItems {
         }
     }
 
-    auto size() const { return m_displayTexts.size(); }
+    [[nodiscard]] auto size() const { return m_displayTexts.size(); }
 
-    const std::vector<std::string> &getDisplayTexts() const { return m_displayTexts; }
-    const std::vector<std::string> &getKeys() const { return m_keys; }
+    [[nodiscard]] const std::vector<std::string> &getDisplayTexts() const { return m_displayTexts; }
+    [[nodiscard]] const std::vector<std::string> &getKeys() const { return m_keys; }
 
   private:
     std::vector<std::string> m_displayTexts;
@@ -61,7 +61,7 @@ class AnnualViewBase { // NOLINT
 
     virtual void setInputHandler(InputHandlerBase *handler) = 0;
 
-    virtual std::chrono::year_month_day getFocusedDate() const = 0;
+    [[nodiscard]] virtual std::chrono::year_month_day getFocusedDate() const = 0;
     virtual void showCalendarForYear(std::chrono::year year) = 0;
 
     virtual void post(ftxui::Task) = 0;
@@ -88,8 +88,8 @@ class AnnualViewBase { // NOLINT
     virtual void setSelectedTag(std::string tag) = 0;
     virtual void setSelectedSection(std::string section) = 0;
 
-    virtual const std::string &getSelectedTag() const = 0;
-    virtual const std::string &getSelectedSection() const = 0;
+    [[nodiscard]] virtual const std::string &getSelectedTag() const = 0;
+    [[nodiscard]] virtual const std::string &getSelectedSection() const = 0;
 };
 
 } // namespace caps_log::view

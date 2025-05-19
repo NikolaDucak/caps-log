@@ -29,13 +29,13 @@ set(FETCHCONTENT_UPDATES_DISCONNECTED TRUE)
 
 # -------------------------- Fetech ftxui ------------------------------- #
 
-find_package(ftxui 5)
+find_package(ftxui 6)
 if(NOT ftxui_FOUND)
   message(STATUS "ftxui Not found... fetching")
   FetchContent_Declare(
     ftxui
     GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
-    GIT_TAG v5.0.0)
+    GIT_TAG v6.1.9)
   FetchContent_GetProperties(ftxui)
   if(NOT ftxui_POPULATED)
     FetchContent_Populate(ftxui)

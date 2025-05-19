@@ -24,14 +24,16 @@ class ScreenSizeProvider {
     ScreenSizeProvider &operator=(ScreenSizeProvider &&) = default;
     virtual ~ScreenSizeProvider() = default;
 
-    virtual ftxui::Dimensions getScreenSize() const = 0;
+    [[nodiscard]] virtual ftxui::Dimensions getScreenSize() const = 0;
 
     [[nodiscard]] static std::unique_ptr<ScreenSizeProvider> makeDefault() {
         // Caps-log runs only in full screen mode, so we can use the terminal size as the screen
         // size
         class DefaultScreenSizeProvider : public ScreenSizeProvider {
           public:
-            ftxui::Dimensions getScreenSize() const override { return ftxui::Terminal::Size(); }
+            [[nodiscard]] ftxui::Dimensions getScreenSize() const override {
+                return ftxui::Terminal::Size();
+            }
         };
         return std::make_unique<DefaultScreenSizeProvider>();
     }
@@ -53,7 +55,7 @@ class Calendar : public ftxui::ComponentBase {
              const std::chrono::year_month_day &today, CalendarOption option = {});
 
     bool OnEvent(ftxui::Event event) override;
-    ftxui::Element Render() override;
+    ftxui::Element OnRender() override;
 
     void displayYear(std::chrono::year year);
     [[nodiscard]] std::chrono::year_month_day getFocusedDate() const;

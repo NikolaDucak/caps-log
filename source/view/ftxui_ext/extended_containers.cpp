@@ -74,7 +74,7 @@ class ContainerBase : public ComponentBase {
         }
         for (size_t offset = 1; offset < children_.size(); ++offset) {
             size_t index =
-                ((size_t(*selector_ + offset * dir + children_.size())) % children_.size());
+                ((size_t(*selector_ + (offset * dir) + children_.size())) % children_.size());
             if (children_[index]->Focusable()) {
                 *selector_ = (int)index;
                 return;
@@ -91,7 +91,7 @@ class GridContainer : public ContainerBase {
     GridContainer(int width, Components components, int *selector)
         : ContainerBase(std::move(components), selector), m_width(width) {}
 
-    Element Render() override {
+    Element OnRender() override {
         Elements elements;
         for (auto &child : children_) {
             elements.push_back(child->Render());
@@ -160,7 +160,7 @@ class AnyDirContainer : public ContainerBase {
   public:
     using ContainerBase::ContainerBase;
 
-    Element Render() override {
+    Element OnRender() override {
         Elements elements;
         for (auto &child : children_) {
             elements.push_back(child->Render());
@@ -242,7 +242,7 @@ class CustomInputContainer : public ContainerBase {
         : ContainerBase(std::move(children), selector), m_switch(std::move(sswitch)),
           m_switchBack(std::move(switchBack)) {}
 
-    Element Render() override {
+    Element OnRender() override {
         Elements elements;
         for (auto &child : children_) {
             elements.push_back(child->Render());

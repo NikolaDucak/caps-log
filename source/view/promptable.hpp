@@ -24,7 +24,7 @@ class Promptable : public ftxui::ComponentBase {
     void loadingScreen(std::string message);
     void resetToMain() { m_depth = 0; }
 
-    ftxui::Element Render() override;
+    ftxui::Element OnRender() override;
 };
 
 } // namespace caps_log::view

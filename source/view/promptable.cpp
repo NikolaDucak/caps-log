@@ -71,7 +71,7 @@ void Promptable::loadingScreen(std::string message) {
     m_depth = kIndexSpinner;
 }
 
-Element Promptable::Render() {
+Element Promptable::OnRender() {
     if (m_depth == 0) {
         return m_main->Render();
     }
