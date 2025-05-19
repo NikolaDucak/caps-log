@@ -10,7 +10,7 @@ class Preview : public ftxui::ComponentBase {
     ftxui::Element m_title = ftxui::text("log preview");
 
   public:
-    ftxui::Element Render() override;
+    ftxui::Element OnRender() override;
     [[nodiscard]] bool Focusable() const override;
     bool OnEvent(ftxui::Event event) override;
 

@@ -2,6 +2,7 @@
 #include "view/calendar_component.hpp"
 #include <filesystem>
 #include <fstream>
+#include <ftxui/component/event.hpp>
 #include <gtest/gtest.h>
 
 using namespace std::chrono_literals;

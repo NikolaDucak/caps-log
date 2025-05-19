@@ -36,7 +36,7 @@ AnnualView::AnnualView(const std::chrono::year_month_day &today, bool sundayStar
 
 void AnnualView::run() {
     // Caps-log expects the terminal to be at least 80x24
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     Terminal::SetFallbackSize(Dimensions{/*dimx=*/80, /*dimy=*/24});
     m_screen.Loop(m_rootComponent);
 }

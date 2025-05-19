@@ -4,6 +4,7 @@
 #include "utils/date.hpp"
 #include "view/ftxui_ext/extended_containers.hpp"
 
+#include <ftxui/component/event.hpp>
 #include <ftxui/screen/screen.hpp>
 #include <ftxui/screen/terminal.hpp>
 #include <memory>
@@ -108,7 +109,7 @@ bool Calendar::OnEvent(ftxui::Event event) {
     return result;
 }
 
-ftxui::Element Calendar::Render() {
+ftxui::Element Calendar::OnRender() {
     if (Focused()) {
         return m_root->Render();
     }
