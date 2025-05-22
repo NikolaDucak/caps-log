@@ -261,6 +261,34 @@ TEST_F(ControllerTest, AddLog_AddedEmptyLogGetsRemoved) {
     capsLog.run();
 }
 
+TEST_F(ControllerTest, AddLog_AddedLogWithTemplateOnlyGetsRemoved) {
+    auto capsLog = makeCapsLog();
+    EXPECT_FALSE(mockView->getDummyView().m_datesWithLogs->contains(date::monthDay(day1)));
+
+    ON_CALL(*mockView, run()).WillByDefault([&] {
+        EXPECT_CALL(*mockEditor, openEditor(_))
+            .WillOnce([&](const auto &) {
+                // Assert only base template has been written
+                auto baseLog = mockRepo->getDummyRepo().read(day1);
+                ASSERT_TRUE(baseLog);
+                EXPECT_EQ(baseLog->getContent(), date::formatToString(day1, kLogBaseTemplate));
+            })
+            .WillOnce([&](const auto &) {
+                // Write an empty log
+                mockRepo->getDummyRepo().write(
+                    {day1, utils::date::formatToString(day1, kLogBaseTemplate) +
+                               "\n\t"}); // extra whitespace to test trimming
+            });
+
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_FALSE(mockRepo->getDummyRepo().read(day1));
+
+        capsLog.handleInputEvent(UIEvent{OpenLogFile{day1}});
+        EXPECT_FALSE(mockRepo->getDummyRepo().read(day1));
+    });
+    capsLog.run();
+}
+
 TEST_F(ControllerTest, AddLog_ConfigSkipsFirstSection) {
     {
         auto capsLog = makeCapsLog();
