@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "utils/date.hpp"
+#include "utils/string.hpp"
 
 #include <algorithm>
 #include <fmt/format.h>
@@ -18,7 +19,7 @@ namespace {
 
 [[nodiscard]] bool noMeaningfulContent(const std::string &content,
                                        const std::chrono::year_month_day &date) {
-    return content == date::formatToString(date, kLogBaseTemplate) || content.empty();
+    return utils::trim(content) == date::formatToString(date, kLogBaseTemplate) || content.empty();
 }
 
 [[nodiscard]] std::string makePreviewTitle(std::chrono::year_month_day date,
