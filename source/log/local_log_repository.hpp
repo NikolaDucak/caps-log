@@ -17,16 +17,32 @@ class LocalFSLogFilePathProvider {
     LocalFSLogFilePathProvider(const std::filesystem::path &logDir, std::string logFilenameFormat)
         : m_logDirectory{logDir}, m_logFilenameFormat{std::move(logFilenameFormat)} {}
 
-    [[nodiscard]] inline std::filesystem::path path(const std::chrono::year_month_day &date) const {
+    [[nodiscard]] std::filesystem::path path(const std::chrono::year_month_day &date) const {
         return {m_logDirectory / fmt::format("y{}", (int)date.year()) /
                 utils::date::formatToString(date, m_logFilenameFormat)};
     }
 
-    [[nodiscard]] inline std::filesystem::path getLogDirPath() const { return m_logDirectory; }
-    [[nodiscard]] inline std::string getLogFilenameFormat() const { return m_logFilenameFormat; }
+    [[nodiscard]] std::filesystem::path getLogDirPath() const { return m_logDirectory; }
+    [[nodiscard]] std::string getLogFilenameFormat() const { return m_logFilenameFormat; }
+};
+
+class LocalScratchpadRepository : public ScratchpadRepositoryBase {
+    std::filesystem::path m_scratchpadDirPath;
+    std::string m_password;
+
+  public:
+    explicit LocalScratchpadRepository(std::filesystem::path scratchpadDirPath,
+                                       std::string password = "");
+
+    [[nodiscard]] Scratchpads read() const override;
+    void remove(std::string name) override;
+    void rename(std::string oldName, std::string newName) override;
 };
 
 class LocalLogRepository : public LogRepositoryBase {
+    LocalFSLogFilePathProvider m_pathProvider;
+    std::string m_password;
+
   public:
     explicit LocalLogRepository(LocalFSLogFilePathProvider pathProvider, std::string password = "");
 
@@ -34,10 +50,6 @@ class LocalLogRepository : public LogRepositoryBase {
     read(const std::chrono::year_month_day &date) const override;
     void remove(const std::chrono::year_month_day &date) override;
     void write(const LogFile &log) override;
-
-  private:
-    LocalFSLogFilePathProvider m_pathProvider;
-    std::string m_password;
 };
 
 } // namespace caps_log::log

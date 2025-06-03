@@ -21,8 +21,6 @@ class WindowedMenu : public ftxui::ComponentBase {
   public:
     explicit WindowedMenu(const WindowedMenuOption &option) {
         using namespace ftxui;
-        static constexpr auto kWidth = 25;
-        static constexpr auto kHeight = 20;
 
         MenuOption menuOption;
         menuOption.entries = option.entries;
@@ -31,8 +29,8 @@ class WindowedMenu : public ftxui::ComponentBase {
 
         auto menuComponent = Menu(std::move(menuOption));
         auto menuRenderer = Renderer(menuComponent, [title = option.title, menu = menuComponent]() {
-            auto windowElement = window(text(title), menu->Render() | frame) |
-                                 size(WIDTH, EQUAL, kWidth) | size(HEIGHT, EQUAL, kHeight);
+            auto windowElement = window(text(title), menu->Render() | vscroll_indicator | frame);
+
             if (not menu->Focused()) {
                 windowElement |= dim;
             }

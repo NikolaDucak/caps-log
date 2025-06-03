@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "utils/date.hpp"
 #include "utils/string.hpp"
+#include "view/view.hpp"
 
 #include <algorithm>
 #include <fmt/format.h>
@@ -51,9 +52,24 @@ namespace {
     return title;
 }
 
+[[nodiscard]] auto makeViewModelForScratchpads(const std::vector<Scratchpad> &scratchpads) {
+    std::vector<view::ScratchpadData> viewScratchpads;
+    viewScratchpads.reserve(scratchpads.size());
+
+    for (const auto &scratchpad : scratchpads) {
+        viewScratchpads.emplace_back(view::ScratchpadData{
+            .title = scratchpad.title,
+            .content = scratchpad.content,
+            .dateModified = scratchpad.dateModified,
+        });
+    }
+    return viewScratchpads;
+}
+
 } // namespace
 
-ViewDataUpdater::ViewDataUpdater(std::shared_ptr<AnnualViewBase> view, const AnnualLogData &data)
+ViewDataUpdater::ViewDataUpdater(std::shared_ptr<AnnualViewLayoutBase> view,
+                                 const AnnualLogData &data)
     : m_view{std::move(view)}, m_data{data} {}
 
 void ViewDataUpdater::handleFocusedTagChange() {
@@ -204,8 +220,8 @@ MenuItems ViewDataUpdater::makeSectionMenuItems() {
 void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog) {
     m_data.collect(m_repo, dateOfChangedLog, m_config.skipFirstLine);
     std::string previewString;
-    if (dateOfChangedLog == m_view->getFocusedDate()) {
-        if (auto log = m_repo->read(m_view->getFocusedDate())) {
+    if (dateOfChangedLog == m_view->getAnnualViewLayout()->getFocusedDate()) {
+        if (auto log = m_repo->read(m_view->getAnnualViewLayout()->getFocusedDate())) {
             previewString = log->getContent();
         }
     }
@@ -214,16 +230,17 @@ void App::updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dat
                                                 previewString);
 }
 
-App::App(std::shared_ptr<AnnualViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
+App::App(std::shared_ptr<ViewBase> view, std::shared_ptr<LogRepositoryBase> repo,
+         std::shared_ptr<ScratchpadRepositoryBase> scratchpadRepo,
          std::shared_ptr<EditorBase> editor, std::optional<GitRepo> gitRepo, AppConfig config)
     : m_config{std::move(config)}, m_view{std::move(view)}, m_repo{std::move(repo)},
-      m_editor{std::move(editor)},
+      m_scratchpadRepo{std::move(scratchpadRepo)}, m_editor{std::move(editor)},
       m_data{AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine)},
-      m_viewDataUpdater{m_view, m_data} {
+      m_viewDataUpdater{m_view->getAnnualViewLayout(), m_data} {
     m_view->setInputHandler(this);
-    m_view->setDatesWithLogs(&m_data.datesWithLogs);
-    m_view->setEventDates(&m_config.events);
-    updateDataAndViewAfterLogChange(m_view->getFocusedDate());
+    m_view->getAnnualViewLayout()->setDatesWithLogs(&m_data.datesWithLogs);
+    m_view->getAnnualViewLayout()->setEventDates(&m_config.events);
+    updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
 
     if (gitRepo) {
         m_gitRepo.emplace(std::move(*gitRepo));
@@ -239,7 +256,13 @@ bool App::handleInputEvent(const UIEvent &event) {
             if constexpr (std::is_same_v<T, DisplayedYearChange>) {
                 handleDisplayedYearChange(arg.year);
             } else if constexpr (std::is_same_v<T, OpenLogFile>) {
-                handleCalendarButtonClick();
+                handleOpenLogFile();
+            } else if constexpr (std::is_same_v<T, OpenScratchpad>) {
+                handleOpenScratchpad(arg.name);
+            } else if constexpr (std::is_same_v<T, DeleteScratchpad>) {
+                handleDeleteScratchpad(arg.name);
+            } else if constexpr (std::is_same_v<T, RenameScratchpad>) {
+                handleRenameScratchpad(arg.name);
             } else if constexpr (std::is_same_v<T, UiStarted>) {
                 handleUiStarted();
             } else if constexpr (std::is_same_v<T, FocusedDateChange>) {
@@ -265,6 +288,8 @@ bool App::handleRootEvent(const std::string &input) {
         handleDisplayedYearChange(+1);
     } else if (input == "-") {
         handleDisplayedYearChange(-1);
+    } else if (input == "s") {
+        handleSwitchLayout();
     } else {
         return false;
     }
@@ -272,13 +297,20 @@ bool App::handleRootEvent(const std::string &input) {
     return true;
 }
 
-void App::handleFocusedDateChange() {
+void App::handleSwitchLayout() {
+    // todo: switch to scratchpad view if not already there
+    auto scratchapds = m_scratchpadRepo->read();
+    m_view->getScratchpadViewLayout()->setScratchpads(makeViewModelForScratchpads(scratchapds));
+    m_view->switchLayout();
+}
 
-    const auto title = makePreviewTitle(m_view->getFocusedDate(), m_config.events);
-    if (auto log = m_repo->read(m_view->getFocusedDate())) {
-        m_view->setPreviewString(title, log->getContent());
+void App::handleFocusedDateChange() {
+    const auto title =
+        makePreviewTitle(m_view->getAnnualViewLayout()->getFocusedDate(), m_config.events);
+    if (auto log = m_repo->read(m_view->getAnnualViewLayout()->getFocusedDate())) {
+        m_view->getAnnualViewLayout()->setPreviewString(title, log->getContent());
     } else {
-        m_view->setPreviewString(title, "");
+        m_view->getAnnualViewLayout()->setPreviewString(title, "");
     }
 }
 
@@ -288,13 +320,13 @@ void App::handleFocusedSectionChange() { m_viewDataUpdater.handleFocusedSectionC
 
 void App::handleUiStarted() {
     if (m_gitRepo) {
-        m_view->loadingScreen("Pulling from remote...");
+        m_view->getPopUpView().show(PopUpViewBase::Loading{"Pulling from remote..."});
         m_gitRepo->pull([this] {
             m_view->post([this] {
                 m_data =
                     AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
-                updateDataAndViewAfterLogChange(m_view->getFocusedDate());
-                m_view->loadingScreenOff();
+                updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
+                m_view->getPopUpView().show(PopUpViewBase::None{});
             });
         });
     }
@@ -302,7 +334,7 @@ void App::handleUiStarted() {
 
 void App::quit() {
     if (m_gitRepo) {
-        m_view->loadingScreen("Committing & pushing...");
+        m_view->getPopUpView().show(PopUpViewBase::Loading{"Committing & pushing..."});
         m_gitRepo->commitAll([this](bool somethingCommitted) {
             if (somethingCommitted) {
                 m_gitRepo->push([this] { m_view->stop(); });
@@ -316,38 +348,129 @@ void App::quit() {
 }
 
 void App::deleteFocusedLog() {
-    auto date = m_view->getFocusedDate();
+    auto date = m_view->getAnnualViewLayout()->getFocusedDate();
     if (m_data.datesWithLogs.contains(date::monthDay(date))) {
-        m_view->prompt("Are you sure you want to delete a log file?", [date, this] {
-            m_repo->remove(date);
-            updateDataAndViewAfterLogChange(date);
-        });
+        m_view->getPopUpView().show(PopUpViewBase::YesNo{
+            "Are you sure you want to delete a log file?", [date, this](const auto &result) {
+                if (std::holds_alternative<PopUpViewBase::Result::Yes>(result)) {
+                    m_repo->remove(date);
+                    updateDataAndViewAfterLogChange(date);
+                }
+            }});
     }
 }
 
 void App::handleDisplayedYearChange(int diff) {
     m_config.currentYear = std::chrono::year{static_cast<int>(m_config.currentYear) + diff};
     m_data = AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
-    m_view->showCalendarForYear(m_config.currentYear);
-    m_view->setHighlightedDates(nullptr);
-    updateDataAndViewAfterLogChange(m_view->getFocusedDate());
+    m_view->getAnnualViewLayout()->showCalendarForYear(m_config.currentYear);
+    m_view->getAnnualViewLayout()->setHighlightedDates(nullptr);
+    updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
 }
 
-void App::handleCalendarButtonClick() {
+bool hasSuffix(const std::string &str, const std::string &suffix) {
+    return str.size() >= suffix.size() &&
+           str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+void App::handleOpenScratchpad(std::string name) {
     if (m_editor == nullptr) {
         return;
     }
-    m_view->withRestoredIO([this]() {
-        auto date = m_view->getFocusedDate();
-        auto log = m_repo->read(date);
-        if (not log.has_value()) {
-            m_repo->write({date, date::formatToString(date, kLogBaseTemplate)});
-            // this looks a little awkward, it's easy to forget to reread after write
-            log = m_repo->read(date);
-        }
 
-        assert(log);
-        m_editor->openEditor(*log);
+    if (name.empty()) {
+        m_view->getPopUpView().show(PopUpViewBase::TextBox{
+            "Enter the name of the scratchpad to open:", [this](const auto &name) {
+                if (std::holds_alternative<PopUpViewBase::Result::Input>(name)) {
+                    auto nameStr = std::get<PopUpViewBase::Result::Input>(name).text;
+                    if (nameStr.empty()) {
+                        m_view->getPopUpView().show(
+                            PopUpViewBase::Ok{"Scratchpad name cannot be empty."});
+                        return;
+                    }
+                    nameStr = utils::trim(nameStr);
+
+                    // if name doesn't end with .md, add it
+                    if (!hasSuffix(nameStr, ".md")) {
+                        nameStr += ".md";
+                    }
+
+                    handleOpenScratchpad(nameStr);
+                }
+            }});
+    } else {
+        m_view->withRestoredIO([this, &name]() {
+            m_editor->openScratchpad(name);
+            auto scratchpads = m_scratchpadRepo->read();
+            m_view->getScratchpadViewLayout()->setScratchpads(
+                makeViewModelForScratchpads(scratchpads));
+        });
+    }
+}
+
+void App::handleRenameScratchpad(std::string name) {
+    if (name.empty()) {
+        return;
+    }
+    auto message = fmt::format("Enter the new name for the scratchpad \"{}\":", name);
+
+    m_view->getPopUpView().show(PopUpViewBase::TextBox{
+        message, [this, name](const auto &input) {
+            if (std::holds_alternative<PopUpViewBase::Result::Input>(input)) {
+                auto newName = std::get<PopUpViewBase::Result::Input>(input).text;
+                if (newName.empty()) {
+                    m_view->getPopUpView().show(
+                        PopUpViewBase::Ok{"Scratchpad name cannot be empty."});
+                    return;
+                }
+                newName = utils::trim(newName);
+
+                // if name doesn't end with .md, add it
+                if (!hasSuffix(newName, ".md")) {
+                    newName += ".md";
+                }
+
+                m_scratchpadRepo->rename(name, newName);
+                auto scratchpads = m_scratchpadRepo->read();
+                m_view->getScratchpadViewLayout()->setScratchpads(
+                    makeViewModelForScratchpads(scratchpads));
+            }
+        }});
+}
+
+void App::handleDeleteScratchpad(std::string name) {
+    if (name.empty()) {
+        return;
+    }
+
+    m_view->getPopUpView().show(PopUpViewBase::YesNo{
+        fmt::format("Are you sure you want to delete the scratchpad \"{}\"?", name),
+        [this, name](const auto &result) {
+            if (std::holds_alternative<PopUpViewBase::Result::Yes>(result)) {
+                m_scratchpadRepo->remove(name);
+                m_view->getScratchpadViewLayout()->setScratchpads(
+                    makeViewModelForScratchpads(m_scratchpadRepo->read()));
+            }
+        }});
+}
+
+void App::handleOpenLogFile() {
+    if (m_editor == nullptr) {
+        return;
+    }
+
+    // otherwise, open the editor for the focused log
+    auto date = m_view->getAnnualViewLayout()->getFocusedDate();
+    auto log = m_repo->read(date);
+    if (not log.has_value()) {
+        m_repo->write({date, date::formatToString(date, kLogBaseTemplate)});
+
+        // this looks a little awkward, it's easy to forget to reread after write
+        log = m_repo->read(date);
+    }
+
+    assert(log);
+    m_view->withRestoredIO([this, &log, date]() {
+        m_editor->openLog(*log);
 
         // check that after editing still exists
         log = m_repo->read(date);

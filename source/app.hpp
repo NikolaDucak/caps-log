@@ -4,8 +4,9 @@
 #include "log/annual_log_data.hpp"
 #include "log/log_repository_base.hpp"
 #include "utils/async_git_repo.hpp"
-#include "view/annual_view_base.hpp"
+#include "view/annual_view_layout_base.hpp"
 #include "view/input_handler.hpp"
+#include "view/view.hpp"
 
 #include <cassert>
 #include <chrono>
@@ -23,13 +24,13 @@ const std::string kLogBaseTemplate{"# %d. %m. %y."};
  * new one or update an existing one.
  */
 class ViewDataUpdater final {
-    std::shared_ptr<view::AnnualViewBase> m_view;
-    const log::AnnualLogData &m_data;
+    std::shared_ptr<view::AnnualViewLayoutBase> m_view;
+    const log::AnnualLogData &m_data; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
     std::map<std::string, view::MenuItems> m_tagMenuItemsPerSection;
     static constexpr auto kSelectNoneMenuEntryText = "<select none>";
 
   public:
-    explicit ViewDataUpdater(std::shared_ptr<view::AnnualViewBase> view,
+    explicit ViewDataUpdater(std::shared_ptr<view::AnnualViewLayoutBase> view,
                              const log::AnnualLogData &data);
 
     void handleFocusedTagChange();
@@ -56,15 +57,17 @@ struct AppConfig {
  */
 class App final : public view::InputHandlerBase {
     AppConfig m_config;
-    std::shared_ptr<view::AnnualViewBase> m_view;
+    std::shared_ptr<view::ViewBase> m_view;
     std::shared_ptr<log::LogRepositoryBase> m_repo;
+    std::shared_ptr<log::ScratchpadRepositoryBase> m_scratchpadRepo;
     std::shared_ptr<editor::EditorBase> m_editor;
     log::AnnualLogData m_data;
     std::optional<utils::AsyncGitRepo> m_gitRepo;
     ViewDataUpdater m_viewDataUpdater;
 
   public:
-    App(std::shared_ptr<view::AnnualViewBase> view, std::shared_ptr<log::LogRepositoryBase> repo,
+    App(std::shared_ptr<view::ViewBase> view, std::shared_ptr<log::LogRepositoryBase> repo,
+        std::shared_ptr<log::ScratchpadRepositoryBase> scratchpadRepo,
         std::shared_ptr<editor::EditorBase> editor,
         std::optional<utils::GitRepo> gitRepo = std::nullopt, AppConfig config = {});
     App(const App &) = delete;
@@ -83,7 +86,11 @@ class App final : public view::InputHandlerBase {
     void handleFocusedSectionChange();
     void handleUiStarted();
     void handleDisplayedYearChange(int diff);
-    void handleCalendarButtonClick();
+    void handleOpenScratchpad(std::string name);
+    void handleDeleteScratchpad(std::string name);
+    void handleRenameScratchpad(std::string name);
+    void handleOpenLogFile();
+    void handleSwitchLayout();
 
     void updateDataAndViewAfterLogChange(const std::chrono::year_month_day &dateOfChangedLog);
     void deleteFocusedLog();

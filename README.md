@@ -6,25 +6,22 @@
 
 ## What It Does
 
-Daily entries are saved locally as Markdown files. Level 1 headers are
-interpreted as 'sections', and unordered lists beginning with the '*' character
-are interpreted as 'tags'. Titles of these sections and tags are then displayed
-in two menus. When selecting a section, tag menu will list out only the tags 
-found under the selected section. If no section is selected, tag menu will 
-display all tags found. Selecting an item in these menus highlights the dates 
-with mentions of that tag or title in the calendar. This feature provides a 
-visual representation of how (in)consistent your habits and activities are.
-
-Clicking on a date or pressing enter when a date is focused will open that log
-file in an editor, if possible. Currently, `Caps-Log` uses your `$EDITOR`
-environment variable to start the editor, if set. Otherwise, this functionality
-is disabled. This integration looks particularly impressive with terminal-based
-editors.
-
-Additionally, `caps-log` also has a primitive 'remote storage' feture in the form
-of using a git repository with a remote to push and pull data. (See
-[Configuration & Command Line Options](#configuration--command-line-options)
-section below)
+- Daily entries saved as Markdown files
+- Sections and tags for organizing entries (level 1 headers for sections, 
+  unordered lists starting with '*' for tags) [Log Entry Tags and Sections](#log-entry-tags-and-sections)
+- Two menus for navigating sections and tags
+- Browse tags under a specific section or all tags 
+- Calendar view highlighting dates with mentions of selected tags or sections, 
+  providing a visual representation of habits and activities
+- Calendar view highlighting dates with log entries, allowing you to see when you 
+  wrote something
+- Calendar view highlighting dates with annual events, such as birthdays and
+  holidays, allowing you to see when you have an event coming up [Cofiguration & Command Line Options](#configuration--command-line-options)
+- Open log entries in your preferred editor using `$EDITOR` environment variable
+- Primitive remote storage feature using a git repository with a remote for 
+  pushing and pulling data [Configuration & Command Line Options](#configuration--command-line-options)
+- Scratchpad feature for quick note-taking without creating a new log entry
+- Encrypted logs using AES encryption algorithm for added security [Encrypting Logs](#encrypting-logs)
 
 **Note**
 
@@ -47,12 +44,15 @@ improved in the future.
 
 ## Keybindings
 
-- `Tab` or `Shift + Tab` = Switch focus between the calendar and menus.
-- `h` or arrow keys = Navigate within the calendar or menus.
-- `Enter` = Highlight logs containing a specific tag/section or open the log
-  entry in `$EDITOR` for the date under the cursor.
-- `D` = Delete the log under the cursor if the calendar is focused.
-- `+` / `-` = Navigate to the next / previous year's calendar.
+| Keybinding | Action |
+|------------|--------|
+| `Tab` / `Shift + Tab` | Switch focus between the calendar and menus |
+| `hjklr` / arrow keys | Navigate within the calendar or menus |
+| `Enter` |  Open the log entry in `$EDITOR` for the date under the cursor |
+| `d` | Delete the log under the cursor if the calendar is focused |
+| `s` | Toggle scratchpad mode |
+| `+` / `-` | Navigate to the next / previous year's calendar |
+
 
 ## Log Entry Tags and Sections
 
@@ -100,7 +100,7 @@ caps-log --decrypt --password <your password>
 
 ## Configuration & Command Line Options
 
-_Command Line Options_
+__Command Line Options__
 
 ```
 Allowed options:
@@ -124,7 +124,7 @@ Allowed options:
                                         directory path (requires --password).
 ```
 
-_Config File_
+__Config File__
 
 most of the command line flags can be set through a config file.
 

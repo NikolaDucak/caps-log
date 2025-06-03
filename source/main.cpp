@@ -15,7 +15,6 @@
 #include "log/local_log_repository.hpp"
 #include "log/log_repository_crypto_applier.hpp"
 #include "utils/git_repo.hpp"
-#include "view/annual_view.hpp"
 #include <boost/program_options.hpp>
 
 /**
@@ -79,7 +78,6 @@ void migrateToNewRepoStructureIfNeeded(
         std::filesystem::rename(entry.path(), newPath);
     }
 }
-
 std::string promptPassword(const caps_log::Config &config) {
     using namespace ftxui;
     auto screen = ScreenInteractive::Fullscreen();
@@ -89,11 +87,12 @@ std::string promptPassword(const caps_log::Config &config) {
                                          .multiline = false,
                                          .on_enter = screen.ExitLoopClosure()});
     const auto buttonSubmit = Button("Submit", screen.ExitLoopClosure(), ButtonOption::Ascii());
+    bool shouldExit = false;
     const auto buttonQuit = Button(
         "Quit",
         [&]() {
+            shouldExit = true;
             screen.Exit();
-            std::exit(0);
         },
         ButtonOption::Ascii());
     const auto container = Container::Vertical({input, buttonSubmit, buttonQuit});
@@ -103,6 +102,9 @@ std::string promptPassword(const caps_log::Config &config) {
     });
 
     screen.Loop(renderer);
+    if (shouldExit) {
+        std::exit(0);
+    }
     return password;
 }
 
@@ -118,9 +120,13 @@ auto makeCapsLog(const caps_log::Config &conf) {
     using namespace caps_log;
     const auto password = getPasswordFromTUIIfNeededAndNotProvided(conf);
     auto pathProvider = log::LocalFSLogFilePathProvider{conf.logDirPath, conf.logFilenameFormat};
-    auto view = std::make_shared<view::AnnualView>(utils::date::getToday(), conf.sundayStart,
-                                                   conf.recentEventsWindow);
+    auto view = std::make_shared<view::View>(
+        view::ViewConfig{.today = utils::date::getToday(),
+                         .sundayStart = conf.sundayStart,
+                         .recentEventsWindow = conf.recentEventsWindow});
     auto repo = std::make_shared<log::LocalLogRepository>(pathProvider, password);
+    auto scratchpadRepo = std::make_shared<log::LocalScratchpadRepository>(
+        conf.logDirPath / Config::kDefaultScratchpadFolderName, password);
     auto editor = [&]() -> std::shared_ptr<editor::EditorBase> {
         auto *const envEditor = std::getenv("EDITOR");
         if (envEditor == nullptr) {
@@ -128,9 +134,12 @@ auto makeCapsLog(const caps_log::Config &conf) {
         }
         const auto editorCmd = std::string(envEditor);
         if (password.empty()) {
-            return std::make_shared<editor::DefaultEditor>(pathProvider, editorCmd);
+            return std::make_shared<editor::DefaultEditor>(
+                pathProvider, conf.logDirPath / Config::kDefaultScratchpadFolderName, editorCmd);
         }
-        return std::make_shared<editor::EncryptedDefaultEditor>(pathProvider, password, editorCmd);
+        return std::make_shared<editor::EncryptedDefaultEditor>(
+            pathProvider, conf.logDirPath / Config::kDefaultScratchpadFolderName, password,
+            editorCmd);
     }();
     auto gitRepo = [&]() -> std::optional<utils::GitRepo> {
         if (conf.repoConfig) {
@@ -143,12 +152,14 @@ auto makeCapsLog(const caps_log::Config &conf) {
 
     migrateToNewRepoStructureIfNeeded(pathProvider);
 
-    AppConfig appConf;
-    appConf.skipFirstLine = conf.ignoreFirstLineWhenParsingSections;
-    appConf.events = conf.calendarEvents;
-    appConf.currentYear = utils::date::getToday().year();
-    return caps_log::App{std::move(view), std::move(repo), std::move(editor), std::move(gitRepo),
-                         std::move(appConf)};
+    AppConfig appConf{
+        .skipFirstLine = conf.ignoreFirstLineWhenParsingSections,
+        .currentYear = utils::date::getToday().year(),
+        .events = conf.calendarEvents,
+    };
+
+    return caps_log::App{std::move(view),   std::move(repo),    std::move(scratchpadRepo),
+                         std::move(editor), std::move(gitRepo), std::move(appConf)};
 }
 
 int main(int argc, const char **argv) try {
@@ -158,13 +169,13 @@ int main(int argc, const char **argv) try {
         [](const auto &path) { return std::make_unique<std::ifstream>(path); }, cliOpts);
 
     if (cliOpts.contains("--encrypt")) {
-        caps_log::LogRepositoryCryptoApplier::apply(config.password, config.logDirPath,
-                                                    config.logFilenameFormat,
-                                                    caps_log::Crypto::Encrypt);
+        caps_log::LogRepositoryCryptoApplier::apply(
+            config.password, config.logDirPath, caps_log::Config::kDefaultScratchpadFolderName,
+            config.logFilenameFormat, caps_log::Crypto::Encrypt);
     } else if (cliOpts.contains("--decrypt")) {
-        caps_log::LogRepositoryCryptoApplier::apply(config.password, config.logDirPath,
-                                                    config.logFilenameFormat,
-                                                    caps_log::Crypto::Decrypt);
+        caps_log::LogRepositoryCryptoApplier::apply(
+            config.password, config.logDirPath, caps_log::Config::kDefaultScratchpadFolderName,
+            config.logFilenameFormat, caps_log::Crypto::Decrypt);
     } else {
         makeCapsLog(config).run();
     }

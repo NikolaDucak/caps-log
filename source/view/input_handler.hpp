@@ -16,6 +16,16 @@ struct DisplayedYearChange {
 struct OpenLogFile {
     std::chrono::year_month_day date{};
 };
+// TODO: rethink events, some are handled by view and some by input handler
+struct OpenScratchpad {
+    std::string name;
+};
+struct DeleteScratchpad {
+    std::string name;
+};
+struct RenameScratchpad {
+    std::string name;
+};
 struct UnhandledRootEvent {
     std::string input;
 };
@@ -25,7 +35,8 @@ struct UnhandledRootEvent {
  * It is used to handle different types of events in a unified way.
  */
 using UIEvent = std::variant<UiStarted, DisplayedYearChange, OpenLogFile, FocusedSectionChange,
-                             FocusedTagChange, FocusedDateChange, UnhandledRootEvent>;
+                             FocusedTagChange, FocusedDateChange, UnhandledRootEvent,
+                             OpenScratchpad, DeleteScratchpad, RenameScratchpad>;
 
 /**
  * @brief A base class for handling input events in the application.
