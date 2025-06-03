@@ -17,13 +17,13 @@ add_executable(
   ./utils/crypto.cpp
   ./utils/crypto.hpp
   ./utils/date.hpp
-  ./utils/string.hpp
-  ./utils/task_executor.hpp
   ./utils/git_repo.cpp
   ./utils/git_repo.hpp
-  ./view/annual_view.cpp
-  ./view/annual_view.hpp
-  ./view/annual_view_base.hpp
+  ./utils/string.hpp
+  ./utils/task_executor.hpp
+  ./view/annual_view_layout.cpp
+  ./view/annual_view_layout.hpp
+  ./view/annual_view_layout_base.hpp
   ./view/calendar_component.cpp
   ./view/calendar_component.hpp
   ./view/ftxui_ext/extended_containers.cpp
@@ -31,8 +31,13 @@ add_executable(
   ./view/input_handler.hpp
   ./view/preview.cpp
   ./view/preview.hpp
-  ./view/promptable.cpp
-  ./view/promptable.hpp)
+  ./view/scratchpad_view_layout.cpp
+  ./view/scratchpad_view_layout.hpp
+  ./view/scratchpad_view_layout_base.hpp
+  ./view/view.cpp
+  ./view/view.hpp
+  ./view/view_layout_base.hpp
+)
 
 target_include_directories(
   caps-log 

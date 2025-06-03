@@ -19,7 +19,8 @@ class EditorBase {
     EditorBase &operator=(EditorBase &&) = default;
     virtual ~EditorBase() = default;
 
-    virtual void openEditor(const caps_log::log::LogFile &log) = 0;
+    virtual void openLog(const caps_log::log::LogFile &log) = 0;
+    virtual void openScratchpad(const std::string &scratchpadName) = 0;
 };
 
 } // namespace caps_log::editor

@@ -78,6 +78,7 @@ bool cryptoAlreadyApplied(const std::filesystem::path &logDirPath, Crypto crypto
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 void LogRepositoryCryptoApplier::apply(const std::string &password,
                                        const std::filesystem::path &logDirPath,
+                                       const std::string &scratchpadFolderName,
                                        const std::string &logFilenameFormat, Crypto crypto) {
     if (cryptoAlreadyApplied(logDirPath, crypto)) {
         throw CryptoAlreadyAppliedError{"Already applied"};
@@ -90,7 +91,7 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
     std::vector<std::exception> errors; // Accumulate errors here
 
     // Function to process individual log files
-    const auto processLogFile = [&](const std::filesystem::directory_entry &entry) {
+    const auto encryptFileContents = [&](const std::filesystem::directory_entry &entry) {
         if (auto ifsOpt = openInputFileStream(entry.path())) {
             std::istream &ifs = *ifsOpt;
             std::string fileContentsAfterCrypto = (crypto == Crypto::Encrypt)
@@ -128,10 +129,27 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
                 continue;
             }
             try {
-                processLogFile(subEntry);
+                encryptFileContents(subEntry);
             } catch (const std::exception &e) {
                 // Do not throw here, accumulate errors instead
                 errors.push_back(e);
+            }
+        }
+    }
+
+    // Apply the encryption to "scratchapds" sub-directory if it exists
+    const auto scratchpadDirPath = logDirPath / scratchpadFolderName;
+    if (std::filesystem::exists(scratchpadDirPath) &&
+        std::filesystem::is_directory(scratchpadDirPath)) {
+        for (const auto &entry : std::filesystem::directory_iterator{scratchpadDirPath}) {
+            // is markdown file
+            if (entry.is_regular_file() && entry.path().extension() == ".md") {
+                try {
+                    encryptFileContents(entry);
+                } catch (const std::exception &e) {
+                    // Do not throw here, accumulate errors instead
+                    errors.push_back(e);
+                }
             }
         }
     }

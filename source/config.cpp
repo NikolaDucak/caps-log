@@ -8,10 +8,12 @@
 #include <iostream>
 
 namespace caps_log {
+using boost::program_options::variables_map;
 
 const std::string Config::kDefaultConfigLocation =
     std::getenv("HOME") + std::string{"/.caps-log/config.ini"};
 const std::string Config::kDefaultLogDirPath = std::getenv("HOME") + std::string{"/.caps-log/day"};
+const std::string Config::kDefaultScratchpadFolderName = "scratchpads";
 const std::string Config::kDefaultLogFilenameFormat = "d%Y_%m_%d.md";
 const bool Config::kDefaultSundayStart = false;
 const bool Config::kDefaultIgnoreFirstLineWhenParsingSections = true;
@@ -225,7 +227,7 @@ Config Config::make(const FileReader &fileReader,
     }
 }
 
-boost::program_options::variables_map parseCLIOptions(std::span<const char *> args) {
+variables_map parseCLIOptions(std::span<const char *> argv) {
     namespace po = boost::program_options;
 
     po::options_description desc("Allowed options");
@@ -243,7 +245,7 @@ boost::program_options::variables_map parseCLIOptions(std::span<const char *> ar
     // clang-format on
 
     po::variables_map vmap;
-    po::store(po::parse_command_line(static_cast<int>(args.size()), args.data(), desc), vmap);
+    po::store(po::parse_command_line(static_cast<int>(argv.size()), argv.data(), desc), vmap);
     po::notify(vmap);
 
     if (vmap.contains("help")) {

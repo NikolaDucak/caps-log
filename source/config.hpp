@@ -1,4 +1,4 @@
-#include "view/annual_view_base.hpp"
+#include "view/annual_view_layout_base.hpp"
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -31,6 +31,8 @@ struct Config {
 
     static const std::string kDefaultConfigLocation;
     static const std::string kDefaultLogDirPath;
+    // TODO: make this configurable, or not?
+    static const std::string kDefaultScratchpadFolderName;
     static const std::string kDefaultLogFilenameFormat;
     static const bool kDefaultSundayStart;
     static const bool kDefaultIgnoreFirstLineWhenParsingSections;
