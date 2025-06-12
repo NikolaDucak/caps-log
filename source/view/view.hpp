@@ -81,9 +81,8 @@ class ViewBase {
 };
 
 struct ViewConfig {
-    std::chrono::year_month_day today{};
-    bool sundayStart = false;
-    unsigned recentEventsWindow = 7;
+    bool sundayStart;
+    unsigned recentEventsWindow;
 };
 
 class View : public ViewBase, public InputHandlerBase {
@@ -93,9 +92,12 @@ class View : public ViewBase, public InputHandlerBase {
     std::shared_ptr<ScratchpadViewLayoutBase> m_scratchpadViewLayout;
     std::shared_ptr<class PopUpViewLayoutWrapper> m_rootWithPopUpSupport;
     InputHandlerBase *m_inputHandler = nullptr;
+    std::function<ftxui::Dimensions()> m_terminalSizeProvider;
+    bool m_running = false;
 
   public:
-    explicit View(const ViewConfig &conf);
+    View(const ViewConfig &conf, std::chrono::year_month_day today,
+         std::function<ftxui::Dimensions()> terminalSizeProvider);
     View(const View &) = delete;
     View(View &&) = delete;
     View &operator=(const View &) = delete;
@@ -118,6 +120,12 @@ class View : public ViewBase, public InputHandlerBase {
     bool handleInputEvent(const UIEvent &event) override;
 
     void switchLayout() override;
+
+    // testing tools
+
+    bool onEvent(ftxui::Event event);
+
+    [[nodiscard]] std::string render() const;
 };
 
 } // namespace caps_log::view

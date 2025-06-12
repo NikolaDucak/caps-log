@@ -5,6 +5,14 @@
 
 namespace caps_log::utils {
 
+struct GitRepoConfig {
+    std::filesystem::path root;
+    std::filesystem::path sshKeyPath;
+    std::filesystem::path sshPubKeyPath;
+    std::string mainBranchName = "master";
+    std::string remoteName = "origin";
+};
+
 /**
  * A utility class that manages the initialization of libgit2 and other required interactions with
  * the library. It deals with commit the files, pulling and pushing. It expect that the repository
@@ -33,9 +41,7 @@ class GitRepo {
     std::string m_sshKeyPath;
 
   public:
-    GitRepo(const std::filesystem::path &path, const std::filesystem::path &sshKeyPath,
-            const std::filesystem::path &sshPubKeyPath, std::string remoteName = "origin",
-            std::string mainBranchName = "master");
+    GitRepo(GitRepoConfig config);
 
     GitRepo(const GitRepo &) = delete;
     GitRepo(GitRepo &&) noexcept;

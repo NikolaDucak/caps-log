@@ -183,12 +183,13 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     }
 };
 
-View::View(const ViewConfig &conf) {
-    m_annualViewLayout = std::make_shared<AnnualViewLayout>(this, conf.today, conf.sundayStart,
-                                                            conf.recentEventsWindow);
-    m_scratchpadViewLayout = std::make_shared<ScratchpadViewLayout>(this);
-    m_rootWithPopUpSupport = std::make_shared<PopUpViewLayoutWrapper>(this);
-}
+View::View(const ViewConfig &conf, std::chrono::year_month_day today,
+           std::function<ftxui::Dimensions()> terminalSizeProvider)
+    : m_annualViewLayout{std::make_shared<AnnualViewLayout>(
+          this, terminalSizeProvider, today, conf.sundayStart, conf.recentEventsWindow)},
+      m_scratchpadViewLayout{std::make_shared<ScratchpadViewLayout>(this, terminalSizeProvider)},
+      m_rootWithPopUpSupport{std::make_shared<PopUpViewLayoutWrapper>(this)},
+      m_terminalSizeProvider{std::move(terminalSizeProvider)} {}
 
 PopUpViewBase &View::getPopUpView() { return *m_rootWithPopUpSupport; }
 
@@ -197,6 +198,7 @@ void View::run() {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     ftxui::Terminal::SetFallbackSize(ftxui::Dimensions{/*dimx=*/80, /*dimy=*/24});
     m_screen.Loop(m_rootWithPopUpSupport);
+    m_running = true;
 }
 
 void View::stop() { m_screen.Exit(); }
@@ -224,10 +226,29 @@ std::shared_ptr<ScratchpadViewLayoutBase> View::getScratchpadViewLayout() {
 }
 
 void View::withRestoredIO(std::function<void()> func) {
-    m_screen.WithRestoredIO(std::move(func))();
+    // We shouldn't ever trigger the function if we are not running, but for the purposes of
+    // testing, we allow it.
+    if (m_running) {
+        m_screen.WithRestoredIO(std::move(func))();
+    } else {
+        func();
+    }
 }
 
 void View::setInputHandler(InputHandlerBase *handler) { m_inputHandler = handler; }
 
 void View::switchLayout() { m_rootWithPopUpSupport->switchLayout(); }
+
+bool View::onEvent(ftxui::Event event) { return m_rootWithPopUpSupport->OnEvent(std::move(event)); }
+
+std::string View::render() const {
+    auto dimensitons = m_terminalSizeProvider();
+    ftxui::Screen screen{dimensitons.dimx, dimensitons.dimy};
+
+    auto root = m_rootWithPopUpSupport->Render();
+    ftxui::Render(screen, root);
+
+    return screen.ToString();
+}
+
 } // namespace caps_log::view

@@ -1,5 +1,6 @@
 #include "config.hpp"
-
+#include "log/log_repository_crypto_applier.hpp"
+#include "view/view.hpp"
 #include <boost/program_options/config.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -9,14 +10,6 @@
 
 namespace caps_log {
 using boost::program_options::variables_map;
-
-const std::string Config::kDefaultConfigLocation =
-    std::getenv("HOME") + std::string{"/.caps-log/config.ini"};
-const std::string Config::kDefaultLogDirPath = std::getenv("HOME") + std::string{"/.caps-log/day"};
-const std::string Config::kDefaultScratchpadFolderName = "scratchpads";
-const std::string Config::kDefaultLogFilenameFormat = "d%Y_%m_%d.md";
-const bool Config::kDefaultSundayStart = false;
-const bool Config::kDefaultIgnoreFirstLineWhenParsingSections = true;
 
 namespace {
 
@@ -55,7 +48,7 @@ std::optional<std::chrono::month_day> parseDate(const std::string &date_str) {
     return std::nullopt; // Return empty optional if parsing fails
 }
 
-view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &ptree) {
+view::CalendarEvents parseCalendarEvents(const boost::property_tree::ptree &ptree) {
     // CalendarEvents structure to store all events
     view::CalendarEvents calendarEvents;
 
@@ -79,7 +72,7 @@ view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &ptree) {
         }
 
         if (tokens.size() != 3) {
-            throw std::runtime_error("Invalid calendar event key: " + key);
+            throw ConfigParsingException("Invalid calendar event key: " + key);
         }
 
         // Extract the category (e.g., "birthdays", "holidays", "anniversaries")
@@ -94,7 +87,7 @@ view::CalendarEvents parseCalendarEvents(boost::property_tree::ptree &ptree) {
         int month{};
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         if (sscanf(dateStr.c_str(), "%02d.%02d.", &day, &month) != 2) {
-            throw std::runtime_error("Invalid date format: " + dateStr);
+            throw ConfigParsingException("Invalid date format: " + dateStr);
         }
 
         // Create a month_day object
@@ -118,8 +111,8 @@ std::filesystem::path removeTrailingSlash(const std::filesystem::path &path) {
 }
 
 template <class T, class U>
-void setIfValue(boost::property_tree::ptree &ptree, const std::string &key, U &destination) {
-    if (auto value = ptree.get_optional<T>(key)) {
+void setIfValue(const boost::property_tree::ptree &ptree, const std::string &key, U &destination) {
+    if (const auto value = ptree.get_optional<T>(key)) {
         destination = value.get();
     }
 }
@@ -141,111 +134,31 @@ bool isParentOf(const std::filesystem::path &parent, const std::filesystem::path
     return parentIter == nParent.end() && childIter != nChild.end();
 }
 
-void applyCommandlineOverrides(Config &config,
-                               const boost::program_options::variables_map &commandLineArgs) {
-
-    if (not commandLineArgs["log-dir-path"].defaulted()) {
-        config.logDirPath = expandTilde(commandLineArgs["log-dir-path"].as<std::string>());
-    }
-    if (not commandLineArgs["log-name-format"].defaulted()) {
-        config.logFilenameFormat = commandLineArgs["log-name-format"].as<std::string>();
-    }
-    if (commandLineArgs.contains("sunday-start")) {
-        config.sundayStart = true;
-    }
-    if (commandLineArgs.contains("first-line-section")) {
-        config.ignoreFirstLineWhenParsingSections = true;
-    }
-    if (commandLineArgs.contains("password")) {
-        config.password = commandLineArgs["password"].as<std::string>();
-    }
-}
-
-void applyConfigFileOverrides(Config &config, boost::property_tree::ptree &ptree) {
-    setIfValue<std::string>(ptree, "log-dir-path", config.logDirPath);
-    setIfValue<std::string>(ptree, "log-filename-format", config.logFilenameFormat);
-    setIfValue<bool>(ptree, "sunday-start", config.sundayStart);
-    setIfValue<bool>(ptree, "first-line-section", config.ignoreFirstLineWhenParsingSections);
-    setIfValue<std::string>(ptree, "password", config.password);
-    setIfValue<unsigned>(ptree, "calendar-events.recent-events-window", config.recentEventsWindow);
-
-    // Parse and update calendar events
-    config.calendarEvents = parseCalendarEvents(ptree);
-
-    // sanitize log dir path
-    config.logDirPath = expandTilde(config.logDirPath);
-}
-
-void applyGitConfigIfEnabled(Config &config, boost::property_tree::ptree &ptree) {
-    if (ptree.get_optional<bool>("git.enable-git-log-repo").value_or(false)) {
-        GitRepoConfig gitConf;
-        setIfValue<std::string>(ptree, "git.ssh-pub-key-path", gitConf.sshPubKeyPath);
-        setIfValue<std::string>(ptree, "git.ssh-key-path", gitConf.sshKeyPath);
-        setIfValue<std::string>(ptree, "git.main-branch-name", gitConf.mainBranchName);
-        setIfValue<std::string>(ptree, "git.remote-name", gitConf.remoteName);
-        setIfValue<std::string>(ptree, "git.repo-root", gitConf.root);
-
-        if (not isParentOf(gitConf.root, config.logDirPath) && gitConf.root != config.logDirPath) {
-            throw std::invalid_argument{"Error! Git repo root (" + gitConf.root.string() +
-                                        ") is not parent of log dir (" +
-                                        config.logDirPath.string() + ")!"};
-        }
-
-        // sanitize paths
-        gitConf.sshKeyPath = expandTilde(gitConf.sshKeyPath);
-        gitConf.sshPubKeyPath = expandTilde(gitConf.sshPubKeyPath);
-
-        config.repoConfig = gitConf;
-    }
-}
-
-} // namespace
-
-Config Config::make(const FileReader &fileReader,
-                    const boost::program_options::variables_map &cmdLineArgs) {
-    auto selectedConfigFilePath = cmdLineArgs.contains("config")
-                                      ? cmdLineArgs["config"].as<std::string>()
-                                      : Config::kDefaultConfigLocation;
-    try {
-        auto config = Config{};
-
-        if (auto configFile = fileReader(selectedConfigFilePath)) {
-            boost::property_tree::ptree ptree;
-            boost::property_tree::ini_parser::read_ini(*configFile, ptree);
-
-            applyConfigFileOverrides(config, ptree);
-            applyCommandlineOverrides(config, cmdLineArgs);
-            applyGitConfigIfEnabled(config, ptree);
-        } else {
-            applyCommandlineOverrides(config, cmdLineArgs);
-        }
-
-        return config;
-    } catch (const std::exception &e) {
-        throw ConfigParsingException{
-            fmt::format("Error parsing config file ({}): {}", selectedConfigFilePath, e.what())};
-    }
-}
-
-variables_map parseCLIOptions(std::span<const char *> argv) {
+variables_map parseCLIOptions(const std::vector<std::string> &argv) {
     namespace po = boost::program_options;
 
     po::options_description desc("Allowed options");
     // clang-format off
     desc.add_options()
       ("help,h", "show this message")
-      ("config,c", po::value<std::string>(), "override the default config file path (~/.caps-log/config.ini)")
-      ("log-dir-path", po::value<std::string>()->default_value("~/.caps-log/day/"), "path where log files are stored")
-      ("log-name-format", po::value<std::string>()->default_value("d%Y_%m_%d.md"), "format in which log entry markdown files are saved")
+      ("config,c", po::value<std::string>(), ("override the default config file path (" + Configuration::kDefaultConfigLocation + ")").c_str())
+      ("log-dir-path", po::value<std::string>(), "path where log files are stored")
+      ("log-name-format", po::value<std::string>(), "format in which log entry markdown files are saved")
       ("sunday-start", "have the calendar display sunday as first day of the week")
-      ("first-line-section", "if a section mark is placed on the first line, by default it is ignored as it's left for log title, this overrides this behaviour")
+      ("first-line-section", "override the default behaviour of ignoring sections (lines starting with `#`) in the first line of a log entry file")
       ("password", po::value<std::string>(), "password for encrypted log repositories or to be used with --encrypt/--decrypt")
       ("encrypt", "apply encryption to all logs in log dir path (needs --password)")
       ("decrypt", "apply decryption to all logs in log dir path (needs --password)");
     // clang-format on
 
+    std::vector<const char *> args;
+    args.reserve(argv.size());
+    for (const auto &arg : argv) {
+        args.push_back(arg.c_str());
+    }
+
     po::variables_map vmap;
-    po::store(po::parse_command_line(static_cast<int>(argv.size()), argv.data(), desc), vmap);
+    po::store(po::parse_command_line(static_cast<int>(args.size()), args.data(), desc), vmap);
     po::notify(vmap);
 
     if (vmap.contains("help")) {
@@ -259,4 +172,221 @@ variables_map parseCLIOptions(std::span<const char *> argv) {
     return vmap;
 }
 
+} // namespace
+
+const std::string Configuration::kDefaultConfigLocation =
+    std::getenv("HOME") + std::string{"/.caps-log/config.ini"};
+const std::string Configuration::kDefaultLogDirPath =
+    std::getenv("HOME") + std::string{"/.caps-log/day"};
+const std::string Configuration::kDefaultScratchpadFolderName = "scratchpads";
+const std::string Configuration::kDefaultLogFilenameFormat = "d%Y_%m_%d.md";
+const bool Configuration::kDefaultSundayStart = false;
+const bool Configuration::kDefaultAcceptSectionsOnFirstLine = false;
+
+std::function<std::string(const std::filesystem::path &)> Configuration::makeDefaultReadFileFunc() {
+    return [](const std::filesystem::path &path) {
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            throw ConfigParsingException{"Failed to open file: " + path.string()};
+        }
+        return std::string((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+    };
+}
+
+Configuration::Configuration(
+    const std::vector<std::string> &cliArgs,
+    const std::function<std::string(const std::filesystem::path &)> &readFileFunc) {
+
+    applyDefaults();
+    boost::program_options::variables_map vmap = parseCLIOptions(cliArgs);
+
+    m_configFilePath =
+        vmap.contains("config") ? vmap["config"].as<std::string>() : kDefaultConfigLocation;
+
+    auto content = readFileFunc(m_configFilePath);
+
+    boost::property_tree::ptree ptree;
+    try {
+        std::istringstream iss(content);
+        boost::property_tree::read_ini(iss, ptree);
+    } catch (const boost::property_tree::ini_parser_error &e) {
+        throw ConfigParsingException{"Failed to parse configuration file: " +
+                                     std::string(e.what())};
+    }
+    overrideFromConfigFile(ptree);
+    overrideFromCommandLine(vmap);
+}
+
+void Configuration::applyDefaults() {
+    m_viewConfig = view::ViewConfig{
+        .sundayStart = Configuration::kDefaultSundayStart,
+        .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
+    };
+    m_password = "";
+    m_cryptoApplicationType = std::nullopt;
+    m_gitRepoConfig = std::nullopt;
+    m_cryptoEnabled = false;
+    m_acceptSectionsOnFirstLine = Configuration::kDefaultAcceptSectionsOnFirstLine;
+    m_logDirPath = expandTilde(Configuration::kDefaultLogDirPath);
+    m_logFilenameFormat = Configuration::kDefaultLogFilenameFormat;
+    m_calendarEvents = view::CalendarEvents{};
+}
+
+void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &ptree) {
+    setIfValue<std::string>(ptree, "log-dir-path", m_logDirPath);
+    setIfValue<std::string>(ptree, "log-filename-format", m_logFilenameFormat);
+    setIfValue<bool>(ptree, "sunday-start", m_viewConfig.sundayStart);
+    setIfValue<bool>(ptree, "first-line-section", m_acceptSectionsOnFirstLine);
+    setIfValue<std::string>(ptree, "password", m_password);
+    setIfValue<unsigned>(ptree, "calendar-events.recent-events-window",
+                         m_viewConfig.recentEventsWindow);
+
+    // Parse and update calendar events
+    m_calendarEvents = parseCalendarEvents(ptree);
+
+    // sanitize log dir path
+    m_logDirPath = expandTilde(m_logDirPath);
+
+    if (ptree.get_optional<bool>("git.enable-git-log-repo").value_or(false)) {
+        utils::GitRepoConfig gitConf;
+        setIfValue<std::string>(ptree, "git.ssh-pub-key-path", gitConf.sshPubKeyPath);
+        setIfValue<std::string>(ptree, "git.ssh-key-path", gitConf.sshKeyPath);
+        setIfValue<std::string>(ptree, "git.main-branch-name", gitConf.mainBranchName);
+        setIfValue<std::string>(ptree, "git.remote-name", gitConf.remoteName);
+        setIfValue<std::string>(ptree, "git.repo-root", gitConf.root);
+
+        // sanitize paths
+        gitConf.sshKeyPath = expandTilde(gitConf.sshKeyPath);
+        gitConf.sshPubKeyPath = expandTilde(gitConf.sshPubKeyPath);
+
+        m_gitRepoConfig = gitConf;
+    }
+}
+
+void Configuration::overrideFromCommandLine(const boost::program_options::variables_map &vmap) {
+    if (vmap.contains("log-dir-path")) {
+        m_logDirPath = expandTilde(vmap["log-dir-path"].as<std::string>());
+    }
+    if (vmap.contains("log-name-format")) {
+        m_logFilenameFormat = vmap["log-name-format"].as<std::string>();
+    }
+    if (vmap.contains("sunday-start")) {
+        m_viewConfig.sundayStart = true;
+    }
+    if (vmap.contains("first-line-section")) {
+        m_acceptSectionsOnFirstLine = true;
+    }
+    if (vmap.contains("password")) {
+        m_password = vmap["password"].as<std::string>();
+    }
+
+    if (vmap.contains("encrypt")) {
+        if (m_password.empty()) {
+            throw ConfigParsingException{"Password must be provided when encrypting logs!"};
+        }
+        m_cryptoEnabled = true;
+        m_cryptoApplicationType = Crypto::Encrypt;
+    } else if (vmap.contains("decrypt")) {
+        if (m_password.empty()) {
+            throw ConfigParsingException{"Password must be provided when decrypting logs!"};
+        }
+        m_cryptoEnabled = true;
+        m_cryptoApplicationType = Crypto::Decrypt;
+    }
+}
+
+void Configuration::verify() const {
+    if (m_logDirPath.empty()) {
+        throw ConfigParsingException{"Log directory path can not be empty!"};
+    }
+    if (m_logFilenameFormat.empty()) {
+        throw ConfigParsingException{"Log filename format can not be empty!"};
+    }
+    if (m_cryptoEnabled && m_password.empty()) {
+        throw ConfigParsingException{"Password must be provided when encryption is enabled!"};
+    }
+    if (m_gitRepoConfig.has_value()) {
+        const auto &gitConf = m_gitRepoConfig.value();
+        if (gitConf.sshKeyPath.empty()) {
+            throw ConfigParsingException{"SSH key path can not be empty!"};
+        }
+        if (gitConf.sshPubKeyPath.empty()) {
+            throw ConfigParsingException{"SSH public key path can not be empty!"};
+        }
+        if (gitConf.mainBranchName.empty()) {
+            throw ConfigParsingException{"Main branch name can not be empty!"};
+        }
+        if (gitConf.remoteName.empty()) {
+            throw ConfigParsingException{"Remote name can not be empty!"};
+        }
+        if (gitConf.root.empty()) {
+            throw ConfigParsingException{"Git repository root can not be empty!"};
+        }
+
+        if (not isParentOf(gitConf.root, m_logDirPath) && gitConf.root != m_logDirPath) {
+            throw ConfigParsingException{"Error! Git repo root (" + gitConf.root.string() +
+                                         ") is not parent of log dir (" + m_logDirPath + ")!"};
+        }
+
+        // expect that  sshKeyPath, sshPubKeyPath, root exist
+        if (not std::filesystem::exists(gitConf.sshKeyPath)) {
+            throw ConfigParsingException{"SSH key does not exist: " + gitConf.sshKeyPath.string()};
+        }
+        if (not std::filesystem::exists(gitConf.sshPubKeyPath)) {
+            throw ConfigParsingException{"SSH public key does not exist: " +
+                                         gitConf.sshPubKeyPath.string()};
+        }
+        if (not std::filesystem::exists(gitConf.root)) {
+            throw ConfigParsingException{"Git repository root does not exist: " +
+                                         gitConf.root.string()};
+        }
+    }
+}
+
+[[nodiscard]] const view::ViewConfig &Configuration::getViewConfig() const { return m_viewConfig; }
+
+[[nodiscard]] const std::optional<utils::GitRepoConfig> &Configuration::getGitRepoConfig() const {
+    return m_gitRepoConfig;
+}
+
+[[nodiscard]] bool Configuration::isCryptoEnabled() const { return m_cryptoEnabled; }
+
+[[nodiscard]] bool Configuration::shouldRunApplication() const {
+    return not m_cryptoApplicationType.has_value();
+}
+
+[[nodiscard]] std::string Configuration::getLogDirPath() const { return m_logDirPath; }
+
+[[nodiscard]] std::string Configuration::getPassword() const { return m_password; }
+
+[[nodiscard]] std::string Configuration::getLogFilenameFormat() const {
+    return m_logFilenameFormat;
+}
+
+[[nodiscard]] log::LocalFSLogFilePathProvider Configuration::getLogFilePathProvider() const {
+    return log::LocalFSLogFilePathProvider{m_logDirPath, m_logFilenameFormat};
+}
+
+[[nodiscard]] std::string Configuration::getScratchpadDirPath() const {
+    return m_logDirPath + '/' + Configuration::kDefaultScratchpadFolderName;
+}
+
+[[nodiscard]] bool Configuration::isPasswordProvided() const { return !m_password.empty(); }
+
+[[nodiscard]] std::optional<Crypto> Configuration::getCryptoApplicationType() const {
+    return m_cryptoApplicationType;
+}
+
+[[nodiscard]] std::filesystem::path Configuration::getConfigFilePath() const {
+    return m_configFilePath;
+}
+
+[[nodiscard]] AppConfig Configuration::getAppConfig() const {
+    return AppConfig{
+        // TODO: align
+        .skipFirstLine = !m_acceptSectionsOnFirstLine,
+        .events = m_calendarEvents,
+    };
+}
 } // namespace caps_log

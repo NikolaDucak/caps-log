@@ -21,15 +21,9 @@ std::string readFile(const std::string &path) {
     return buffer.str();
 }
 
-class MockScreenSizeProvider : public caps_log::view::ScreenSizeProvider {
-  public:
-    MockScreenSizeProvider(ftxui::Dimensions size) : m_size{size} {}
-    [[nodiscard]] ftxui::Dimensions getScreenSize() const override { return m_size; }
-
-  private:
-    ftxui::Dimensions m_size;
-};
-
+auto screenSizeProvider(const ftxui::Dimensions &dimensions) {
+    return [dimensions]() -> ftxui::Dimensions { return dimensions; };
+}
 } // namespace
 
 TEST(CalnedarComponentTest, Render) {
@@ -49,7 +43,7 @@ TEST(CalnedarComponentTest, Render) {
     for (const auto &data : testData) {
         ftxui::Dimensions dimensions{data.screen_width, 41};
         ftxui::Screen screen{data.screen_width, 41};
-        auto sizeProvider = std::make_unique<MockScreenSizeProvider>(dimensions);
+        auto sizeProvider = screenSizeProvider(dimensions);
         caps_log::view::Calendar calendar{std::move(sizeProvider),
                                           {2024y, std::chrono::January, 1d}};
         ftxui::Render(screen, calendar.Render());
@@ -65,7 +59,7 @@ TEST(CalnedarComponentTest, EventHandling) {
     std::chrono::year_month_day next{2024y, std::chrono::January, 2d};
     std::chrono::year_month_day nextMonth{2024y, std::chrono::February, 1d};
     ftxui::Screen screen{184, 41};
-    auto sizeProvider = std::make_unique<MockScreenSizeProvider>(ftxui::Dimensions{184, 41});
+    auto sizeProvider = screenSizeProvider(ftxui::Dimensions{184, 41});
 
     caps_log::view::Calendar calendar{std::move(sizeProvider), start};
 

@@ -34,8 +34,9 @@ std::size_t countLines(const std::string &str) {
 
 } // namespace
 
-ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler)
-    : m_inputHandler(inputHandler), m_height(kPreviewDefaultHeight) {
+ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
+                                           std::function<ftxui::Dimensions()> screenSizeProvider)
+    : m_inputHandler(inputHandler), m_screenSizeProvider(std::move(screenSizeProvider)) {
     m_windowedMenu = WindowedMenu::make(WindowedMenuOption{
         .title = "Scratchpads", .entries = &m_scratchpadTitles, .onChange = [this]() {
             if (m_windowedMenu->selected() == 0) {
@@ -54,7 +55,7 @@ ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler)
     });
 
     auto component = Renderer(container, [this]() {
-        auto terminalWidth = Terminal::Size().dimx;
+        auto terminalWidth = m_screenSizeProvider().dimx;
         const auto kFactor = 0.75; // Factor to determine the width of the preview
         const auto height = 24;
 
@@ -128,10 +129,6 @@ void ScratchpadViewLayout::setScratchpads(const std::vector<ScratchpadData> &scr
                          [](const ScratchpadData &left, const ScratchpadData &right) {
                              return countLines(left.content) < countLines(right.content);
                          });
-    // TODO: remove m_height
-    m_height = (longestContentLength != scratchpadsCopy.end())
-                   ? countLines(longestContentLength->content) + 2 // +2 for padding
-                   : kPreviewDefaultHeight;
 
     for (const auto &data : scratchpadsCopy) {
         const auto title =

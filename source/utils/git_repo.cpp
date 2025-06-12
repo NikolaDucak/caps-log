@@ -70,12 +70,11 @@ bool hasChangedFiles(git_repository *repo) {
 
 } // namespace
 
-GitRepo::GitRepo(const std::filesystem::path &path, const std::filesystem::path &sshKeyPath,
-                 const std::filesystem::path &sshPubKeyPath, std::string remoteName,
-                 std::string mainBranchName)
-    : m_gitLibRaii{getGitLibRaii()}, m_remoteName{std::move(remoteName)},
-      m_mainBranchName{std::move(mainBranchName)}, m_sshKeyPath{sshKeyPath},
-      m_sshPubKeyPath{sshPubKeyPath} {
+GitRepo::GitRepo(GitRepoConfig config)
+    : m_gitLibRaii{getGitLibRaii()}, m_mainBranchName{std::move(config.mainBranchName)},
+      m_remoteName{std::move(config.remoteName)}, m_sshKeyPath{std::move(config.sshKeyPath)},
+      m_sshPubKeyPath{std::move(config.sshPubKeyPath)} {
+
     if (m_sshKeyPath.empty() || m_sshPubKeyPath.empty()) {
         throw std::invalid_argument{"SSH keys are not set!"};
     }
@@ -93,7 +92,7 @@ GitRepo::GitRepo(const std::filesystem::path &path, const std::filesystem::path 
         throw std::invalid_argument{"Main branch name can not be empty!"};
     }
     git_libgit2_init();
-    CHECK_GIT_ERROR(git_repository_open(&m_repo, path.c_str()));
+    CHECK_GIT_ERROR(git_repository_open(&m_repo, config.root.c_str()));
 }
 
 GitRepo::GitRepo(GitRepo &&other) noexcept
@@ -204,7 +203,6 @@ bool GitRepo::commitAll() {
     }
     return true;
 }
-
 void GitRepo::pull() {
     git_remote *remote = nullptr;
     git_reference *localRef = nullptr;
