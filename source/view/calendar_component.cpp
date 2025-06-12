@@ -74,7 +74,7 @@ class MonthComponentArranger {
 
 } // namespace
 
-Calendar::Calendar(std::unique_ptr<ScreenSizeProvider> screenSizeProvider,
+Calendar::Calendar(std::function<ftxui::Dimensions()> screenSizeProvider,
                    const std::chrono::year_month_day &today, CalendarOption option)
     : m_screenSizeProvider{std::move(screenSizeProvider)}, m_option(std::move(option)),
       m_today(today),
@@ -135,14 +135,23 @@ Component Calendar::createYear(std::chrono::year year) {
     const auto container = ftxui_ext::AnyDir(monthComponents, &m_selectedMonthComponentIdx);
 
     return Renderer(container, [this, monthComponents]() {
-        return MonthComponentArranger::arrange(m_screenSizeProvider->getScreenSize(),
-                                               monthComponents, m_displayedYear);
+        return MonthComponentArranger::arrange(m_screenSizeProvider(), monthComponents,
+                                               m_displayedYear);
     });
 }
 
 Component Calendar::createMonth(std::chrono::year_month year_month) {
     static const auto kMonthWeekdayHeaderElement = [](const std::string &txt) {
         return center(text(txt)) | size(WIDTH, EQUAL, 3) | size(HEIGHT, EQUAL, 1);
+    };
+
+    static const auto kMonthHeaderElement = [](const std::string &txt) {
+        const auto width = 3 * 7; // 7 days in a week, each day takes 3 chars
+        Elements elements;
+        for (const auto chr : txt) {
+            elements.push_back(kMonthWeekdayHeaderElement(std::string{chr}));
+        }
+        return elements | underlined;
     };
 
     const auto numOfDays =
@@ -164,11 +173,7 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
                                 sundayStart = (m_option.sundayStart ? 1 : 0),
                                 buttons = std::move(buttons)]() {
         const auto header =
-            Elements{kMonthWeekdayHeaderElement("M"), kMonthWeekdayHeaderElement("T"),
-                     kMonthWeekdayHeaderElement("W"), kMonthWeekdayHeaderElement("T"),
-                     kMonthWeekdayHeaderElement("F"), kMonthWeekdayHeaderElement("S"),
-                     kMonthWeekdayHeaderElement("S")} |
-            underlined;
+            sundayStart == 1 ? kMonthHeaderElement("SMTWTFS") : kMonthHeaderElement("MTWTFSS");
         std::vector<Elements> renderData = {header, {}};
         const auto startingWeekday =
             utils::date::getStartingWeekdayForMonth({displayedYear, yearMonth.month()}) +

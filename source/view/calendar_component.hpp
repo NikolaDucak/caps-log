@@ -15,32 +15,8 @@ struct CalendarOption {
     bool sundayStart = false;
 };
 
-class ScreenSizeProvider {
-  public:
-    ScreenSizeProvider() = default;
-    ScreenSizeProvider(const ScreenSizeProvider &) = default;
-    ScreenSizeProvider(ScreenSizeProvider &&) = default;
-    ScreenSizeProvider &operator=(const ScreenSizeProvider &) = default;
-    ScreenSizeProvider &operator=(ScreenSizeProvider &&) = default;
-    virtual ~ScreenSizeProvider() = default;
-
-    [[nodiscard]] virtual ftxui::Dimensions getScreenSize() const = 0;
-
-    [[nodiscard]] static std::unique_ptr<ScreenSizeProvider> makeDefault() {
-        // Caps-log runs only in full screen mode, so we can use the terminal size as the screen
-        // size
-        class DefaultScreenSizeProvider : public ScreenSizeProvider {
-          public:
-            [[nodiscard]] ftxui::Dimensions getScreenSize() const override {
-                return ftxui::Terminal::Size();
-            }
-        };
-        return std::make_unique<DefaultScreenSizeProvider>();
-    }
-};
-
 class Calendar : public ftxui::ComponentBase {
-    std::unique_ptr<ScreenSizeProvider> m_screenSizeProvider;
+    std::function<ftxui::Dimensions()> m_screenSizeProvider;
     CalendarOption m_option;
     std::chrono::year_month_day m_today;
     ftxui::Component m_root;
@@ -51,7 +27,7 @@ class Calendar : public ftxui::ComponentBase {
     std::chrono::year m_displayedYear;
 
   public:
-    Calendar(std::unique_ptr<ScreenSizeProvider> ScreenSizeProvider,
+    Calendar(std::function<ftxui::Dimensions()> screenSizeProvider,
              const std::chrono::year_month_day &today, CalendarOption option = {});
 
     bool OnEvent(ftxui::Event event) override;
@@ -64,7 +40,7 @@ class Calendar : public ftxui::ComponentBase {
      * @brief A utility factory method to create a shared pointer to a Calendar instance. This is
      * useful as FTXUI works with shared pointers to ComponentBase instances.
      */
-    [[nodiscard]] static auto make(std::unique_ptr<ScreenSizeProvider> screenSizeProvider,
+    [[nodiscard]] static auto make(std::function<ftxui::Dimensions()> screenSizeProvider,
                                    const std::chrono::year_month_day &today,
                                    CalendarOption option = {}) {
         return std::make_shared<Calendar>(std::move(screenSizeProvider), today, option);

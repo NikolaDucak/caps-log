@@ -4,68 +4,56 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <boost/property_tree/ini_parser.hpp>
+
 using namespace caps_log;
 using namespace testing;
-using MockFilesystemReader = testing::MockFunction<FileReader>;
 
-boost::program_options::variables_map parseArgs(const std::vector<std::string> &args) {
-    std::vector<const char *> argvTemp;
-    argvTemp.reserve(args.size());
-    for (const auto &arg : args) {
-        argvTemp.push_back(arg.data());
-    }
-    argvTemp.push_back(nullptr); // Null terminator for argv
-
-    const char **argv = argvTemp.data();
-    int argc = static_cast<int>(argvTemp.size()) - 1; // argc should not count the null terminator
-
-    return parseCLIOptions(std::span<const char *>(argv, argc));
-}
-
-std::function<std::unique_ptr<std::istringstream>(const std::string &)>
-mockFileReader(const std::string &configContent) {
-    return [configContent](const std::string &) -> std::unique_ptr<std::istringstream> {
-        return std::make_unique<std::istringstream>(std::istringstream(configContent));
+std::function<std::string(const std::filesystem::path &)> makeMockReadFileFunc(
+    const std::string &configContent,
+    const std::filesystem::path &expectedPath = Configuration::kDefaultConfigLocation) {
+    return [configContent, expectedPath](const std::filesystem::path &path) {
+        if (path != expectedPath) {
+            throw std::runtime_error("Unexpected config file path: " + path.string());
+        }
+        return configContent;
     };
 }
 
 TEST(ConfigTest, DefaultConfigurations) {
     std::vector<std::string> args = {"caps-log"};
-    auto cmdLineArgs = parseArgs(args);
+    auto configFile = makeMockReadFileFunc("");
 
-    auto fileReader = mockFileReader("");
+    Configuration config{args, configFile};
 
-    Config config = Config::make(fileReader, cmdLineArgs);
-
-    EXPECT_EQ(config.logDirPath, Config::kDefaultLogDirPath);
-    EXPECT_EQ(config.logFilenameFormat, Config::kDefaultLogFilenameFormat);
-    EXPECT_EQ(config.sundayStart, Config::kDefaultSundayStart);
-    EXPECT_EQ(config.ignoreFirstLineWhenParsingSections,
-              Config::kDefaultIgnoreFirstLineWhenParsingSections);
-    EXPECT_EQ(config.password, "");
-    EXPECT_FALSE(config.repoConfig.has_value());
-    EXPECT_TRUE(config.calendarEvents.empty());
+    EXPECT_EQ(config.getLogDirPath(), Configuration::kDefaultLogDirPath);
+    EXPECT_EQ(config.getLogFilenameFormat(), Configuration::kDefaultLogFilenameFormat);
+    EXPECT_EQ(config.getViewConfig().sundayStart, Configuration::kDefaultSundayStart);
+    EXPECT_EQ(config.getAppConfig().skipFirstLine,
+              !Configuration::kDefaultAcceptSectionsOnFirstLine);
+    EXPECT_EQ(config.getPassword(), "");
+    EXPECT_FALSE(config.getGitRepoConfig().has_value());
+    EXPECT_TRUE(config.getAppConfig().events.empty());
 }
 
 TEST(ConfigTest, ConfigFileOverrides) {
     std::vector<std::string> args = {"caps-log"};
-    auto cmdLineArgs = parseArgs(args);
 
     std::string configContent = "log-dir-path=/override/path/\n"
                                 "log-filename-format=override_format.md\n"
                                 "sunday-start=true\n"
                                 "first-line-section=false\n"
                                 "password=override_password";
-    auto fileReader = mockFileReader(configContent);
+    auto configFile = makeMockReadFileFunc(configContent);
 
-    Config config = Config::make(fileReader, cmdLineArgs);
+    Configuration config = Configuration(args, configFile);
 
-    EXPECT_EQ(config.logDirPath, "/override/path/");
-    EXPECT_EQ(config.logFilenameFormat, "override_format.md");
-    EXPECT_TRUE(config.sundayStart);
-    EXPECT_FALSE(config.ignoreFirstLineWhenParsingSections);
-    EXPECT_EQ(config.password, "override_password");
-    EXPECT_FALSE(config.repoConfig.has_value());
+    EXPECT_EQ(config.getLogDirPath(), "/override/path/");
+    EXPECT_EQ(config.getLogFilenameFormat(), "override_format.md");
+    EXPECT_TRUE(config.getViewConfig().sundayStart);
+    EXPECT_TRUE(config.getAppConfig().skipFirstLine);
+    EXPECT_EQ(config.getPassword(), "override_password");
+    EXPECT_FALSE(config.getGitRepoConfig().has_value());
 }
 
 TEST(ConfigTest, CommandLineOverrides) {
@@ -80,23 +68,22 @@ TEST(ConfigTest, CommandLineOverrides) {
                                      "--first-line-section",
                                      "--password",
                                      "cmd_override_password"};
-    auto cmdLineArgs = parseArgs(args);
 
     std::string configContent = "log-dir-path=/file/override/path/\n"
                                 "log-filename-format=file_override_format.md\n"
                                 "sunday-start=false\n"
                                 "first-line-section=true\n"
                                 "password=file_override_password";
-    auto fileReader = mockFileReader(configContent);
+    auto configFile = makeMockReadFileFunc(configContent, "some/path/to/config.ini");
 
-    Config config = Config::make(fileReader, cmdLineArgs);
+    Configuration config = Configuration(args, configFile);
 
-    EXPECT_EQ(config.logDirPath, "/cmd/override/path/");
-    EXPECT_EQ(config.logFilenameFormat, "cmd_override_format.md");
-    EXPECT_TRUE(config.sundayStart);
-    EXPECT_TRUE(config.ignoreFirstLineWhenParsingSections);
-    EXPECT_EQ(config.password, "cmd_override_password");
-    EXPECT_FALSE(config.repoConfig.has_value());
+    EXPECT_EQ(config.getLogDirPath(), "/cmd/override/path/");
+    EXPECT_EQ(config.getLogFilenameFormat(), "cmd_override_format.md");
+    EXPECT_TRUE(config.getViewConfig().sundayStart);
+    EXPECT_FALSE(config.getAppConfig().skipFirstLine);
+    EXPECT_EQ(config.getPassword(), "cmd_override_password");
+    EXPECT_FALSE(config.getGitRepoConfig().has_value());
 }
 
 TEST(ConfigTest, GitConfigWorks) {
@@ -108,16 +95,16 @@ TEST(ConfigTest, GitConfigWorks) {
                                 "ssh-pub-key-path=/path/to/pub-key\n"
                                 "main-branch-name=main-name\n"
                                 "remote-name=remote-name";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    Config config = Config::make(fileReader, cmdLineArgs);
+    auto configfile = makeMockReadFileFunc(configContent);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    Configuration config = Configuration(cmdLineArgs, configfile);
 
-    EXPECT_TRUE(config.repoConfig.has_value());
-    EXPECT_EQ(config.repoConfig->root, "/path/to/repo/");
-    EXPECT_EQ(config.repoConfig->sshKeyPath, "/path/to/key");
-    EXPECT_EQ(config.repoConfig->sshPubKeyPath, "/path/to/pub-key");
-    EXPECT_EQ(config.repoConfig->mainBranchName, "main-name");
-    EXPECT_EQ(config.repoConfig->remoteName, "remote-name");
+    EXPECT_TRUE(config.getGitRepoConfig().has_value());
+    EXPECT_EQ(config.getGitRepoConfig()->root, "/path/to/repo/");
+    EXPECT_EQ(config.getGitRepoConfig()->sshKeyPath, "/path/to/key");
+    EXPECT_EQ(config.getGitRepoConfig()->sshPubKeyPath, "/path/to/pub-key");
+    EXPECT_EQ(config.getGitRepoConfig()->mainBranchName, "main-name");
+    EXPECT_EQ(config.getGitRepoConfig()->remoteName, "remote-name");
 }
 
 TEST(ConfigTest, GitConfigDisabledIfUnset) {
@@ -128,11 +115,11 @@ TEST(ConfigTest, GitConfigDisabledIfUnset) {
                                 "ssh-pub-key-path=/path/to/pub-key\n"
                                 "main-branch-name=main-name\n"
                                 "remote-name=remote-name";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    Config config = Config::make(fileReader, cmdLineArgs);
+    auto configFile = makeMockReadFileFunc(configContent);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    Configuration config = Configuration(cmdLineArgs, configFile);
 
-    EXPECT_FALSE(config.repoConfig.has_value());
+    EXPECT_FALSE(config.getGitRepoConfig().has_value());
 }
 
 TEST(ConfigTest, GitConfigDisabled) {
@@ -144,11 +131,11 @@ TEST(ConfigTest, GitConfigDisabled) {
                                 "ssh-pub-key-path=/path/to/pub-key\n"
                                 "main-branch-name=main-name\n"
                                 "remote-name=remote-name";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    Config config = Config::make(fileReader, cmdLineArgs);
+    auto configFile = makeMockReadFileFunc(configContent);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    Configuration config = Configuration(cmdLineArgs, configFile);
 
-    EXPECT_FALSE(config.repoConfig.has_value());
+    EXPECT_FALSE(config.getGitRepoConfig().has_value());
 }
 
 TEST(ConfigTest, GitConfigThrowsIfLogDirIsNotInsideRepoRoot) {
@@ -160,9 +147,9 @@ TEST(ConfigTest, GitConfigThrowsIfLogDirIsNotInsideRepoRoot) {
                                 "ssh-pub-key-path=/path/to/pub-key\n"
                                 "main-branch-name=main-name\n"
                                 "remote-name=remote-name";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
+    auto configFile = makeMockReadFileFunc(configContent);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile).verify(), caps_log::ConfigParsingException);
 }
 
 TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
@@ -174,9 +161,9 @@ TEST(ConfigTest, GitConfigDoesNotThrowIfGitRootIsSameAsLogDirPath) {
                                 "ssh-pub-key-path=/path/to/pub-key\n"
                                 "main-branch-name=main-name\n"
                                 "remote-name=remote-name";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    EXPECT_NO_THROW(Config::make(fileReader, cmdLineArgs));
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_NO_THROW(Configuration(cmdLineArgs, configFile));
 }
 
 TEST(ConfigTest, GitConfigIsAppliedAfterCommandLineOverrides) {
@@ -188,13 +175,13 @@ TEST(ConfigTest, GitConfigIsAppliedAfterCommandLineOverrides) {
                                 "ssh-pub-key-path=/path/to/pub-key\n"
                                 "main-branch-name=main-name\n"
                                 "remote-name=remote-name";
-    auto cmdLineArgs = parseArgs({
+    std::vector<std::string> cmdLineArgs = {
         "caps-log",
         "--log-dir-path",
         "/cmd/override/path/",
-    });
-    auto fileReader = mockFileReader(configContent);
-    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
+    };
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile).verify(), caps_log::ConfigParsingException);
 }
 
 TEST(ConfigTest, CalendarEventsParsing) {
@@ -207,20 +194,21 @@ TEST(ConfigTest, CalendarEventsParsing) {
                                 "[calendar-events.holidays.0]\n"
                                 "name=Christmas\n"
                                 "date=25.12.\n";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    Config config = Config::make(fileReader, cmdLineArgs);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config = Configuration(cmdLineArgs, configFile);
 
-    EXPECT_EQ(config.recentEventsWindow, 42);
-    EXPECT_EQ(config.calendarEvents.size(), 2);
-    EXPECT_EQ(config.calendarEvents["birthdays"].size(), 1);
-    EXPECT_EQ(config.calendarEvents["holidays"].size(), 1);
-    EXPECT_EQ(config.calendarEvents["birthdays"].begin()->name, "John Doe");
+    auto events = config.getAppConfig().events;
+    EXPECT_EQ(config.getViewConfig().recentEventsWindow, 42);
+    EXPECT_EQ(events.size(), 2);
+    EXPECT_EQ(events["birthdays"].size(), 1);
+    EXPECT_EQ(events["holidays"].size(), 1);
+    EXPECT_EQ(events["birthdays"].begin()->name, "John Doe");
     const auto date1 = std::chrono::month_day{std::chrono::month{2}, std::chrono::day{2}};
-    EXPECT_EQ(config.calendarEvents["birthdays"].begin()->date, date1);
-    EXPECT_EQ(config.calendarEvents["holidays"].begin()->name, "Christmas");
+    EXPECT_EQ(events["birthdays"].begin()->date, date1);
+    EXPECT_EQ(events["holidays"].begin()->name, "Christmas");
     const auto date2 = std::chrono::month_day{std::chrono::month{12}, std::chrono::day{25}};
-    EXPECT_EQ(config.calendarEvents["holidays"].begin()->date, date2);
+    EXPECT_EQ(events["holidays"].begin()->date, date2);
 }
 
 TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenNoId) {
@@ -233,9 +221,9 @@ TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenNoId) {
                                 "[calendar-events.holidays.0]\n"
                                 "name=Christmas\n"
                                 "date=12.25.\n";
-    auto cmdLineArgs = parseArgs({"caps-log"});
-    auto fileReader = mockFileReader(configContent);
-    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile).verify(), caps_log::ConfigParsingException);
 }
 
 TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
@@ -248,10 +236,7 @@ TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
                                 "[calendar-events.holidays.0]\n"
                                 "name=Christmas\n"
                                 "date=12.25.\n";
-    auto cmdLineArgs = parseArgs({
-        "caps-log",
-
-    });
-    auto fileReader = mockFileReader(configContent);
-    EXPECT_THROW(Config::make(fileReader, cmdLineArgs), caps_log::ConfigParsingException);
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile).verify(), caps_log::ConfigParsingException);
 }

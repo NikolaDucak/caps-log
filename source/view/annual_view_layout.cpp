@@ -15,6 +15,7 @@
 #include <string>
 
 namespace caps_log::view {
+using std::function;
 
 ftxui::Element identity(ftxui::Element element) { return element; }
 
@@ -29,11 +30,12 @@ int daysDifference(std::chrono::year_month_day from_ymd, std::chrono::year_month
 using namespace ftxui;
 
 AnnualViewLayout::AnnualViewLayout(InputHandlerBase *handler,
+                                   function<ftxui::Dimensions()> screenSizeProvider,
                                    const std::chrono::year_month_day &today, bool sundayStart,
                                    unsigned recentEventsWindow)
-    : m_handler{handler},
-      m_calendarButtons{Calendar::make(ScreenSizeProvider::makeDefault(), today,
-                                       makeCalendarOptions(today, sundayStart))},
+    : m_handler{handler}, m_screenSizeProvider{std::move(screenSizeProvider)}, m_today{today},
+      m_calendarButtons{
+          Calendar::make(m_screenSizeProvider, today, makeCalendarOptions(today, sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
       m_eventsList{makeEventsList()}, m_rootComponent{makeFullUIComponent()},
       m_recentEventsWindow{recentEventsWindow} {}
@@ -54,7 +56,7 @@ std::shared_ptr<ComponentBase> AnnualViewLayout::makeFullUIComponent() {
         },
         ftxui::Event::Tab, ftxui::Event::TabReverse);
 
-    const auto dateStr = utils::date::formatToString(utils::date::getToday(), "%d. %m. %Y.");
+    const auto dateStr = utils::date::formatToString(m_today, "%d. %m. %Y.");
     const auto wholeUiRenderer = Renderer(logContainer, [this, logContainer, dateStr,
                                                          firstRender = true]() mutable {
         // preview window can sometimes be wider than the menus & calendar, it's simpler to keep
@@ -78,7 +80,7 @@ std::shared_ptr<ComponentBase> AnnualViewLayout::makeFullUIComponent() {
         mainSectionElements.push_back(
             m_eventsList->Render()
                   | size(WIDTH, EQUAL, kMenuWidht * 2) 
-                  | size(HEIGHT, LESS_THAN, kMenuHeight / 3) 
+                  | size(HEIGHT, LESS_THAN, kMenuHeight / 2) 
         );
         // clang-format on
         mainSectionElements = Elements{vbox(mainSectionElements)};
@@ -186,14 +188,15 @@ Component AnnualViewLayout::makeEventsList() {
         if (std::ranges::contains(m_recentAndUpcomingEventsGroupItemIndex, state.index)) {
             element = element | bold | underlined;
         }
-
         return element;
     };
 
     auto menuComponent = Menu(std::move(menuOption));
-    auto menuRenderer = Renderer(menuComponent, [menu = menuComponent]() {
-        auto windowElement =
-            window(text("Recent & upcomming events"), menu->Render() | vscroll_indicator | frame);
+    auto menuRenderer = Renderer(menuComponent, [menu = menuComponent, this]() {
+        auto eventsCount =
+            m_recentAndUpcomingEventsList.size() - m_recentAndUpcomingEventsGroupItemIndex.size();
+        auto title = text("Recent & upcoming events (" + std::to_string(eventsCount) + ")");
+        auto windowElement = window(title, menu->Render() | vscroll_indicator | frame);
         if (not menu->Focused()) {
             windowElement |= dim;
         }
@@ -265,10 +268,9 @@ void AnnualViewLayout::setEventDates(const CalendarEvents *events) {
         for (const auto &[group, events] : *m_eventDates) {
             std::vector<std::string> groupItems;
             for (const auto &event : events) {
-                const auto today = utils::date::getToday();
-                const auto daysToEvent =
-                    daysDifference(today, std::chrono::year_month_day(
-                                              today.year(), event.date.month(), event.date.day()));
+                const auto daysToEvent = daysDifference(
+                    m_today, std::chrono::year_month_day(m_today.year(), event.date.month(),
+                                                         event.date.day()));
                 if (std::abs(daysToEvent) > m_recentEventsWindow) {
                     continue;
                 }
@@ -285,7 +287,7 @@ void AnnualViewLayout::setEventDates(const CalendarEvents *events) {
                                                  (unsigned)event.date.day());
                 groupItems.push_back(fmt::format(" - {} {} ({})", event.name, dateStr, daysStr));
                 // check if the event is today
-                if (event.date == utils::date::monthDay(today)) {
+                if (event.date == utils::date::monthDay(m_today)) {
                     todaysEventStr = fmt::format("{} - {}", group, event.name);
                 }
             }

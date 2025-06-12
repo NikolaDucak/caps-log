@@ -72,6 +72,17 @@ class ControllerTest : public testing::Test {
         return res;
     }
 
+    constexpr static const std::chrono::year_month_day kDummyDateModified{
+        std::chrono::year{2023}, std::chrono::month{10}, std::chrono::day{1}};
+
+    void writeDummyScratchpads(const std::vector<std::pair<std::string, std::string>> &contents) {
+        mockScratchpadRepo->getDummyRepo().m_scratchpads.clear();
+        for (const auto &[name, content] : contents) {
+            mockScratchpadRepo->getDummyRepo().m_scratchpads.push_back(
+                Scratchpad{.title = name, .content = content, .dateModified = kDummyDateModified});
+        }
+    }
+
   public:
     ControllerTest() { mockView->m_annualViewLayout->getDummyView().m_focusedDate = day1; }
 };
@@ -572,6 +583,96 @@ TEST_F(
         EXPECT_TRUE(areTagMenuItemsEqual({"<select none>", makeMenuItemTitle("tag 2", 1)}));
         EXPECT_TRUE(areSectionMenuItemsEqual({"<select none>", makeMenuItemTitle("section 2", 1),
                                               makeMenuItemTitle("section 3", 1)}));
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, SwitchToScratchpadView_SwitchesToScratchpadViewAndBackToAnnualView) {
+    auto capsLog = makeCapsLog();
+    writeDummyScratchpads({
+        {"scratchpad1", "content1"},
+        {"scratchpad2", "content2"},
+    });
+
+    ON_CALL(*mockView, run()).WillByDefault([&] { // NOLINT
+        // Switching layouts 2 times hence Times(2)
+        EXPECT_CALL(*mockView, switchLayout()).Times(2);
+        EXPECT_CALL(*mockView->m_scratchpadViewLayout, setScratchpads(_)).Times(2);
+        capsLog.handleInputEvent(UnhandledRootEvent{ftxui::Event::Character('s').input()});
+
+        auto sratchpads = mockView->getDummyScratchpadViewLayout().m_scratchpads;
+        EXPECT_EQ(sratchpads.size(), 2);
+        EXPECT_EQ(sratchpads[0].title, "scratchpad1");
+        EXPECT_EQ(sratchpads[0].content, "content1");
+        EXPECT_EQ(sratchpads[1].title, "scratchpad2");
+        EXPECT_EQ(sratchpads[1].content, "content2");
+
+        capsLog.handleInputEvent(UnhandledRootEvent{ftxui::Event::Character('s').input()});
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, ScratchpadView_DeletesScratchpadAndUpdatesView) {
+    auto capsLog = makeCapsLog();
+    writeDummyScratchpads({
+        {"scratchpad1", "content1"},
+        {"scratchpad2", "content2"},
+    });
+
+    ON_CALL(*mockView, run()).WillByDefault([&] { // NOLINT
+        EXPECT_CALL(*mockView, switchLayout());
+        // once for switching to scratchpad view and once after deleting a scratchpad
+        EXPECT_CALL(*mockView->m_scratchpadViewLayout, setScratchpads(_)).Times(2);
+        EXPECT_CALL(*mockScratchpadRepo, remove("scratchpad1"));
+        EXPECT_CALL(mockView->m_popUpView, show(_))
+            .WillOnce([&](const PopUpViewBase::PopUpType &popup) {
+                ASSERT_TRUE(std::holds_alternative<PopUpViewBase::YesNo>(popup));
+                const auto &yesNoPopup = std::get<PopUpViewBase::YesNo>(popup);
+                // trigger callback as if user clicked 'yes'
+                yesNoPopup.callback(PopUpViewBase::Result::Yes{});
+            });
+
+        capsLog.handleInputEvent(UnhandledRootEvent{"s"});
+        capsLog.handleInputEvent(DeleteScratchpad{"scratchpad1"});
+
+        const auto sratchpads = mockView->getDummyScratchpadViewLayout().m_scratchpads;
+        EXPECT_EQ(sratchpads.size(), 1);
+        EXPECT_EQ(sratchpads[0].title, "scratchpad2");
+        EXPECT_EQ(sratchpads[0].content, "content2");
+    });
+    capsLog.run();
+}
+
+TEST_F(ControllerTest, ScratchpadView_CreatesScratchpadAndUpdatesView) {
+    auto capsLog = makeCapsLog();
+    writeDummyScratchpads({
+        {"scratchpad1", "content1"},
+        {"scratchpad2", "content2"},
+    });
+
+    ON_CALL(*mockView, run()).WillByDefault([&] { // NOLINT
+        EXPECT_CALL(*mockView, switchLayout());
+        // once for switching to scratchpad view and once after creating a scratchpad
+        EXPECT_CALL(*mockView->m_scratchpadViewLayout, setScratchpads(_)).Times(2);
+        EXPECT_CALL(*mockView, withRestoredIO(_)).WillOnce([&](const auto &callback) {
+            mockScratchpadRepo->getDummyRepo().m_scratchpads.push_back(Scratchpad{
+                .title = "scratchpad3", .content = "content3", .dateModified = kDummyDateModified});
+            callback();
+        });
+
+        capsLog.handleInputEvent(UnhandledRootEvent{ftxui::Event::Character('s').input()});
+        capsLog.handleInputEvent(OpenScratchpad{"scratchpad3"});
+
+        auto sratchpads = mockView->getDummyScratchpadViewLayout().m_scratchpads;
+        EXPECT_EQ(sratchpads.size(), 3);
+        EXPECT_EQ(sratchpads[0].title, "scratchpad1");
+        EXPECT_EQ(sratchpads[0].content, "content1");
+        EXPECT_EQ(sratchpads[1].title, "scratchpad2");
+        EXPECT_EQ(sratchpads[1].content, "content2");
+        EXPECT_EQ(sratchpads[2].title, "scratchpad3");
+        EXPECT_EQ(sratchpads[2].content, "content3");
+        EXPECT_EQ(sratchpads[2].dateModified, kDummyDateModified);
+
     });
     capsLog.run();
 }

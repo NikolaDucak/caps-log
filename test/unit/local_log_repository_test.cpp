@@ -31,10 +31,10 @@ constexpr std::chrono::year_month_day kOtherSelectedDate{
 
 class LocalLogRepositoryTest : public ::testing::Test {
   public:
-    LocalFSLogFilePathProvider TMPDirPathProvider{kTestLogDirectory,
-                                                  caps_log::Config::kDefaultLogFilenameFormat};
+    LocalFSLogFilePathProvider TMPDirPathProvider{
+        kTestLogDirectory, caps_log::Configuration::kDefaultLogFilenameFormat};
 
-    const std::string kScratchpadFolderName = caps_log::Config::kDefaultScratchpadFolderName;
+    const std::string kScratchpadFolderName = caps_log::Configuration::kDefaultScratchpadFolderName;
 
     void SetUp() override { std::filesystem::create_directory(kTestLogDirectory); }
     void TearDown() override { std::filesystem::remove_all(kTestLogDirectory); }
@@ -52,7 +52,7 @@ class LocalLogRepositoryTest : public ::testing::Test {
 
     static void writeDummyScratchpad(const std::string &name, const std::string &content) {
         const std::filesystem::path kTestScratchpadDirectory =
-            kTestLogDirectory / caps_log::Config::kDefaultScratchpadFolderName;
+            kTestLogDirectory / caps_log::Configuration::kDefaultScratchpadFolderName;
 
         if (!std::filesystem::exists(kTestScratchpadDirectory)) {
             std::filesystem::create_directories(kTestScratchpadDirectory);
@@ -208,7 +208,7 @@ TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplier) {
 
 TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplierWithScratchpads) {
     const auto kTestScratchpadDirectory =
-        kTestLogDirectory / caps_log::Config::kDefaultScratchpadFolderName;
+        kTestLogDirectory / caps_log::Configuration::kDefaultScratchpadFolderName;
     const auto &date1 = kSelectedDate;
     const auto &date2 = kOtherSelectedDate;
     const auto &kDummyScratchpadName = "dummy.md";
@@ -240,7 +240,7 @@ TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplierWithScratchpads) {
 
 TEST_F(LogRepositoryCryptoApplierTest, IgnoresScratchpadsNotMatchingTheLogFilenamePattern) {
     const auto kTestScratchpadDirectory =
-        kTestLogDirectory / caps_log::Config::kDefaultScratchpadFolderName;
+        kTestLogDirectory / caps_log::Configuration::kDefaultScratchpadFolderName;
 
     const auto *const dummyfileName = "dummy.txt";
     const auto *const dummyScratchpadName = "dummy.doc";

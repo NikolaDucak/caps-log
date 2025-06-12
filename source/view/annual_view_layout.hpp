@@ -18,6 +18,8 @@ namespace caps_log::view {
 
 class AnnualViewLayout : public AnnualViewLayoutBase {
     InputHandlerBase *m_handler{nullptr};
+    std::function<ftxui::Dimensions()> m_screenSizeProvider;
+    std::chrono::year_month_day m_today;
 
     // UI components visible to the user
     std::shared_ptr<Calendar> m_calendarButtons;
@@ -43,8 +45,10 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
     std::shared_ptr<ftxui::ComponentBase> m_rootComponent;
 
   public:
-    AnnualViewLayout(InputHandlerBase *handler, const std::chrono::year_month_day &today,
-                     bool sundayStart, unsigned recentEventsWindow);
+    AnnualViewLayout(InputHandlerBase *handler,
+                     std::function<ftxui::Dimensions()> screenSizeProvider,
+                     const std::chrono::year_month_day &today, bool sundayStart,
+                     unsigned recentEventsWindow);
 
     void showCalendarForYear(std::chrono::year year) override;
 
