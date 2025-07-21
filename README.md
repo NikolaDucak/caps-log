@@ -182,6 +182,63 @@ name=New Years eve
 date=31.12.
 ```
 
+__UI configuration__
+
+Color values:
+```
+color = rgba(255, 0, 0, a) # red, green, blue, a
+color = <lowercase color 256>
+```
+
+Style values: 
+```
+style = bold | italic | underline | blink | reverse
+```
+
+```ini
+[ui.logs.sections-list]
+border = true
+
+[ui.logs.tags-list]
+border = <true or false>
+color = <color>
+style = <style>
+selected-color = <color>
+selected-style = <style>
+
+[ui.logs.events-list]
+border = true
+
+[ui.logs.log-entry-preview]
+border = true
+markdown-syntax-highlighting = true
+
+[ui.logs.annual-calendar]
+border = true
+month-border = true
+weekday-color = <color>
+weekday-style = <style>
+weekend-color = <color>
+weekend-style = <style>
+today-color = <color>
+today-style = <style>
+selected-day-color = <color>
+selected-day-style = <style>
+event-day-color = <color>
+
+[ui.scratchpads.scratchpad-list]
+border = true
+color = <color>
+style = <style>
+selected-color = <color>
+selected-style = <style>
+
+[ui.scratchpads.scratchpad-preview]
+border = true
+markdown-syntax-highlighting = true
+```
+
+
 ## Building & Installing
 
 **Dependencies**
