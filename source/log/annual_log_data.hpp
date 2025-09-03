@@ -2,6 +2,7 @@
 
 #include "log_repository_base.hpp"
 #include "utils/date.hpp"
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <string>

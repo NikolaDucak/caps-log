@@ -55,14 +55,20 @@ void AnnualLogData::collect(const std::shared_ptr<LogRepositoryBase> &repo,
                             const std::chrono::year_month_day &date, bool skipFirstLine) {
     // remove all information in maps for this date first
     const auto monthDayDate = monthDay(date);
-    std::erase_if(tagsPerSection, [monthDayDate](auto &item) {
-        auto &[section, tags] = item;
-        // remove all tags that after removal of this date would be empty (except for <any tag>)
-        std::erase_if(tags, [monthDayDate, section](auto &tagAndDates) {
-            auto &[tag, dates] = tagAndDates;
+
+    for (auto &[_, tags] : tagsPerSection) {
+        for (auto &[_, dates] : tags) {
             dates.erase(monthDayDate);
+        }
+        // remove all tags that after removal of this date would be empty (except for <any tag>)
+        std::erase_if(tags, [monthDayDate](auto &tagAndDates) {
+            const auto &[tag, dates] = tagAndDates;
             return tag != kAnyOrNoTag && dates.size() == 0;
         });
+    }
+
+    std::erase_if(tagsPerSection, [monthDayDate](auto &item) {
+        const auto &[section, tags] = item;
         if (section == kAnySection) {
             return false;
         }
