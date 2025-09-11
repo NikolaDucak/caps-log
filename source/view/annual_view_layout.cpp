@@ -9,15 +9,14 @@
 #include "view/input_handler.hpp"
 #include "view/windowed_menu.hpp"
 
+#include <algorithm>
 #include <chrono>
-#include <ftxui/screen/terminal.hpp>
-
 #include <string>
+
+#include <ftxui/screen/terminal.hpp>
 
 namespace caps_log::view {
 using std::function;
-
-ftxui::Element identity(ftxui::Element element) { return element; }
 
 namespace {
 int daysDifference(std::chrono::year_month_day from_ymd, std::chrono::year_month_day to_ymd) {
