@@ -1,530 +1,445 @@
 #pragma once
 
-#include <boost/property_tree/ini_parser.hpp>
+#include "utils/string.hpp"
+#include <array>
 #include <boost/property_tree/ptree.hpp>
-
-#include <memory>
+#include <cctype>
+#include <cstdint>
+#include <cstdlib>
 #include <regex>
+#include <set>
 #include <string>
+#include <utility>
+#include <variant>
 #include <vector>
 
 namespace caps_log::config {
-
-using pt = boost::property_tree;
-
 enum class Type : std::uint8_t { String, Path, Boolean, Date, Integer, Color, Style };
 enum class Required : std::uint8_t { Yes, No };
 
-// Forward declarations
-class IniSchema;
-class IniSchemaSection;
-class IniArraySection;
-class IniAnyNameSection;
-
-// Validation result
-struct ValidationResult {
-    bool isValid = true;
-    std::vector<std::string> errors;
-};
-
-// Type validators
-class TypeValidators {
-  public:
-    static bool validateString(const std::string &value) {
-        return true; // Any string is valid
-    }
-
-    static bool validatePath(const std::string &value) {
-        return !value.empty(); // Basic path validation
-    }
-
-    static bool validateBoolean(const std::string &value) {
-        return value == "true" || value == "false";
-    }
-
-    static bool validateDate(const std::string &value) {
-        // Date format: DD.MM. or DD.MM.YYYY
-        std::regex datePattern(R"(^\d{2}\.\d{2}\.(\d{4})?$)");
-        return std::regex_match(value, datePattern);
-    }
-
-    static bool validateInteger(const std::string &value) {
-        try {
-            std::stoi(value);
-            return true;
-        } catch (...) {
-            return false;
-        }
-    }
-
-    static bool validateColor(const std::string &value) {
-        // Named colors
-        static const std::vector<std::string> namedColors = {
-            "black",          "red",         "green",        "yellow",        "blue",
-            "magenta",        "cyan",        "white",        "gray",          "grey",
-            "bright_black",   "bright_red",  "bright_green", "bright_yellow", "bright_blue",
-            "bright_magenta", "bright_cyan", "bright_white"};
-
-        for (const auto &namedColor : namedColors) {
-            if (value == namedColor)
-                return true;
-        }
-
-        // rgb(r,g,b,a) format
-        std::regex rgbPattern(
-            R"(^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$)");
-        std::smatch matches;
-
-        if (std::regex_match(value, matches, rgbPattern)) {
-            for (int i = 1; i <= 4; ++i) {
-                int val = std::stoi(matches[i].str());
-                if (val < 0 || val > 255)
-                    return false;
-            }
-            return true;
-        }
-
-        return false;
-    }
-
-    static bool validateStyle(const std::string &value) {
-        static const std::vector<std::string> validStyles = {"bold",  "regular", "italic",
-                                                             "blink", "inverse", "underline"};
-        return std::find(validStyles.begin(), validStyles.end(), value) != validStyles.end();
-    }
-
-    static bool validateType(Type type, const std::string &value) {
-        switch (type) {
-        case Type::String:
-            return validateString(value);
-        case Type::Path:
-            return validatePath(value);
-        case Type::Boolean:
-            return validateBoolean(value);
-        case Type::Date:
-            return validateDate(value);
-        case Type::Integer:
-            return validateInteger(value);
-        case Type::Color:
-            return validateColor(value);
-        case Type::Style:
-            return validateStyle(value);
-        default:
-            return false;
-        }
-    }
-
-    static std::string getTypeName(Type type) {
-        switch (type) {
-        case Type::String:
-            return "String";
-        case Type::Path:
-            return "Path";
-        case Type::Boolean:
-            return "Boolean";
-        case Type::Date:
-            return "Date";
-        case Type::Integer:
-            return "Integer";
-        case Type::Color:
-            return "Color";
-        case Type::Style:
-            return "Style";
-        default:
-            return "Unknown";
-        }
-    }
-};
-
-// Base schema element
-class IniSchemaElement {
-  public:
-    virtual ~IniSchemaElement() = default;
-    virtual bool validate(const pt::ptree &tree, const std::string &path,
-                          ValidationResult &result) const = 0;
-    virtual std::ostream &print(std::ostream &os, int depth = 0) const = 0;
-};
-
-// Property definition
-struct PropertyDef {
+struct IniProperty {
     std::string name;
     Type type;
     Required required;
 
-    PropertyDef(const std::string &n, Type t, Required r) : name(n), type(t), required(r) {}
+    IniProperty(std::string n, Type typ, Required req)
+        : name(std::move(n)), type(typ), required(req) {}
 };
 
-// Array section for numbered items like birthadays.0, birthadays.1, etc.
-class IniArraySection : public IniSchemaElement {
-  private:
-    std::vector<PropertyDef> properties_;
-    std::vector<std::unique_ptr<IniSchemaElement>> sections_;
+struct IniSection {
+    std::string name;
+    Required required{Required::No};
 
+    // Children: both properties and nested sections
+    std::vector<IniProperty> properties;
+    std::vector<IniSection> sections;
+
+    IniSection() = default;
+    IniSection(std::string aName, Required req) : name(std::move(aName)), required(req) {}
+
+    // Fluent adders
+    IniSection &add(IniProperty property) {
+        properties.push_back(std::move(property));
+        return *this;
+    }
+
+    IniSection &add(IniSection section) {
+        sections.push_back(std::move(section));
+        return *this;
+    }
+
+    // Convenience for the DSL style used below
+    IniSection &addProperty(std::string n, Type type, Required required) {
+        return add(IniProperty{std::move(n), type, required});
+    }
+
+    IniSection &addSection(IniSection section) { return add(std::move(section)); }
+};
+
+using SchemaElement = std::variant<IniProperty, IniSection>;
+
+struct IniAnyNameSection : IniSection {
+    // By convention, name="*" to indicate wildcard keys beneath this node.
+    IniAnyNameSection() : IniSection{"*", Required::No} {}
+};
+
+struct IniArraySection : IniSection {
+    // By convention, name="[]" to indicate "array-like" entries.
+    IniArraySection() : IniSection{"[]", Required::No} {}
+};
+
+class ValidationVisitor {
   public:
-    IniArraySection &addProperty(const std::string &name, Type type, Required required) {
-        properties_.emplace_back(name, type, required);
-        return *this;
+    explicit ValidationVisitor(const boost::property_tree::ptree &cfg) : m_ptree(cfg) {}
+
+    // Validate an entire schema tree starting from a Section root.
+    bool validate(const IniSection &root) {
+        m_errors.clear();
+        validateSection(root, &m_ptree, /*path=*/"");
+        return m_errors.empty();
     }
 
-    IniArraySection &addSection(std::unique_ptr<IniSchemaElement> section) {
-        sections_.push_back(std::move(section));
-        return *this;
-    }
+    [[nodiscard]] const std::vector<std::string> &errors() const { return m_errors; }
 
-    bool validate(const pt::ptree &tree, const std::string &path,
-                  ValidationResult &result) const override {
-        bool foundAny = false;
+    void operator()(const IniSection &section) { validateSection(section, &m_ptree, ""); }
+    void operator()(const IniProperty &property) { validateProperty(property, &m_ptree, ""); }
 
-        // Look for numbered items (0, 1, 2, etc.)
-        for (int i = 0; i < 1000; ++i) {
-            std::string itemPath = path + "." + std::to_string(i);
-            try {
-                tree.get_child(itemPath);
-                foundAny = true;
-
-                // Validate properties of this array item
-                for (const auto &prop : properties_) {
-                    std::string propPath = itemPath + "." + prop.name;
-                    try {
-                        auto value = tree.get<std::string>(propPath);
-                        if (!TypeValidators::validateType(prop.type, value)) {
-                            result.errors.push_back("Property '" + propPath + "' has invalid " +
-                                                    TypeValidators::getTypeName(prop.type) +
-                                                    " value: " + value);
-                            result.isValid = false;
-                        }
-                    } catch (const pt::ptree_bad_path &) {
-                        if (prop.required == Required::Yes) {
-                            result.errors.push_back("Required property '" + propPath +
-                                                    "' is missing");
-                            result.isValid = false;
-                        }
-                    }
-                }
-
-                // Validate child sections
-                for (const auto &section : sections_) {
-                    section->validate(tree, itemPath, result);
-                }
-
-            } catch (const pt::ptree_bad_path &) {
-                break; // No more items
-            }
-        }
-
-        return result.isValid;
-    }
-
-    std::ostream &print(std::ostream &os, int depth = 0) const override {
-        std::string indent(depth * 2, ' ');
-        os << indent << "ArraySection:" << std::endl;
-        for (const auto &prop : properties_) {
-            os << indent << "  - " << prop.name << " (" << TypeValidators::getTypeName(prop.type)
-               << ", " << (prop.required == Required::Yes ? "required" : "optional") << ")"
-               << std::endl;
-        }
-        return os;
-    }
-};
-
-// Any name section for dynamic section names
-class IniAnyNameSection : public IniSchemaElement {
   private:
-    std::vector<PropertyDef> properties_;
-    std::vector<std::unique_ptr<IniSchemaElement>> sections_;
+    using ptree = boost::property_tree::ptree;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
+    const ptree &m_ptree;
+    std::vector<std::string> m_errors;
 
-  public:
-    IniAnyNameSection &addProperty(const std::string &name, Type type, Required required) {
-        properties_.emplace_back(name, type, required);
-        return *this;
+    // ---------- Small string helpers
+    static std::string joinPath(const std::string &base, const std::string &name) {
+        if (base.empty()) {
+            return name;
+        }
+        if (name.empty()) {
+            return base;
+        }
+        return base + "." + name;
     }
 
-    IniAnyNameSection &addSection(std::unique_ptr<IniSchemaElement> section) {
-        sections_.push_back(std::move(section));
-        return *this;
+    // ---------- Validators for specific types
+    static bool isBool(const std::string &raw) {
+        const std::string val = utils::lowercase(utils::trim(raw));
+        return (val == "true" || val == "false" || val == "yes" || val == "no" || val == "on" ||
+                val == "off" || val == "1" || val == "0");
     }
 
-    template <typename T> IniAnyNameSection &addSection(T section) {
-        sections_.push_back(std::make_unique<T>(std::move(section)));
-        return *this;
+    static bool isInteger(const std::string &raw) {
+        int tmp = 0;
+        return utils::parseInt(utils::trim(raw), tmp);
     }
 
-    bool validate(const pt::ptree &tree, const std::string &path,
-                  ValidationResult &result) const override {
-        try {
-            auto section = tree.get_child(path);
+    static bool isDateMMDD(const std::string &raw) {
+        // Accept MM-DD, months 01..12; Feb <= 29; Apr/Jun/Sep/Nov <= 30
+        static const std::regex kReg(R"(^(0[1-9]|1[0-2])\-([0-2][0-9]|3[01])$)");
+        std::smatch match;
+        if (!std::regex_match(raw, match, kReg)) {
+            return false;
+        }
+        int month = std::stoi(match[1].str());
+        int day = std::stoi(match[2].str());
+        static const std::array<int, 13> kDaysInMonth = {0,  31, 29, 31, 30, 31, 30,
+                                                         31, 31, 30, 31, 30, 31}; // allow Feb 29
 
-            // Iterate through all child sections (any names)
-            for (const auto &child : section) {
-                std::string childPath = path + "." + child.first;
+        static constexpr int kFebruary = 2;
+        static constexpr int kMaxFebruaryDays = 29;
+        return day >= 1 && day <= kDaysInMonth.at(month) &&
+               (month != kFebruary || day <= kMaxFebruaryDays);
+    }
 
-                // Validate properties
-                for (const auto &prop : properties_) {
-                    std::string propPath = childPath + "." + prop.name;
-                    try {
-                        auto value = tree.get<std::string>(propPath);
-                        if (!TypeValidators::validateType(prop.type, value)) {
-                            result.errors.push_back("Property '" + propPath + "' has invalid " +
-                                                    TypeValidators::getTypeName(prop.type) +
-                                                    " value: " + value);
-                            result.isValid = false;
-                        }
-                    } catch (const pt::ptree_bad_path &) {
-                        if (prop.required == Required::Yes) {
-                            result.errors.push_back("Required property '" + propPath +
-                                                    "' is missing");
-                            result.isValid = false;
-                        }
-                    }
-                }
+    static constexpr int kMaxColor256Value = 255;
 
-                // Validate child sections
-                for (const auto &childSection : sections_) {
-                    childSection->validate(tree, childPath, result);
+    static bool isColor(const std::string &raw) {
+        const std::string val = utils::trim(utils::lowercase(raw));
+        // hex(#rgb|#rrggbb)
+        {
+            static const std::regex kReHex(R"(^hex\(\s*\#([0-9a-f]{3}|[0-9a-f]{6})\s*\)$)");
+            if (std::regex_match(val, kReHex)) {
+                return true;
+            }
+        }
+        // rgb(r,g,b) with 0..255
+        {
+            static const std::regex kReRgb(
+                R"(^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$)");
+            std::smatch match;
+            if (std::regex_match(val, match, kReRgb)) {
+                int red = std::stoi(match[1].str());
+                int green = std::stoi(match[2].str());
+                int blue = std::stoi(match[3].str());
+                return (red | green | blue) >= 0 && red <= kMaxColor256Value &&
+                       green <= kMaxColor256Value && blue <= kMaxColor256Value;
+            }
+        }
+        // 256(n) or ansi256(n) with 0..255
+        {
+            static const std::regex kRe256(R"(^(?:256|ansi256)\(\s*(\d{1,3})\s*\)$)");
+            std::smatch match;
+            if (std::regex_match(val, match, kRe256)) {
+                int val = std::stoi(match[1].str());
+                return val >= 0 && val <= kMaxColor256Value;
+            }
+        }
+        return false;
+    }
+
+    static bool isStyle(const std::string &raw) {
+        static const std::set<std::string> kAllowed = {"bold", "underline", "italic"};
+        std::string str = utils::lowercase(raw);
+        // split by ','
+        size_t start = 0;
+        bool any = false;
+        while (true) {
+            size_t comma = str.find(',', start);
+            std::string token = utils::trim(
+                str.substr(start, (comma == std::string::npos ? str.size() : comma) - start));
+            if (!token.empty()) {
+                any = true;
+                if (!kAllowed.contains(token)) {
+                    return false;
                 }
             }
-        } catch (const pt::ptree_bad_path &) {
-            // Section doesn't exist, which might be okay
+            if (comma == std::string::npos) {
+                break;
+            }
+            start = comma + 1;
         }
-
-        return result.isValid;
+        return any; // must have at least one style
     }
 
-    std::ostream &print(std::ostream &os, int depth = 0) const override {
-        std::string indent(depth * 2, ' ');
-        os << indent << "AnyNameSection:" << std::endl;
-        for (const auto &prop : properties_) {
-            os << indent << "  - " << prop.name << " (" << TypeValidators::getTypeName(prop.type)
-               << ", " << (prop.required == Required::Yes ? "required" : "optional") << ")"
-               << std::endl;
+    // ---------- Core validation walkers
+    void validateSection(const IniSection &section, const ptree *node, const std::string &path) {
+        if (node == nullptr) {
+            if (section.required == Required::Yes) {
+                addError(path, "required section '" + section.name + "' is missing");
+            }
+            return;
         }
-        return os;
+
+        // Resolve which subtree(s) to validate under this Section
+        if (section.name.empty()) {
+            // Root pseudo-section: validate here
+            validateHere(section, node, path);
+            return;
+        }
+
+        if (section.name == "*") {
+            // Wildcard: validate under all children
+            if (node->empty()) {
+                if (section.required == Required::Yes) {
+                    addError(path, "required wildcard section has no children");
+                }
+                return;
+            }
+            for (const auto &keyval : *node) {
+                const auto &key = keyval.first;
+                const auto &child = keyval.second;
+                const std::string subPath = joinPath(path, key);
+                validateHere(section, &child, subPath);
+            }
+            return;
+        }
+
+        if (section.name == "[]") {
+            // Array-like: same as wildcard, but keep the [] in the path for clarity
+            if (node->empty()) {
+                if (section.required == Required::Yes) {
+                    addError(path, "required array section '[]' has no children");
+                }
+                return;
+            }
+            int idx = 0;
+            for (const auto &keyval : *node) {
+                const auto &child = keyval.second;
+                const std::string subPath = joinPath(path, "[" + std::to_string(idx++) + "]");
+                validateHere(section, &child, subPath);
+            }
+            return;
+        }
+
+        // Normal named subsection
+        {
+            auto opt = node->get_child_optional(section.name);
+            if (!opt) {
+                if (section.required == Required::Yes) {
+                    addError(joinPath(path, section.name), "required section missing");
+                }
+                return;
+            }
+            const ptree &child = *opt;
+            const std::string subPath = joinPath(path, section.name);
+            validateHere(section, &child, subPath);
+        }
+    }
+
+    void validateHere(const IniSection &sect, const ptree *node, const std::string &path) {
+        // Validate properties at this node
+        for (const auto &prop : sect.properties) {
+            validateProperty(prop, node, path);
+        }
+        // Recurse into subsections
+        for (const auto &sub : sect.sections) {
+            validateSection(sub, node, path);
+        }
+    }
+
+    void validateProperty(const IniProperty &prop, const ptree *node, const std::string &path) {
+        if (node == nullptr) {
+            if (prop.required == Required::Yes) {
+                addError(joinPath(path, prop.name), "required property missing");
+            }
+            return;
+        }
+
+        auto opt = node->get_optional<std::string>(prop.name);
+        if (!opt) {
+            if (prop.required == Required::Yes) {
+                addError(joinPath(path, prop.name), "required property missing");
+            }
+            return;
+        }
+
+        const std::string &value = *opt;
+        const std::string full = joinPath(path, prop.name);
+
+        switch (prop.type) {
+        case Type::String:
+        case Type::Path:
+            if (utils::trim(value).empty() && prop.required == Required::Yes) {
+                addTypedError(full, "non-empty string/path expected", value);
+            }
+            break;
+
+        case Type::Boolean:
+            if (!isBool(value)) {
+                addTypedError(full, "boolean expected (true/false/yes/no/on/off/1/0)", value);
+            }
+            break;
+
+        case Type::Integer:
+            if (!isInteger(value)) {
+                addTypedError(full, "integer (base-10) expected", value);
+            }
+            break;
+
+        case Type::Date:
+            if (!isDateMMDD(value)) {
+                addTypedError(full, "date expected in MM-DD (Feb ≤ 29; Apr/Jun/Sep/Nov ≤ 30)",
+                              value);
+            }
+            break;
+
+        case Type::Color:
+            if (!isColor(value)) {
+                addTypedError(full,
+                              "color expected: hex(#rgb|#rrggbb) | rgb(r,g,b) | 256(n)/ansi256(n)",
+                              value);
+            }
+            break;
+
+        case Type::Style:
+            if (!isStyle(value)) {
+                addTypedError(full, "style expected: bold, underline, italic (comma-separated)",
+                              value);
+            }
+            break;
+        }
+    }
+
+    void addError(const std::string &src, const std::string &msg) {
+        if (src.empty()) {
+            m_errors.push_back(msg);
+        } else {
+            m_errors.push_back("[" + src + "] " + msg);
+        }
+    }
+    void addTypedError(const std::string &src, const char *expected, const std::string &got) {
+        addError(src, std::string(expected) + ", got: '" + got + "'");
     }
 };
 
-// Named schema section
-class IniSchemaSection : public IniSchemaElement {
-  private:
-    std::string name_;
-    Required required_;
-    std::vector<PropertyDef> properties_;
-    std::vector<std::unique_ptr<IniSchemaElement>> sections_;
-
-  public:
-    IniSchemaSection(const std::string &name, Required required)
-        : name_(name), required_(required) {}
-
-    IniSchemaSection &addProperty(const std::string &name, Type type, Required required) {
-        properties_.emplace_back(name, type, required);
-        return *this;
-    }
-
-    IniSchemaSection &addSection(std::unique_ptr<IniSchemaElement> section) {
-        sections_.push_back(std::move(section));
-        return *this;
-    }
-
-    IniSchemaSection &addSection(IniSchemaSection section) {
-        sections_.push_back(std::make_unique<IniSchemaSection>(std::move(section)));
-        return *this;
-    }
-
-    IniSchemaSection &addSection(IniAnyNameSection section) {
-        sections_.push_back(std::make_unique<IniAnyNameSection>(std::move(section)));
-        return *this;
-    }
-
-    bool validate(const pt::ptree &tree, const std::string &path,
-                  ValidationResult &result) const override {
-        std::string fullPath = path.empty() ? name_ : path + "." + name_;
-
-        try {
-            tree.get_child(fullPath);
-
-            // Validate properties
-            for (const auto &prop : properties_) {
-                std::string propPath = fullPath + "." + prop.name;
-                try {
-                    auto value = tree.get<std::string>(propPath);
-                    if (!TypeValidators::validateType(prop.type, value)) {
-                        result.errors.push_back("Property '" + propPath + "' has invalid " +
-                                                TypeValidators::getTypeName(prop.type) +
-                                                " value: " + value);
-                        result.isValid = false;
-                    }
-                } catch (const pt::ptree_bad_path &) {
-                    if (prop.required == Required::Yes) {
-                        result.errors.push_back("Required property '" + propPath + "' is missing");
-                        result.isValid = false;
-                    }
-                }
-            }
-
-            // Validate child sections
-            for (const auto &section : sections_) {
-                section->validate(tree, fullPath, result);
-            }
-
-        } catch (const pt::ptree_bad_path &) {
-            if (required_ == Required::Yes) {
-                result.errors.push_back("Required section '" + fullPath + "' is missing");
-                result.isValid = false;
-            }
-        }
-
-        return result.isValid;
-    }
-
-    std::ostream &print(std::ostream &os, int depth = 0) const override {
-        std::string indent(depth * 2, ' ');
-        os << indent << "[" << name_ << "] ("
-           << (required_ == Required::Yes ? "required" : "optional") << ")" << std::endl;
-        for (const auto &prop : properties_) {
-            os << indent << "  - " << prop.name << " (" << TypeValidators::getTypeName(prop.type)
-               << ", " << (prop.required == Required::Yes ? "required" : "optional") << ")"
-               << std::endl;
-        }
-        for (const auto &section : sections_) {
-            section->print(os, depth + 1);
-        }
-        return os;
-    }
-
-    const std::string &getName() const { return name_; }
-};
-
-// Root schema section (unnamed)
-class IniSchemaRoot {
-  private:
-    std::vector<PropertyDef> properties_;
-    std::vector<std::unique_ptr<IniSchemaElement>> sections_;
-
-  public:
-    IniSchemaRoot &addProperty(const std::string &name, Type type, Required required) {
-        properties_.emplace_back(name, type, required);
-        return *this;
-    }
-
-    IniSchemaRoot &addSection(IniSchemaSection section) {
-        sections_.push_back(std::make_unique<IniSchemaSection>(std::move(section)));
-        return *this;
-    }
-
-    bool validate(const pt::ptree &tree, ValidationResult &result) const {
-        // Validate root properties
-        for (const auto &prop : properties_) {
-            try {
-                auto value = tree.get<std::string>(prop.name);
-                if (!TypeValidators::validateType(prop.type, value)) {
-                    result.errors.push_back("Property '" + prop.name + "' has invalid " +
-                                            TypeValidators::getTypeName(prop.type) +
-                                            " value: " + value);
-                    result.isValid = false;
-                }
-            } catch (const pt::ptree_bad_path &) {
-                if (prop.required == Required::Yes) {
-                    result.errors.push_back("Required property '" + prop.name + "' is missing");
-                    result.isValid = false;
-                }
-            }
-        }
-
-        // Validate sections
-        for (const auto &section : sections_) {
-            section->validate(tree, "", result);
-        }
-
-        return result.isValid;
-    }
-
-    std::ostream &print(std::ostream &os) const {
-        os << "Root properties:" << std::endl;
-        for (const auto &prop : properties_) {
-            os << "  - " << prop.name << " (" << TypeValidators::getTypeName(prop.type) << ", "
-               << (prop.required == Required::Yes ? "required" : "optional") << ")" << std::endl;
-        }
-        os << "Sections:" << std::endl;
-        for (const auto &section : sections_) {
-            section->print(os, 1);
-        }
-        return os;
-    }
-};
-
-// Main schema class
 class IniSchema {
-  private:
-    IniSchemaRoot root_;
-
   public:
-    IniSchemaRoot &getRoot() { return root_; }
+    IniSchema() : m_root{"", Required::No} {}
 
-    ValidationResult validate(const pt::ptree &tree) {
-        ValidationResult result;
-        root_.validate(tree, result);
-        return result;
+    // Add directly to root via variant (optional convenience)
+    void add(SchemaElement element) {
+        std::visit(
+            [this](auto &&elelm) {
+                using T = std::decay_t<decltype(elelm)>;
+                if constexpr (std::is_same_v<T, IniProperty>) {
+                    m_root.add(std::move(elelm));
+                } else if constexpr (std::is_same_v<T, IniSection>) {
+                    m_root.add(std::move(elelm));
+                }
+            },
+            std::move(element));
     }
 
-    void print() const { root_.print(std::cout); }
+    // Access to the root for fluent building
+    IniSection &getRoot() { return m_root; }
+    [[nodiscard]] const IniSection &getRoot() const { return m_root; }
 
-    friend std::ostream &operator<<(std::ostream &os, const IniSchema &schema) {
-        return schema.root_.print(os);
+    // Validate a ptree against the schema
+    bool validate(const boost::property_tree::ptree &cfg, std::vector<std::string> &outErrors) {
+        ValidationVisitor visitor(cfg);
+        const bool isOk = visitor.validate(m_root);
+        outErrors = visitor.errors();
+        return isOk;
     }
+
+  private:
+    IniSection m_root;
 };
 
-// Your specific schema function
-auto getCapsLogIniSchema() {
+// Schema creation function
+inline auto getCapsLogIniSchema() {
     IniSchema schema;
     // clang-format off
     auto &root = schema.getRoot();
-    root.addProperty("log-dir-path", Type::Path, Required::No)
-        .addProperty("log-name-format", Type::String, Required::No)
-        .addProperty("sunday-start", Type::Boolean, Required::No)
-        .addProperty("first-line-section", Type::Boolean, Required::No)
-        .addProperty("password", Type::String, Required::No)
-        .addProperty("crypto-application-type", Type::String, Required::No)
-        .addProperty("recent-events-window", Type::Integer, Required::No)
-        .addProperty("config-file-path", Type::Path, Required::No);
-    
-    root.addSection(IniSchemaSection{"git", Required::No}
-        .addProperty("enable-git-log-repo", Type::Boolean, Required::Yes)
-        .addProperty("ssh-pub-key-path", Type::String, Required::Yes)
-        .addProperty("ssh-key-path", Type::Path, Required::Yes)
-        .addProperty("main-branch-name", Type::String, Required::Yes)
-        .addProperty("remote-name", Type::String, Required::Yes)
-        .addProperty("repo-root", Type::Path, Required::Yes)
+    root.add(IniProperty{"log-dir-path", Type::Path, Required::No})
+        .add(IniProperty{"log-name-format", Type::String, Required::No})
+        .add(IniProperty{"sunday-start", Type::Boolean, Required::No})
+        .add(IniProperty{"first-line-section", Type::Boolean, Required::No})
+        .add(IniProperty{"password", Type::String, Required::No})
+        .add(IniProperty{"crypto-application-type", Type::String, Required::No})
+        .add(IniProperty{"recent-events-window", Type::Integer, Required::No})
+        .add(IniProperty{"config-file-path", Type::Path, Required::No});
+
+    root.add(IniSection{"git", Required::No}
+        .add(IniProperty{"enable-git-log-repo", Type::Boolean, Required::Yes})
+        .add(IniProperty{"ssh-pub-key-path", Type::String, Required::Yes})
+        .add(IniProperty{"ssh-key-path", Type::Path, Required::Yes})
+        .add(IniProperty{"main-branch-name", Type::String, Required::Yes})
+        .add(IniProperty{"remote-name", Type::String, Required::Yes})
+        .add(IniProperty{"repo-root", Type::Path, Required::Yes})
     );
-    
-    root.addSection(IniSchemaSection{"calendar-events", Required::No}
+
+    // Calendar events: wildcard -> array -> object with required fields
+    root.addSection(IniSection{"calendar-events", Required::No}
         .addSection(IniAnyNameSection{}
-            .addSection(std::make_unique<IniArraySection>(
-                IniArraySection{}
-                    .addProperty("name", Type::String, Required::Yes)
-                    .addProperty("date", Type::Date, Required::Yes)
-            ))
+            .addSection(IniArraySection{}
+                .addProperty("name", Type::String, Required::Yes)
+                .addProperty("date", Type::Date, Required::Yes)
+            )
         )
     );
-    
-    root.addSection(IniSchemaSection{"ui", Required::No}
-        .addSection(IniSchemaSection{"logs", Required::No}
-            .addSection(IniSchemaSection{"tags-list", Required::No}
+
+    // UI section
+    root.addSection(IniSection{"ui", Required::No}
+        .addSection(IniSection{"logs-view", Required::No}
+            .addSection(IniSection{"tags-menu", Required::No}
                 .addProperty("border", Type::Boolean, Required::No)
                 .addProperty("color", Type::Color, Required::No)
                 .addProperty("style", Type::Style, Required::No)
                 .addProperty("selected-color", Type::Color, Required::No)
                 .addProperty("selected-style", Type::Style, Required::No)
             )
-            .addSection(IniSchemaSection{"sections-list", Required::No}
+            .addSection(IniSection{"sections-menu", Required::No}
                 .addProperty("border", Type::Boolean, Required::No)
+                .addProperty("color", Type::Color, Required::No)
+                .addProperty("style", Type::Style, Required::No)
+                .addProperty("selected-color", Type::Color, Required::No)
+                .addProperty("selected-style", Type::Style, Required::No)
             )
-            .addSection(IniSchemaSection{"events-list", Required::No}
+            .addSection(IniSection{"events-list", Required::No}
                 .addProperty("border", Type::Boolean, Required::No)
+                .addProperty("color", Type::Color, Required::No)
+                .addProperty("style", Type::Style, Required::No)
+                .addProperty("selected-color", Type::Color, Required::No)
+                .addProperty("selected-style", Type::Style, Required::No)
             )
-            .addSection(IniSchemaSection{"log-entry-preview", Required::No}
+            .addSection(IniSection{"log-entry-preview", Required::No}
                 .addProperty("border", Type::Boolean, Required::No)
                 .addProperty("markdown-syntax-highlighting", Type::Boolean, Required::No)
             )
-            .addSection(IniSchemaSection{"annual-calendar", Required::No}
+            .addSection(IniSection{"annual-calendar", Required::No}
+                .add(IniProperty{"sunday-start", Type::Boolean, Required::No})
+                .addProperty("recent-events-window", Type::Integer, Required::No)
                 .addProperty("border", Type::Boolean, Required::No)
                 .addProperty("month-border", Type::Boolean, Required::No)
                 .addProperty("weekday-color", Type::Color, Required::No)
@@ -538,15 +453,15 @@ auto getCapsLogIniSchema() {
                 .addProperty("event-day-color", Type::Color, Required::No)
             )
         )
-        .addSection(IniSchemaSection{"scratchpads", Required::No}
-            .addSection(IniSchemaSection{"scratchpad-list", Required::No}
+        .addSection(IniSection{"scratchpads-view", Required::No}
+            .addSection(IniSection{"scratchpad-list", Required::No}
                 .addProperty("border", Type::Boolean, Required::No)
                 .addProperty("color", Type::Color, Required::No)
                 .addProperty("style", Type::Style, Required::No)
                 .addProperty("selected-color", Type::Color, Required::No)
                 .addProperty("selected-style", Type::Style, Required::No)
             )
-            .addSection(IniSchemaSection{"scratchpad-preview", Required::No}
+            .addSection(IniSection{"scratchpad-preview", Required::No}
                 .addProperty("border", Type::Boolean, Required::No)
                 .addProperty("markdown-syntax-highlighting", Type::Boolean, Required::No)
             )

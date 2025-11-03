@@ -1,11 +1,13 @@
 #include "preview.hpp"
+
 #include <ftxui/component/event.hpp>
+
 #include <regex>
 #include <sstream>
 
 namespace caps_log::view {
 using namespace ftxui;
-
+namespace {
 /**
  * @brief Decorates a markdown line with appropriate styling.
  * Headers are bolded and purple, code blocks are gray, lists are bllue, and paragraphs are normal.
@@ -27,6 +29,9 @@ Element decorateMarkdownLine(const std::string &line) {
 
     return text(line); // Normal paragraph
 }
+} // namespace
+
+Preview::Preview(const PreviewOptions &options) : m_options(options) {}
 
 Element Preview::OnRender() {
     Elements visibleLines;
@@ -37,7 +42,10 @@ Element Preview::OnRender() {
 
     // Not using a `window` because of https://github.com/ArthurSonzogni/FTXUI/issues/1016
     // Note: dont use `center` it makes the width not expanded to the full width of the screen
-    auto element = vbox(visibleLines) | borderRounded;
+    auto element = vbox(visibleLines);
+    if (m_options.border) {
+        element |= borderRounded;
+    }
     return (Focused() ? element : element | dim);
 }
 
@@ -70,8 +78,14 @@ void Preview::setContent(const std::string &title, const std::string &str) {
     m_title = text(title) | underlined | center | bold;
     Elements lines;
     std::istringstream input{str};
-    for (std::string line; std::getline(input, line);) {
-        lines.push_back(decorateMarkdownLine(line));
+    if (m_options.markdownSyntaxHighlighting) {
+        for (std::string line; std::getline(input, line);) {
+            lines.push_back(decorateMarkdownLine(line));
+        }
+    } else {
+        for (std::string line; std::getline(input, line);) {
+            lines.push_back(text(line));
+        }
     }
     m_lines = std::move(lines);
 }

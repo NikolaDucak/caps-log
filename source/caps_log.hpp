@@ -39,7 +39,8 @@ class CapsLog {
 
     CapsLog(const Context &context) : m_config(context.cliArgs) {
         m_config.verify();
-        if (m_config.isPasswordProvided() && m_config.isCryptoEnabled()) {
+        auto isEncrypted = LogRepositoryCryptoApplier::isEncrypted(m_config.getLogDirPath());
+        if (not m_config.isPasswordProvided() && isEncrypted) {
             m_config.setPassword(promptPassword());
         }
 

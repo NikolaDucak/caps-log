@@ -186,34 +186,35 @@ __UI configuration__
 
 Color values:
 ```
-color = rgba(255, 0, 0, a) # red, green, blue, a
-color = <lowercase color 256>
+color = hex(#abc) | hex(#aabbcc)
+color = rgb(r, g, b)      # each 0..255
+color = 256(n) | ansi256(n) # n in 0..255
 ```
 
 Style values: 
 ```
-style = bold | italic | underline | blink | reverse
+style = bold | italic | underline   # comma-separated for combos, e.g. "bold, underline"
 ```
 
 ```ini
-[ui.logs.sections-list]
+[ui.logs-view.sections-menu]
 border = true
 
-[ui.logs.tags-list]
+[ui.logs-view.tags-menu]
 border = <true or false>
 color = <color>
 style = <style>
 selected-color = <color>
 selected-style = <style>
 
-[ui.logs.events-list]
+[ui.logs-view.events-list]
 border = true
 
-[ui.logs.log-entry-preview]
+[ui.logs-view.log-entry-preview]
 border = true
 markdown-syntax-highlighting = true
 
-[ui.logs.annual-calendar]
+[ui.logs-view.annual-calendar]
 border = true
 month-border = true
 weekday-color = <color>
@@ -226,14 +227,14 @@ selected-day-color = <color>
 selected-day-style = <style>
 event-day-color = <color>
 
-[ui.scratchpads.scratchpad-list]
+[ui.scratchpads-view.scratchpad-list]
 border = true
 color = <color>
 style = <style>
 selected-color = <color>
 selected-style = <style>
 
-[ui.scratchpads.scratchpad-preview]
+[ui.scratchpads-view.scratchpad-preview]
 border = true
 markdown-syntax-highlighting = true
 ```

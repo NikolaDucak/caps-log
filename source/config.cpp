@@ -220,8 +220,10 @@ Configuration::Configuration(
 
 void Configuration::applyDefaults() {
     m_viewConfig = view::ViewConfig{
-        .sundayStart = Configuration::kDefaultSundayStart,
-        .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
+        .logView{
+            .calendar{.sundayStart = Configuration::kDefaultSundayStart},
+            .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
+        },
     };
     m_password = "";
     m_cryptoApplicationType = std::nullopt;
@@ -236,11 +238,11 @@ void Configuration::applyDefaults() {
 void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &ptree) {
     setIfValue<std::string>(ptree, "log-dir-path", m_logDirPath);
     setIfValue<std::string>(ptree, "log-filename-format", m_logFilenameFormat);
-    setIfValue<bool>(ptree, "sunday-start", m_viewConfig.sundayStart);
+    setIfValue<bool>(ptree, "sunday-start", m_viewConfig.logView.calendar.sundayStart);
     setIfValue<bool>(ptree, "first-line-section", m_acceptSectionsOnFirstLine);
     setIfValue<std::string>(ptree, "password", m_password);
     setIfValue<unsigned>(ptree, "calendar-events.recent-events-window",
-                         m_viewConfig.recentEventsWindow);
+                         m_viewConfig.logView.recentEventsWindow);
 
     // Parse and update calendar events
     m_calendarEvents = parseCalendarEvents(ptree);
@@ -262,6 +264,9 @@ void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &pt
 
         m_gitRepoConfig = gitConf;
     }
+
+    // apply new view config options
+    m_viewConfig = view::extractViewConfig(ptree);
 }
 
 void Configuration::overrideFromCommandLine(const boost::program_options::variables_map &vmap) {
@@ -272,7 +277,7 @@ void Configuration::overrideFromCommandLine(const boost::program_options::variab
         m_logFilenameFormat = vmap["log-name-format"].as<std::string>();
     }
     if (vmap.contains("sunday-start")) {
-        m_viewConfig.sundayStart = true;
+        m_viewConfig.logView.calendar.sundayStart = true;
     }
     if (vmap.contains("first-line-section")) {
         m_acceptSectionsOnFirstLine = true;

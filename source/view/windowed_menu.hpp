@@ -1,5 +1,6 @@
 #pragma once
 
+#include "view/view.hpp"
 #include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
@@ -13,6 +14,11 @@ struct WindowedMenuOption {
     std::string title;
     ftxui::ConstStringListRef entries;
     std::function<void()> onChange;
+    ViewConfig::Logs::Menu config;
+
+    ftxui::Decorator selectedDecorator = ftxui::inverted;
+    ftxui::Decorator unselectedDecorator = ftxui::nothing;
+    ftxui::BorderStyle border = ftxui::BorderStyle::ROUNDED;
 };
 
 class WindowedMenu : public ftxui::ComponentBase {
@@ -26,10 +32,19 @@ class WindowedMenu : public ftxui::ComponentBase {
         menuOption.entries = option.entries;
         menuOption.on_change = option.onChange;
         menuOption.selected = &m_selected;
-
+        menuOption.entries_option.transform = [option](const EntryState &state) {
+            auto element = text(state.label);
+            if (state.focused) {
+                element |= option.selectedDecorator;
+            } else {
+                element |= option.unselectedDecorator;
+            }
+            return element;
+        };
         auto menuComponent = Menu(std::move(menuOption));
-        auto menuRenderer = Renderer(menuComponent, [title = option.title, menu = menuComponent]() {
-            auto windowElement = window(text(title), menu->Render() | vscroll_indicator | frame);
+        auto menuRenderer = Renderer(menuComponent, [option, menu = menuComponent]() {
+            auto windowElement = window(text(option.title),
+                                        menu->Render() | vscroll_indicator | frame, option.border);
 
             if (not menu->Focused()) {
                 windowElement |= dim;

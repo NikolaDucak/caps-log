@@ -13,6 +13,7 @@ namespace caps_log::view {
 using namespace ftxui;
 
 namespace {
+
 /**
  * @brief Utility class that allows for the arrangement of month components in a calendar.
  * It distributes 12 months into 2 or more rows of equal elements.
@@ -24,11 +25,11 @@ namespace {
 class MonthComponentArranger {
   public:
     static Element arrange(const Dimensions screenDimensions, const Components &monthComponents,
-                           std::chrono::year displayedYear) {
+                           std::chrono::year displayedYear, BorderStyle style) {
         const auto availableMonthColumns = computeNumberOfMonthsPerRow(screenDimensions);
         const auto renderData = arrangeMonthsInCalendar(monthComponents, availableMonthColumns);
         return window(text(std::to_string(static_cast<int>(displayedYear))),
-                      vbox(renderData) | frame) |
+                      vbox(renderData) | frame, style) |
                vscroll_indicator;
     }
 
@@ -134,9 +135,11 @@ Component Calendar::createYear(std::chrono::year year) {
     }
     const auto container = ftxui_ext::AnyDir(monthComponents, &m_selectedMonthComponentIdx);
 
-    return Renderer(container, [this, monthComponents]() {
+    const auto borderStyle = m_option.border ? BorderStyle::ROUNDED : BorderStyle::EMPTY;
+
+    return Renderer(container, [this, monthComponents, borderStyle]() {
         return MonthComponentArranger::arrange(m_screenSizeProvider(), monthComponents,
-                                               m_displayedYear);
+                                               m_displayedYear, borderStyle);
     });
 }
 
@@ -169,9 +172,10 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
         kDaysPerWeek, buttons,
         &m_selectedDayButtonIdxMap.at(static_cast<unsigned>(year_month.month()) - 1));
 
+    const auto borderStyle = m_option.monthBorder ? BorderStyle::ROUNDED : BorderStyle::EMPTY;
     return Renderer(container, [&displayedYear = m_displayedYear, yearMonth = year_month,
                                 sundayStart = (m_option.sundayStart ? 1 : 0),
-                                buttons = std::move(buttons)]() {
+                                buttons = std::move(buttons), borderStyle]() {
         const auto header =
             sundayStart == 1 ? kMonthHeaderElement("SMTWTFS") : kMonthHeaderElement("MTWTFSS");
         std::vector<Elements> renderData = {header, {}};
@@ -192,7 +196,7 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
             currentWeekday++;
         }
         return window(text(utils::date::getStringNameForMonth(yearMonth.month())),
-                      gridbox(renderData));
+                      gridbox(renderData), borderStyle);
     });
 }
 

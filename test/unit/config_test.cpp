@@ -28,7 +28,8 @@ TEST(ConfigTest, DefaultConfigurations) {
 
     EXPECT_EQ(config.getLogDirPath(), Configuration::kDefaultLogDirPath);
     EXPECT_EQ(config.getLogFilenameFormat(), Configuration::kDefaultLogFilenameFormat);
-    EXPECT_EQ(config.getViewConfig().sundayStart, Configuration::kDefaultSundayStart);
+    EXPECT_EQ(config.getViewConfig().logView.calendar.sundayStart,
+              Configuration::kDefaultSundayStart);
     EXPECT_EQ(config.getAppConfig().skipFirstLine,
               !Configuration::kDefaultAcceptSectionsOnFirstLine);
     EXPECT_EQ(config.getPassword(), "");
@@ -50,7 +51,7 @@ TEST(ConfigTest, ConfigFileOverrides) {
 
     EXPECT_EQ(config.getLogDirPath(), "/override/path/");
     EXPECT_EQ(config.getLogFilenameFormat(), "override_format.md");
-    EXPECT_TRUE(config.getViewConfig().sundayStart);
+    EXPECT_TRUE(config.getViewConfig().logView.calendar.sundayStart);
     EXPECT_TRUE(config.getAppConfig().skipFirstLine);
     EXPECT_EQ(config.getPassword(), "override_password");
     EXPECT_FALSE(config.getGitRepoConfig().has_value());
@@ -80,7 +81,7 @@ TEST(ConfigTest, CommandLineOverrides) {
 
     EXPECT_EQ(config.getLogDirPath(), "/cmd/override/path/");
     EXPECT_EQ(config.getLogFilenameFormat(), "cmd_override_format.md");
-    EXPECT_TRUE(config.getViewConfig().sundayStart);
+    EXPECT_TRUE(config.getViewConfig().logView.calendar.sundayStart);
     EXPECT_FALSE(config.getAppConfig().skipFirstLine);
     EXPECT_EQ(config.getPassword(), "cmd_override_password");
     EXPECT_FALSE(config.getGitRepoConfig().has_value());
@@ -199,7 +200,7 @@ TEST(ConfigTest, CalendarEventsParsing) {
     Configuration config = Configuration(cmdLineArgs, configFile);
 
     auto events = config.getAppConfig().events;
-    EXPECT_EQ(config.getViewConfig().recentEventsWindow, 42);
+    EXPECT_EQ(config.getViewConfig().logView.recentEventsWindow, 42);
     EXPECT_EQ(events.size(), 2);
     EXPECT_EQ(events["birthdays"].size(), 1);
     EXPECT_EQ(events["holidays"].size(), 1);
