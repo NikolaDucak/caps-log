@@ -18,6 +18,19 @@ using namespace utils;
 
 namespace {
 
+[[nodiscard]] std::string exceptionPtrToString(const std::exception_ptr &ptr) {
+    try {
+        if (ptr) {
+            std::rethrow_exception(ptr);
+        }
+    } catch (const std::exception &e) {
+        return e.what();
+    } catch (...) {
+        return "Unknown exception";
+    }
+    return "No exception";
+}
+
 [[nodiscard]] bool noMeaningfulContent(const std::string &content,
                                        const std::chrono::year_month_day &date) {
     return utils::trim(content) == date::formatToString(date, kLogBaseTemplate) || content.empty();
@@ -319,33 +332,60 @@ void App::handleFocusedTagChange() { m_viewDataUpdater.handleFocusedTagChange();
 void App::handleFocusedSectionChange() { m_viewDataUpdater.handleFocusedSectionChange(); }
 
 void App::handleUiStarted() {
-    if (m_gitRepo) {
-        m_view->getPopUpView().show(PopUpViewBase::Loading{"Pulling from remote..."});
-        m_gitRepo->pull([this] {
-            m_view->post([this] {
+    if (!m_gitRepo) {
+        return;
+    }
+    m_view->getPopUpView().show(PopUpViewBase::Loading{"Pulling from remote..."});
+    m_gitRepo->pull([this](std::expected<void, std::exception_ptr> result) {
+        m_view->post([this, result = std::move(result)]() {
+            if (!result.has_value()) {
+                m_view->getPopUpView().show(PopUpViewBase::Ok{fmt::format(
+                    "Error pulling from remote:\n{}", exceptionPtrToString(result.error()))});
+            } else {
                 m_data =
                     AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
                 updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
                 m_view->getPopUpView().show(PopUpViewBase::None{});
-            });
+            }
         });
-    }
+    });
 }
 
 void App::quit() {
-    if (m_gitRepo) {
-        m_view->getPopUpView().show(PopUpViewBase::Loading{"Committing & pushing..."});
-        m_gitRepo->commitAll([this](bool somethingCommitted) {
-            if (somethingCommitted) {
-                m_gitRepo->push([this] { m_view->stop(); });
-            } else {
-                m_view->stop();
-            }
-        });
-    } else {
+    if (!m_gitRepo) {
         m_view->stop();
+        return;
     }
-}
+    m_view->getPopUpView().show(PopUpViewBase::Loading{"Committing & pushing..."});
+    m_gitRepo->commitAll([this](std::expected<bool, std::exception_ptr> result) {
+        if (result.has_value()) {
+            const bool somethingCommitted = result.value();
+            if (somethingCommitted) {
+                m_gitRepo->push([this](std::expected<void, std::exception_ptr> pushResult) {
+                    if (pushResult.has_value()) {
+                        m_view->stop();
+                    } else {
+                        m_view->post([this, pushResult = std::move(pushResult)]() {
+                            m_view->getPopUpView().show(PopUpViewBase::Ok{
+                                fmt::format("Error pushing to remote:\n{}",
+                                            exceptionPtrToString(pushResult.error())),
+                                [this](const auto &) { m_view->stop(); }});
+                        });
+                    }
+                });
+            } else {
+                m_view->post([this]() { m_view->stop(); });
+            }
+        } else {
+            m_view->post([this, result = std::move(result)]() {
+                m_view->getPopUpView().show(
+                    PopUpViewBase::Ok{fmt::format("Error committing to remote:\n{}",
+                                                  exceptionPtrToString(result.error())),
+                                      [this](const auto &) { m_view->stop(); }});
+            });
+        }
+    });
+};
 
 void App::deleteFocusedLog() {
     auto date = m_view->getAnnualViewLayout()->getFocusedDate();
