@@ -9,6 +9,7 @@ int main(int argc, const char **argv) try {
     std::vector<std::string> args;
     args.reserve(argc);
     for (int i = 0; i < argc; ++i) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         args.emplace_back(argv[i]);
     }
 

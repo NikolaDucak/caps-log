@@ -10,7 +10,7 @@ namespace caps_log::utils {
 namespace {
 
 void checkGitError(int code, int line, const char *file) {
-    if (code < 0) {
+    if (code != 0) {
         const git_error *error = git_error_last();
         throw std::runtime_error{std::string{"Git error @"} + file + ":" + std::to_string(line) +
                                  "\n\t" + error->message};
