@@ -8,6 +8,7 @@
 #include <fmt/ranges.h>
 #include <memory>
 #include <ranges>
+#include <utility>
 
 namespace caps_log {
 
@@ -303,6 +304,26 @@ App::App(std::shared_ptr<ViewBase> view, std::shared_ptr<LogRepositoryBase> repo
     }
 }
 
+App::App(
+    std::shared_ptr<ViewBase> view,
+    std::function<std::shared_ptr<LogRepositoryBase>(std::string)> aLogRepoFactory,
+    std::function<std::shared_ptr<ScratchpadRepositoryBase>(std::string)> aScratchpadRepoFactory,
+    std::function<std::shared_ptr<EditorBase>(std::string)> aEditorFactory,
+    std::optional<GitRepo> gitRepo, AppConfig config)
+    : m_config{std::move(config)}, m_view{std::move(view)},
+      m_viewDataUpdater{m_view->getAnnualViewLayout(), m_data} {
+    m_view->setInputHandler(this);
+    m_askForPassword = AskForPassword{
+        .logRepoFactory = std::move(aLogRepoFactory),
+        .scratchpadRepoFactory = std::move(aScratchpadRepoFactory),
+        .editorFactory = std::move(aEditorFactory),
+    };
+
+    if (gitRepo) {
+        m_gitRepo.emplace(std::move(*gitRepo));
+    }
+}
+
 void App::run() { m_view->run(); }
 
 bool App::handleInputEvent(const UIEvent &event) {
@@ -377,23 +398,71 @@ void App::handleFocusedTagChange() { m_viewDataUpdater.handleFocusedTagChange();
 void App::handleFocusedSectionChange() { m_viewDataUpdater.handleFocusedSectionChange(); }
 
 void App::handleUiStarted() {
-    if (!m_gitRepo) {
-        return;
-    }
-    m_view->getPopUpView().show(PopUpViewBase::Loading{"Pulling from remote..."});
-    m_gitRepo->pull([this](std::expected<void, std::exception_ptr> result) {
-        m_view->post([this, result = std::move(result)]() {
-            if (!result.has_value()) {
-                m_view->getPopUpView().show(PopUpViewBase::Ok{fmt::format(
-                    "Error pulling from remote:\n{}", exceptionPtrToString(result.error()))});
-            } else {
-                m_data =
-                    AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
-                updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
-                m_view->getPopUpView().show(PopUpViewBase::None{});
-            }
+    const auto paswordReceivedFunc = [this](const auto &input, const auto &logRepoFactory,
+                                            const auto &scratchpadRepoFactory,
+                                            const auto &editorFactory) {
+        if (!std::holds_alternative<PopUpViewBase::Result::Input>(input)) {
+            throw std::runtime_error{"Input expected"};
+        }
+        auto password = std::get<PopUpViewBase::Result::Input>(input).text;
+        m_repo = logRepoFactory(password);
+        m_scratchpadRepo = scratchpadRepoFactory(password);
+        m_editor = editorFactory(password);
+        m_data = AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
+        m_view->getAnnualViewLayout()->setDatesWithLogs(&m_data.datesWithLogs);
+        m_view->getAnnualViewLayout()->setEventDates(&m_config.events);
+        updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
+        m_view->getPopUpView().show(PopUpViewBase::None{});
+    };
+
+    const auto pullFromRemoteFunc = [this]() {
+        // TODO: move from lambdas to a member function
+        m_view->getPopUpView().show(PopUpViewBase::Loading{"Pulling from remote..."});
+        m_gitRepo->pull([this](std::expected<void, std::exception_ptr> result) {
+            m_view->post([this, result = std::move(result)]() {
+                if (!result.has_value()) {
+                    m_view->getPopUpView().show(PopUpViewBase::Ok{fmt::format(
+                        "Error pulling from remote:\n{}", exceptionPtrToString(result.error()))});
+                } else {
+                    m_data = AnnualLogData::collect(m_repo, m_config.currentYear,
+                                                    m_config.skipFirstLine);
+                    updateDataAndViewAfterLogChange(
+                        m_view->getAnnualViewLayout()->getFocusedDate());
+                    m_view->getPopUpView().show(PopUpViewBase::None{});
+                }
+            });
         });
-    });
+    };
+
+    if (m_askForPassword) {
+        auto aLogRepoFactory = std::move(m_askForPassword->logRepoFactory);
+        auto aScratchpadRepoFactory = std::move(m_askForPassword->scratchpadRepoFactory);
+        auto aEditorFactory = std::move(m_askForPassword->editorFactory);
+        m_askForPassword.reset();
+
+        m_view->getPopUpView().show(PopUpViewBase::TextBox{
+            .message = "Enter password for log files:",
+            .isSecret = true,
+            .callback = [this, logRepoFactory = std::move(aLogRepoFactory),
+                         scratchpadRepoFactory = std::move(aScratchpadRepoFactory),
+                         editorFactory = std::move(aEditorFactory), paswordReceivedFunc,
+                         pullFromRemoteFunc](const auto &input) mutable {
+                paswordReceivedFunc(input, logRepoFactory, scratchpadRepoFactory, editorFactory);
+                // if invoked directly, it causes floating window to not event show up,
+                // this is probably because messing with the active chiled from inside the callback
+                // execution causes issues
+                m_view->post([this, pullFromRemoteFunc]() {
+                    if (m_gitRepo) {
+                        pullFromRemoteFunc();
+                    }
+                });
+            }});
+
+        // not sure why this is needed, otherwise it renderes popup only after first input.
+        m_view->post(ftxui::Event::Custom);
+    } else if (m_gitRepo) {
+        pullFromRemoteFunc();
+    }
 }
 
 void App::quit() {
@@ -457,6 +526,7 @@ bool hasSuffix(const std::string &str, const std::string &suffix) {
     return str.size() >= suffix.size() &&
            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
+
 void App::handleOpenScratchpad(std::string name) {
     if (m_editor == nullptr) {
         return;
@@ -464,7 +534,9 @@ void App::handleOpenScratchpad(std::string name) {
 
     if (name.empty()) {
         m_view->getPopUpView().show(PopUpViewBase::TextBox{
-            "Enter the name of the scratchpad to open:", [this](const auto &name) {
+            .message = "Enter the name of the scratchpad to open:",
+            .isSecret = false,
+            .callback = [this](const auto &name) {
                 if (std::holds_alternative<PopUpViewBase::Result::Input>(name)) {
                     auto nameStr = std::get<PopUpViewBase::Result::Input>(name).text;
                     if (nameStr.empty()) {
@@ -499,7 +571,7 @@ void App::handleRenameScratchpad(std::string name) {
     auto message = fmt::format("Enter the new name for the scratchpad \"{}\":", name);
 
     m_view->getPopUpView().show(PopUpViewBase::TextBox{
-        message, [this, name](const auto &input) {
+        .message = message, .isSecret = false, .callback = [this, name](const auto &input) {
             if (std::holds_alternative<PopUpViewBase::Result::Input>(input)) {
                 auto newName = std::get<PopUpViewBase::Result::Input>(input).text;
                 if (newName.empty()) {

@@ -37,6 +37,7 @@ class PopUpViewBase {
     };
     struct TextBox {
         std::string message;
+        bool isSecret = false;
         PopUpCallback callback;
     };
     struct Help {
@@ -125,7 +126,6 @@ class View : public ViewBase, public InputHandlerBase {
     void switchLayout() override;
 
     // testing tools
-
     bool onEvent(ftxui::Event event);
 
     [[nodiscard]] std::string render() const;

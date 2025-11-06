@@ -23,6 +23,7 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     std::string m_message;
     View *m_view = nullptr;
     Component m_prompt = nullptr;
+    bool m_isSecret = false;
 
     // todo: move to separate class
     std::string m_inputText;
@@ -61,7 +62,12 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
             }
             resetToPrevious();
         };
-        auto textBox = Container::Vertical({Input(&m_inputText, "", {.on_enter = txtBoxHandler}),
+        auto textBox = Container::Vertical({Input(&m_inputText, "",
+                                                  {
+                                                      .password = &m_isSecret,
+                                                      .multiline = false,
+                                                      .on_enter = txtBoxHandler,
+                                                  }),
                                             Button("Submit", txtBoxHandler)});
 
         auto yesNoRenderer = Renderer(yesNoButtons, [this, yesNoButtons]() {
@@ -134,7 +140,7 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::YesNo>) {
                     prompt(popUpData.message, popUpData.callback);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::TextBox>) {
-                    promptTxt(popUpData.message, popUpData.callback);
+                    promptTxt(popUpData.message, popUpData.callback, popUpData.isSecret);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::Loading>) {
                     loadingScreen(popUpData.message);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::Help>) {
@@ -179,9 +185,10 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
         m_currentScreen = kIndexLoading;
     }
 
-    void promptTxt(std::string message, PopUpCallback callback) {
+    void promptTxt(std::string message, PopUpCallback callback, bool isSecret) {
         m_message = std::move(message);
         m_callback = std::move(callback);
+        m_isSecret = isSecret;
         m_previousScreen = m_currentScreen;
         m_currentScreen = kIndexTextBox;
     }

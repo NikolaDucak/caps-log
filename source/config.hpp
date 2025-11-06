@@ -39,8 +39,6 @@ class Configuration {
 
     [[nodiscard]] const std::optional<utils::GitRepoConfig> &getGitRepoConfig() const;
 
-    [[nodiscard]] bool isCryptoEnabled() const;
-
     [[nodiscard]] bool shouldRunApplication() const;
 
     [[nodiscard]] std::string getLogDirPath() const;
@@ -66,7 +64,7 @@ class Configuration {
     void verify() const;
 
   private:
-    bool m_cryptoEnabled{};
+    bool m_cryptoTaskEnabled{};
     view::ViewConfig m_viewConfig{};
     std::string m_password;
     std::optional<utils::GitRepoConfig> m_gitRepoConfig;

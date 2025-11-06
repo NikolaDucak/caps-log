@@ -40,42 +40,59 @@ class CapsLog {
 
     CapsLog(const Context &context) : m_config(context.cliArgs) {
         m_config.verify();
-        if (m_config.isPasswordProvided() && m_config.isCryptoEnabled()) {
-            m_config.setPassword(promptPassword());
+
+        if (!m_config.shouldRunApplication()) {
+            return;
         }
 
-        if (m_config.shouldRunApplication()) {
-            m_view = std::make_shared<view::View>(m_config.getViewConfig(), context.today,
-                                                  context.terminalSizeProvider);
-            m_logRepo = std::make_shared<log::LocalLogRepository>(m_config.getLogFilePathProvider(),
-                                                                  m_config.getPassword());
-            m_scratchpadRepo = std::make_shared<log::LocalScratchpadRepository>(
+        m_view = std::make_shared<view::View>(m_config.getViewConfig(), context.today,
+                                              context.terminalSizeProvider);
+
+        auto gitRepo = [this] -> std::optional<utils::GitRepo> {
+            if (m_config.getGitRepoConfig()) {
+                return std::make_optional<utils::GitRepo>(*m_config.getGitRepoConfig());
+            }
+            return std::nullopt;
+        }();
+
+        // TODO: unify hanling of injected todays date
+        auto conf = m_config.getAppConfig();
+        conf.currentYear = context.today.year();
+
+        const auto shouldAskForPassword =
+            LogRepositoryCryptoApplier::isEncrypted(m_config.getLogDirPath()) &&
+            !m_config.isPasswordProvided();
+
+        if (shouldAskForPassword) {
+            auto logRepoFactory = [pathProvider = m_config.getLogFilePathProvider(),
+                                   password = m_config.getPassword()](const std::string &pwd) {
+                return std::make_shared<log::LocalLogRepository>(pathProvider, pwd);
+            };
+            auto scratchpadRepoFactory =
+                [scratchpadDirPath = m_config.getScratchpadDirPath()](const std::string &pwd) {
+                    return std::make_shared<log::LocalScratchpadRepository>(scratchpadDirPath, pwd);
+                };
+            auto editorFactory = [this, factory = context.editorFactory](const std::string &pwd) {
+                return factory(m_config.getLogFilePathProvider(), m_config.getScratchpadDirPath(),
+                               pwd);
+            };
+
+            m_app = std::make_shared<App>(m_view, std::move(logRepoFactory),
+                                          std::move(scratchpadRepoFactory),
+                                          std::move(editorFactory), std::move(gitRepo), conf);
+        } else {
+            auto logRepo = std::make_shared<log::LocalLogRepository>(
+                m_config.getLogFilePathProvider(), m_config.getPassword());
+            auto scratchpadRepo = std::make_shared<log::LocalScratchpadRepository>(
                 m_config.getScratchpadDirPath(), m_config.getPassword());
-            m_editor =
+            auto editor =
                 context.editorFactory(m_config.getLogFilePathProvider(),
                                       m_config.getScratchpadDirPath(), m_config.getPassword());
 
-            auto gitRepo = [&]() -> std::optional<utils::GitRepo> {
-                if (m_config.getGitRepoConfig()) {
-                    return std::make_optional<utils::GitRepo>(*m_config.getGitRepoConfig());
-                }
-                return std::nullopt;
-            }();
-
-            // TODO: unify hanling of injected todays date
-            auto conf = m_config.getAppConfig();
-            conf.currentYear = context.today.year();
-            m_app = std::make_shared<App>(m_view, m_logRepo, m_scratchpadRepo, m_editor,
+            m_app = std::make_shared<App>(m_view, logRepo, scratchpadRepo, editor,
                                           std::move(gitRepo), conf);
         }
     }
-
-    // used for testing purposes
-    bool onEvent(ftxui::Event event) { return m_view->onEvent(std::move(event)); }
-    // used for testing purposes
-    [[nodiscard]] std::string render() const { return m_view->render(); }
-
-    const Configuration &getConfig() { return m_config; }
 
     [[nodiscard]] Task getTask() {
         if (m_config.shouldRunApplication()) {
@@ -87,6 +104,15 @@ class CapsLog {
         }
         return Task{Task::Type::kInvalidCliArgs, []() {}};
     }
+
+    // used for testing purposes
+    bool onEvent(ftxui::Event event) { return m_view->onEvent(std::move(event)); }
+
+    // used for testing purposes
+    [[nodiscard]] std::string render() const { return m_view->render(); }
+
+    // used for testing purposes
+    [[nodiscard]] const Configuration &getConfig() const { return m_config; }
 
   private:
     void run() {
@@ -102,36 +128,6 @@ class CapsLog {
             m_config.getPassword(), m_config.getLogDirPath(),
             caps_log::Configuration::kDefaultScratchpadFolderName, m_config.getLogFilenameFormat(),
             crypto);
-    }
-
-    static std::string promptPassword() {
-        using namespace ftxui;
-        auto screen = ScreenInteractive::Fullscreen();
-        std::string password;
-        const auto input = Input(InputOption{.content = &password,
-                                             .password = true,
-                                             .multiline = false,
-                                             .on_enter = screen.ExitLoopClosure()});
-        const auto buttonSubmit = Button("Submit", screen.ExitLoopClosure(), ButtonOption::Ascii());
-        bool shouldExit = false;
-        const auto buttonQuit = Button(
-            "Quit",
-            [&]() {
-                shouldExit = true;
-                screen.Exit();
-            },
-            ButtonOption::Ascii());
-        const auto container = Container::Vertical({input, buttonSubmit, buttonQuit});
-
-        const Component renderer = Renderer(container, [container]() {
-            return window(text("Password required!"), container->Render()) | center;
-        });
-
-        screen.Loop(renderer);
-        if (shouldExit) {
-            std::exit(0);
-        }
-        return password;
     }
 
     /**
@@ -198,9 +194,6 @@ class CapsLog {
 
     Configuration m_config;
     std::shared_ptr<view::View> m_view;
-    std::shared_ptr<log::LocalLogRepository> m_logRepo;
-    std::shared_ptr<log::LocalScratchpadRepository> m_scratchpadRepo;
-    std::shared_ptr<editor::EditorBase> m_editor;
     std::shared_ptr<App> m_app;
 
     static std::shared_ptr<editor::EditorBase>
