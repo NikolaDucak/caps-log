@@ -29,6 +29,8 @@ add_executable(
   ./view/ftxui_ext/extended_containers.cpp
   ./view/ftxui_ext/extended_containers.hpp
   ./view/input_handler.hpp
+  ./view/markdown_text.cpp
+  ./view/markdown_text.hpp
   ./view/preview.cpp
   ./view/preview.hpp
   ./view/scratchpad_view_layout.cpp

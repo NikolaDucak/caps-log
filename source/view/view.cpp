@@ -1,7 +1,10 @@
 #include "view/view.hpp"
 #include "view/annual_view_layout.hpp"
+#include "view/markdown_text.hpp"
 #include "view/scratchpad_view_layout.hpp"
+
 #include <ftxui/component/component.hpp>
+
 namespace caps_log::view {
 using namespace ftxui;
 
@@ -11,6 +14,7 @@ constexpr std::size_t kIndexYesNot = 2;
 constexpr std::size_t kIndexOk = 3;
 constexpr std::size_t kIndexLoading = 4;
 constexpr std::size_t kIndexTextBox = 5;
+constexpr std::size_t kIndexHelp = 6;
 
 class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     int m_currentScreen = kIndexAnnualViewLayout;
@@ -29,7 +33,7 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     PopUpViewLayoutWrapper &operator=(const PopUpViewLayoutWrapper &) = delete;
     PopUpViewLayoutWrapper &operator=(PopUpViewLayoutWrapper &&) = delete;
     explicit PopUpViewLayoutWrapper(View *view) : m_view(view) {
-        auto buttons = Container::Horizontal({
+        auto yesNoButtons = Container::Horizontal({
             Button("Yes",
                    [this] {
                        m_callback(PopUpViewBase::Result::Yes{});
@@ -60,8 +64,9 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
         auto textBox = Container::Vertical({Input(&m_inputText, "", {.on_enter = txtBoxHandler}),
                                             Button("Submit", txtBoxHandler)});
 
-        auto yesNoRenderer = Renderer(buttons, [this, buttons]() {
-            return vbox(text(m_message), separator(), buttons->Render() | center) | center | border;
+        auto yesNoRenderer = Renderer(yesNoButtons, [this, yesNoButtons]() {
+            return vbox(text(m_message), separator(), yesNoButtons->Render() | center) | center |
+                   border;
         });
 
         auto okRenderer = Renderer(okButton, [this, okButton]() {
@@ -76,12 +81,22 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
         auto loadingRenderer =
             Renderer([this] { return window(text("Loading..."), text(m_message)); });
 
+        auto closeHelpButton = Container::Horizontal({
+            Button("Close", [this] { resetToPrevious(); }),
+        });
+
+        auto helpRenderer = Renderer(closeHelpButton, [closeHelpButton, this]() {
+            return vbox(markdown(m_message), separator(), closeHelpButton->Render() | center) |
+                   center | border;
+        });
+
         Components comps{m_view->getAnnualViewLayout()->getComponent(),
                          m_view->getScratchpadViewLayout()->getComponent(),
                          yesNoRenderer,
                          okRenderer,
                          loadingRenderer,
-                         textBoxRenderer};
+                         textBoxRenderer,
+                         helpRenderer};
 
         assert(
             kIndexAnnualViewLayout ==
@@ -100,6 +115,8 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
 
         assert(kIndexTextBox == std::distance(comps.begin(), std::find(comps.begin(), comps.end(),
                                                                        textBoxRenderer)));
+        assert(kIndexHelp ==
+               std::distance(comps.begin(), std::find(comps.begin(), comps.end(), helpRenderer)));
 
         auto tab = Container::Tab(comps, &m_currentScreen);
         this->m_prompt = tab;
@@ -120,6 +137,8 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
                     promptTxt(popUpData.message, popUpData.callback);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::Loading>) {
                     loadingScreen(popUpData.message);
+                } else if constexpr (std::is_same_v<T, PopUpViewBase::Help>) {
+                    helpScreen(popUpData.message);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::None>) {
                     resetToPrevious();
                 }
@@ -170,6 +189,13 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     void resetToPrevious() {
         m_currentScreen = m_previousScreen;
         m_previousScreen = 0;
+    }
+
+    void helpScreen(std::string message) {
+        m_message = std::move(message);
+        m_callback = nullptr;
+        m_previousScreen = m_currentScreen;
+        m_currentScreen = kIndexHelp;
     }
 
     Element OnRender() override {

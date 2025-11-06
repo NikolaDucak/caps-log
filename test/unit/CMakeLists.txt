@@ -10,8 +10,8 @@ set(TEST_SOURCES
 )
 
 set(SOURCE_FILES
-  ./../../source/app.hpp
   ./../../source/app.cpp
+  ./../../source/app.hpp
   ./../../source/config.cpp
   ./../../source/config.hpp
   ./../../source/log/annual_log_data.cpp
@@ -23,8 +23,10 @@ set(SOURCE_FILES
   ./../../source/log/log_repository_base.hpp
   ./../../source/log/log_repository_crypto_applier.cpp
   ./../../source/log/log_repository_crypto_applier.hpp
+  ./../../source/utils/async_git_repo.hpp
   ./../../source/utils/crypto.cpp
   ./../../source/utils/crypto.hpp
+  ./../../source/utils/date.hpp
   ./../../source/utils/date.hpp
   ./../../source/utils/git_repo.cpp
   ./../../source/utils/git_repo.hpp
@@ -38,6 +40,8 @@ set(SOURCE_FILES
   ./../../source/view/ftxui_ext/extended_containers.cpp
   ./../../source/view/ftxui_ext/extended_containers.hpp
   ./../../source/view/input_handler.hpp
+  ./../../source/view/markdown_text.cpp
+  ./../../source/view/markdown_text.hpp
   ./../../source/view/preview.cpp
   ./../../source/view/preview.hpp
   ./../../source/view/scratchpad_view_layout.cpp
