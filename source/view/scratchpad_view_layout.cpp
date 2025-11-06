@@ -59,8 +59,7 @@ ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
         const auto kFactor = 0.75; // Factor to determine the width of the preview
         const auto height = 24;
 
-        static const auto kHelpString =
-            std::string{"hjkl/arrow keys - navigation | d - delete | s - see logs | r - rename"};
+        static const auto kHelpString = std::string{"Press F1 for help."};
         // clang-format off
         return vbox({
           text("Scratchpad Manager") | center | bold, 
@@ -123,12 +122,6 @@ void ScratchpadViewLayout::setScratchpads(const std::vector<ScratchpadData> &scr
               [](const ScratchpadData &left, const ScratchpadData &right) {
                   return left.dateModified > right.dateModified;
               });
-
-    const auto longestContentLength =
-        std::max_element(scratchpadsCopy.begin(), scratchpadsCopy.end(),
-                         [](const ScratchpadData &left, const ScratchpadData &right) {
-                             return countLines(left.content) < countLines(right.content);
-                         });
 
     for (const auto &data : scratchpadsCopy) {
         const auto title =

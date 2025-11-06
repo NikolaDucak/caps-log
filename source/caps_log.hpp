@@ -12,6 +12,7 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/screen/terminal.hpp>
 #include <functional>
+#include <iostream>
 #include <log/local_log_repository.hpp>
 #include <string>
 #include <utility>

@@ -39,9 +39,12 @@ class PopUpViewBase {
         std::string message;
         PopUpCallback callback;
     };
+    struct Help {
+        std::string message;
+    };
     struct None {};
 
-    using PopUpType = std::variant<Ok, YesNo, Loading, TextBox, None>;
+    using PopUpType = std::variant<Ok, YesNo, Loading, TextBox, Help, None>;
 
     PopUpViewBase() = default;
     PopUpViewBase(const PopUpViewBase &) = default;

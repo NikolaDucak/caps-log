@@ -16,6 +16,49 @@ using namespace log;
 using namespace view;
 using namespace utils;
 
+static const std::string kHelpString = R"(
+  Captain's Log (caps-log) - Help
+  -------------------------------
+  Version: )" + std::string{CAPS_LOG_VERSION_STRING} +
+                                       R"(
+
+  **Caption's Log** is a terminal-based application for maintaining daily logs/journals with 
+  optional scratchpads/notes. 
+
+  All files are stored in markdown format for easy readability and
+  portability. Possible to integrate with git for version control, remote bacup, or rough approach to 
+  sharing logs between multiple devices. And also supports basic encryption of log files for privacy.
+
+  To learn more about configuration options, please refer to the documentation at: 
+  https://github.com/nikoladucak/caps-log
+
+  It supports "tagging" by using `* tagname` syntax within log entries, allowing for categorization 
+  and filtering of logs based on user-defined tags. Additionally, logs can be organized into
+  "sections" (e.g., work, personal, health) for better management and retrieval by using `# sectionname` syntax.
+
+  The application can highlight dates with specific tags or sections in the calendar view, 
+  making it easier to identify and access relevant logs. To do so, simply 
+  select the desired section and/or tag from the lists to the left side of the calendar.
+
+  You may notice that by selecting a section, the tag list is updated to only show tags that 
+  exist within the selected section.
+
+  # Controls:
+
+  |---------------------------------------------------------------------|
+  | Key(s)                     | Action                                 |
+  |----------------------------|----------------------------------------|
+  | F1                         | Show this help screen                  |
+  | ↑/↓/←/→ or h/j/k/l         | Navigate dates with logs               |
+  | +/-                        | Change displayed year                  |
+  | Enter                      | Open log for focused date              |
+  | s                          | Open scratchpad view                   |
+  | d                          | Delete focused scratchpad/log          |
+  | r                          | Rename focused scratchpad              |
+  | q/Escape                   | Quit application                       |
+  |---------------------------------------------------------------------|
+  )";
+
 namespace {
 
 [[nodiscard]] std::string exceptionPtrToString(const std::exception_ptr &ptr) {
@@ -303,6 +346,8 @@ bool App::handleRootEvent(const std::string &input) {
         handleDisplayedYearChange(-1);
     } else if (input == "s") {
         handleSwitchLayout();
+    } else if (input == ftxui::Event::F1.input()) {
+        m_view->getPopUpView().show(PopUpViewBase::Help{kHelpString});
     } else {
         return false;
     }
