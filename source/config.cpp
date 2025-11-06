@@ -226,7 +226,6 @@ void Configuration::applyDefaults() {
     m_password = "";
     m_cryptoApplicationType = std::nullopt;
     m_gitRepoConfig = std::nullopt;
-    m_cryptoEnabled = false;
     m_acceptSectionsOnFirstLine = Configuration::kDefaultAcceptSectionsOnFirstLine;
     m_logDirPath = expandTilde(Configuration::kDefaultLogDirPath);
     m_logFilenameFormat = Configuration::kDefaultLogFilenameFormat;
@@ -285,13 +284,11 @@ void Configuration::overrideFromCommandLine(const boost::program_options::variab
         if (m_password.empty()) {
             throw ConfigParsingException{"Password must be provided when encrypting logs!"};
         }
-        m_cryptoEnabled = true;
         m_cryptoApplicationType = Crypto::Encrypt;
     } else if (vmap.contains("decrypt")) {
         if (m_password.empty()) {
             throw ConfigParsingException{"Password must be provided when decrypting logs!"};
         }
-        m_cryptoEnabled = true;
         m_cryptoApplicationType = Crypto::Decrypt;
     }
 }
@@ -303,8 +300,9 @@ void Configuration::verify() const {
     if (m_logFilenameFormat.empty()) {
         throw ConfigParsingException{"Log filename format can not be empty!"};
     }
-    if (m_cryptoEnabled && m_password.empty()) {
-        throw ConfigParsingException{"Password must be provided when encryption is enabled!"};
+    if (m_cryptoApplicationType.has_value() && m_password.empty()) {
+        throw ConfigParsingException{
+            "Password must be provided when encryption encrypting/decrypting a repository."};
     }
     if (m_gitRepoConfig.has_value()) {
         const auto &gitConf = m_gitRepoConfig.value();
@@ -349,8 +347,6 @@ void Configuration::verify() const {
 [[nodiscard]] const std::optional<utils::GitRepoConfig> &Configuration::getGitRepoConfig() const {
     return m_gitRepoConfig;
 }
-
-[[nodiscard]] bool Configuration::isCryptoEnabled() const { return m_cryptoEnabled; }
 
 [[nodiscard]] bool Configuration::shouldRunApplication() const {
     return not m_cryptoApplicationType.has_value();
