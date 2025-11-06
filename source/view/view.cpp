@@ -197,8 +197,8 @@ void View::run() {
     // Caps-log expects the terminal to be at least 80x24
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     ftxui::Terminal::SetFallbackSize(ftxui::Dimensions{/*dimx=*/80, /*dimy=*/24});
-    m_screen.Loop(m_rootWithPopUpSupport);
     m_running = true;
+    m_screen.Loop(m_rootWithPopUpSupport);
 }
 
 void View::stop() { m_screen.Exit(); }
