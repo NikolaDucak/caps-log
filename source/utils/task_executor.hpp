@@ -54,11 +54,8 @@ class ThreadedTaskExecutor {
                 task = std::move(m_tasks.front());
                 m_tasks.pop();
             }
-            try {
-                task();
-            } catch (const std::exception &e) {
-                // Handle or log the exception as needed
-            }
+            // it is the responsiblity of the `task` to handle its own exceptions
+            task();
         }
     }
 };

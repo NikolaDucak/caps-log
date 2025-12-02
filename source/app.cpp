@@ -8,6 +8,7 @@
 #include <fmt/ranges.h>
 #include <memory>
 #include <ranges>
+#include <utility>
 
 namespace caps_log {
 
@@ -16,7 +17,63 @@ using namespace log;
 using namespace view;
 using namespace utils;
 
+static const std::string kHelpString = R"(
+  Captain's Log (caps-log) - Help
+  -------------------------------
+  Version: )" + std::string{CAPS_LOG_VERSION_STRING} +
+                                       R"(
+
+  **Caption's Log** is a terminal-based application for maintaining daily logs/journals with 
+  optional scratchpads/notes. 
+
+  All files are stored in markdown format for easy readability and
+  portability. Possible to integrate with git for version control, remote bacup, or rough approach to 
+  sharing logs between multiple devices. And also supports basic encryption of log files for privacy.
+
+  To learn more about configuration options, please refer to the documentation at: 
+  https://github.com/nikoladucak/caps-log
+
+  It supports "tagging" by using `* tagname` syntax within log entries, allowing for categorization 
+  and filtering of logs based on user-defined tags. Additionally, logs can be organized into
+  "sections" (e.g., work, personal, health) for better management and retrieval by using `# sectionname` syntax.
+
+  The application can highlight dates with specific tags or sections in the calendar view, 
+  making it easier to identify and access relevant logs. To do so, simply 
+  select the desired section and/or tag from the lists to the left side of the calendar.
+
+  You may notice that by selecting a section, the tag list is updated to only show tags that 
+  exist within the selected section.
+
+  # Controls:
+
+  |---------------------------------------------------------------------|
+  | Key(s)                     | Action                                 |
+  |----------------------------|----------------------------------------|
+  | F1                         | Show this help screen                  |
+  | ↑/↓/←/→ or h/j/k/l         | Navigate dates with logs               |
+  | +/-                        | Change displayed year                  |
+  | Enter                      | Open log for focused date              |
+  | s                          | Open scratchpad view                   |
+  | d                          | Delete focused scratchpad/log          |
+  | r                          | Rename focused scratchpad              |
+  | q/Escape                   | Quit application                       |
+  |---------------------------------------------------------------------|
+  )";
+
 namespace {
+
+[[nodiscard]] std::string exceptionPtrToString(const std::exception_ptr &ptr) {
+    try {
+        if (ptr) {
+            std::rethrow_exception(ptr);
+        }
+    } catch (const std::exception &e) {
+        return e.what();
+    } catch (...) {
+        return "Unknown exception";
+    }
+    return "No exception";
+}
 
 [[nodiscard]] bool noMeaningfulContent(const std::string &content,
                                        const std::chrono::year_month_day &date) {
@@ -247,6 +304,26 @@ App::App(std::shared_ptr<ViewBase> view, std::shared_ptr<LogRepositoryBase> repo
     }
 }
 
+App::App(
+    std::shared_ptr<ViewBase> view,
+    std::function<std::shared_ptr<LogRepositoryBase>(std::string)> aLogRepoFactory,
+    std::function<std::shared_ptr<ScratchpadRepositoryBase>(std::string)> aScratchpadRepoFactory,
+    std::function<std::shared_ptr<EditorBase>(std::string)> aEditorFactory,
+    std::optional<GitRepo> gitRepo, AppConfig config)
+    : m_config{std::move(config)}, m_view{std::move(view)},
+      m_viewDataUpdater{m_view->getAnnualViewLayout(), m_data} {
+    m_view->setInputHandler(this);
+    m_askForPassword = AskForPassword{
+        .logRepoFactory = std::move(aLogRepoFactory),
+        .scratchpadRepoFactory = std::move(aScratchpadRepoFactory),
+        .editorFactory = std::move(aEditorFactory),
+    };
+
+    if (gitRepo) {
+        m_gitRepo.emplace(std::move(*gitRepo));
+    }
+}
+
 void App::run() { m_view->run(); }
 
 bool App::handleInputEvent(const UIEvent &event) {
@@ -290,6 +367,8 @@ bool App::handleRootEvent(const std::string &input) {
         handleDisplayedYearChange(-1);
     } else if (input == "s") {
         handleSwitchLayout();
+    } else if (input == ftxui::Event::F1.input()) {
+        m_view->getPopUpView().show(PopUpViewBase::Help{kHelpString});
     } else {
         return false;
     }
@@ -319,33 +398,108 @@ void App::handleFocusedTagChange() { m_viewDataUpdater.handleFocusedTagChange();
 void App::handleFocusedSectionChange() { m_viewDataUpdater.handleFocusedSectionChange(); }
 
 void App::handleUiStarted() {
-    if (m_gitRepo) {
+    const auto paswordReceivedFunc = [this](const auto &input, const auto &logRepoFactory,
+                                            const auto &scratchpadRepoFactory,
+                                            const auto &editorFactory) {
+        if (!std::holds_alternative<PopUpViewBase::Result::Input>(input)) {
+            throw std::runtime_error{"Input expected"};
+        }
+        auto password = std::get<PopUpViewBase::Result::Input>(input).text;
+        m_repo = logRepoFactory(password);
+        m_scratchpadRepo = scratchpadRepoFactory(password);
+        m_editor = editorFactory(password);
+        m_data = AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
+        m_view->getAnnualViewLayout()->setDatesWithLogs(&m_data.datesWithLogs);
+        m_view->getAnnualViewLayout()->setEventDates(&m_config.events);
+        updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
+        m_view->getPopUpView().show(PopUpViewBase::None{});
+    };
+
+    const auto pullFromRemoteFunc = [this]() {
+        // TODO: move from lambdas to a member function
         m_view->getPopUpView().show(PopUpViewBase::Loading{"Pulling from remote..."});
-        m_gitRepo->pull([this] {
-            m_view->post([this] {
-                m_data =
-                    AnnualLogData::collect(m_repo, m_config.currentYear, m_config.skipFirstLine);
-                updateDataAndViewAfterLogChange(m_view->getAnnualViewLayout()->getFocusedDate());
-                m_view->getPopUpView().show(PopUpViewBase::None{});
+        m_gitRepo->pull([this](std::expected<void, std::exception_ptr> result) {
+            m_view->post([this, result = std::move(result)]() {
+                if (!result.has_value()) {
+                    m_view->getPopUpView().show(PopUpViewBase::Ok{fmt::format(
+                        "Error pulling from remote:\n{}", exceptionPtrToString(result.error()))});
+                } else {
+                    m_data = AnnualLogData::collect(m_repo, m_config.currentYear,
+                                                    m_config.skipFirstLine);
+                    updateDataAndViewAfterLogChange(
+                        m_view->getAnnualViewLayout()->getFocusedDate());
+                    m_view->getPopUpView().show(PopUpViewBase::None{});
+                }
             });
         });
+    };
+
+    if (m_askForPassword) {
+        auto aLogRepoFactory = std::move(m_askForPassword->logRepoFactory);
+        auto aScratchpadRepoFactory = std::move(m_askForPassword->scratchpadRepoFactory);
+        auto aEditorFactory = std::move(m_askForPassword->editorFactory);
+        m_askForPassword.reset();
+
+        m_view->getPopUpView().show(PopUpViewBase::TextBox{
+            .message = "Enter password for log files:",
+            .isSecret = true,
+            .callback = [this, logRepoFactory = std::move(aLogRepoFactory),
+                         scratchpadRepoFactory = std::move(aScratchpadRepoFactory),
+                         editorFactory = std::move(aEditorFactory), paswordReceivedFunc,
+                         pullFromRemoteFunc](const auto &input) mutable {
+                paswordReceivedFunc(input, logRepoFactory, scratchpadRepoFactory, editorFactory);
+                // if invoked directly, it causes floating window to not event show up,
+                // this is probably because messing with the active chiled from inside the callback
+                // execution causes issues
+                m_view->post([this, pullFromRemoteFunc]() {
+                    if (m_gitRepo) {
+                        pullFromRemoteFunc();
+                    }
+                });
+            }});
+
+        // not sure why this is needed, otherwise it renderes popup only after first input.
+        m_view->post(ftxui::Event::Custom);
+    } else if (m_gitRepo) {
+        pullFromRemoteFunc();
     }
 }
 
 void App::quit() {
-    if (m_gitRepo) {
-        m_view->getPopUpView().show(PopUpViewBase::Loading{"Committing & pushing..."});
-        m_gitRepo->commitAll([this](bool somethingCommitted) {
-            if (somethingCommitted) {
-                m_gitRepo->push([this] { m_view->stop(); });
-            } else {
-                m_view->stop();
-            }
-        });
-    } else {
+    if (!m_gitRepo) {
         m_view->stop();
+        return;
     }
-}
+    m_view->getPopUpView().show(PopUpViewBase::Loading{"Committing & pushing..."});
+    m_gitRepo->commitAll([this](std::expected<bool, std::exception_ptr> result) {
+        if (result.has_value()) {
+            const bool somethingCommitted = result.value();
+            if (somethingCommitted) {
+                m_gitRepo->push([this](std::expected<void, std::exception_ptr> pushResult) {
+                    if (pushResult.has_value()) {
+                        m_view->stop();
+                    } else {
+                        m_view->post([this, pushResult = std::move(pushResult)]() {
+                            m_view->getPopUpView().show(PopUpViewBase::Ok{
+                                fmt::format("Error pushing to remote:\n{}",
+                                            exceptionPtrToString(pushResult.error())),
+                                [this](const auto &) { m_view->stop(); }});
+                        });
+                    }
+                });
+            } else {
+                m_view->post([this]() { m_view->stop(); });
+            }
+        } else {
+            m_view->post([this, result = std::move(result)]() {
+                m_view->getPopUpView().show(
+                    PopUpViewBase::Ok{fmt::format("Error committing to remote:\n{}",
+                                                  exceptionPtrToString(result.error())),
+                                      [this](const auto &) { m_view->stop(); }});
+            });
+        }
+    });
+};
 
 void App::deleteFocusedLog() {
     auto date = m_view->getAnnualViewLayout()->getFocusedDate();
@@ -372,6 +526,7 @@ bool hasSuffix(const std::string &str, const std::string &suffix) {
     return str.size() >= suffix.size() &&
            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
+
 void App::handleOpenScratchpad(std::string name) {
     if (m_editor == nullptr) {
         return;
@@ -379,7 +534,9 @@ void App::handleOpenScratchpad(std::string name) {
 
     if (name.empty()) {
         m_view->getPopUpView().show(PopUpViewBase::TextBox{
-            "Enter the name of the scratchpad to open:", [this](const auto &name) {
+            .message = "Enter the name of the scratchpad to open:",
+            .isSecret = false,
+            .callback = [this](const auto &name) {
                 if (std::holds_alternative<PopUpViewBase::Result::Input>(name)) {
                     auto nameStr = std::get<PopUpViewBase::Result::Input>(name).text;
                     if (nameStr.empty()) {
@@ -414,7 +571,7 @@ void App::handleRenameScratchpad(std::string name) {
     auto message = fmt::format("Enter the new name for the scratchpad \"{}\":", name);
 
     m_view->getPopUpView().show(PopUpViewBase::TextBox{
-        message, [this, name](const auto &input) {
+        .message = message, .isSecret = false, .callback = [this, name](const auto &input) {
             if (std::holds_alternative<PopUpViewBase::Result::Input>(input)) {
                 auto newName = std::get<PopUpViewBase::Result::Input>(input).text;
                 if (newName.empty()) {

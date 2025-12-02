@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ftxui/component/component.hpp>
+#include <string>
 
 namespace caps_log::view {
 

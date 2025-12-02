@@ -18,7 +18,7 @@ namespace caps_log::utils {
     return data;
 }
 
-bool parseInt(const std::string &str, int &out) {
+inline bool parseInt(const std::string &str, int &out) {
     static constexpr int kBase10 = 10;
     static constexpr long kIntMax = 0x7fffffff;
     char *chr = nullptr;

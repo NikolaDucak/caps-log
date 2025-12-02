@@ -7,6 +7,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/component/task.hpp>
+#include <iostream>
 #include <regex>
 
 namespace caps_log::view {
@@ -39,11 +40,15 @@ class PopUpViewBase {
     };
     struct TextBox {
         std::string message;
+        bool isSecret = false;
         PopUpCallback callback;
+    };
+    struct Help {
+        std::string message;
     };
     struct None {};
 
-    using PopUpType = std::variant<Ok, YesNo, Loading, TextBox, None>;
+    using PopUpType = std::variant<Ok, YesNo, Loading, TextBox, Help, None>;
 
     PopUpViewBase() = default;
     PopUpViewBase(const PopUpViewBase &) = default;
@@ -109,7 +114,7 @@ struct ViewConfig {
     // Annual/Logs view elements:
     struct LogView {
         struct Menu : Borderable, Colorable, Styleable, Selectable {};
-        struct EventsList : Borderable {};
+        struct EventsList : Borderable, Colorable, Styleable, Selectable {};
         struct LogEntryPreview : Borderable {
             bool markdownSyntaxHighlighting = false;
         };
@@ -241,18 +246,60 @@ inline ViewConfig::StyleMask parseStyle(const std::string &raw) {
 
 // ---- ptree convenience getters (safe defaults; INI is already validated) ----
 namespace detail {
+inline std::optional<std::string> getOptionalStr(const boost::property_tree::ptree &cfg,
+                                                 const std::string &key) {
+    // Try normal dotted lookup first.
+    if (auto opt = cfg.get_optional<std::string>(key)) {
+        return std::optional<std::string>(*opt);
+    }
+    // Then try treating the whole path as literal (no splitting on '.').
+    if (auto opt =
+            cfg.get_optional<std::string>(boost::property_tree::ptree::path_type{key, '\0'})) {
+        return std::optional<std::string>(*opt);
+    }
+    // Finally, handle INI sections that contain dots by matching the literal section name.
+    const auto dot = key.rfind('.');
+    if (dot != std::string::npos) {
+        const auto section = key.substr(0, dot);
+        const auto prop = key.substr(dot + 1);
+        if (auto sect =
+                cfg.get_child_optional(boost::property_tree::ptree::path_type{section, '\0'})) {
+            if (auto opt = sect->get_optional<std::string>(prop)) {
+                return std::optional<std::string>(*opt);
+            }
+            if (auto opt = sect->get_optional<std::string>(
+                    boost::property_tree::ptree::path_type{prop, '\0'})) {
+                return std::optional<std::string>(*opt);
+            }
+        }
+        for (const auto &kv : cfg) {
+            if (kv.first == section) {
+                if (auto opt = kv.second.get_optional<std::string>(prop)) {
+                    return std::optional<std::string>(*opt);
+                }
+                if (auto opt = kv.second.get_optional<std::string>(
+                        boost::property_tree::ptree::path_type{prop, '\0'})) {
+                    return std::optional<std::string>(*opt);
+                }
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 inline bool getBool(const boost::property_tree::ptree &cfg, const std::string &key,
                     bool def = false) {
-    auto opt = cfg.get_optional<std::string>(key);
+    auto opt = getOptionalStr(cfg, key);
     if (!opt) {
         return def;
     }
-    std::string value = utils::lowercase(utils::trim(*opt));
-    return (value == "true" || value == "1" || value == "yes" || value == "on");
+    auto value = utils::lowercase(utils::trim(*opt));
+    return value == "true" || value == "yes" || value == "on" || value == "1";
 }
+
 inline unsigned getUint(const boost::property_tree::ptree &cfg, const std::string &key,
                         unsigned def = 0) {
-    auto opt = cfg.get_optional<std::string>(key);
+    auto opt = getOptionalStr(cfg, key);
     if (!opt) {
         return def;
     }
@@ -262,9 +309,10 @@ inline unsigned getUint(const boost::property_tree::ptree &cfg, const std::strin
     }
     return def;
 }
+
 inline std::optional<std::string> getStr(const boost::property_tree::ptree &cfg,
                                          const std::string &key) {
-    auto opt = cfg.get_optional<std::string>(key);
+    auto opt = getOptionalStr(cfg, key);
     if (!opt) {
         return std::nullopt;
     }
@@ -320,11 +368,15 @@ inline ViewConfig extractViewConfig(const boost::property_tree::ptree &cfg) {
     {
         auto base = std::string("ui.logs-view.sections-menu");
         loadBorder(cfg, base, viewConfig.logView.sectionsMenu);
+        loadColorStyleSelectable(cfg, base, viewConfig.logView.sectionsMenu,
+                                 viewConfig.logView.sectionsMenu, &viewConfig.logView.sectionsMenu);
     }
     // events-list
     {
         auto base = std::string("ui.logs-view.events-list");
         loadBorder(cfg, base, viewConfig.logView.eventsList);
+        loadColorStyleSelectable(cfg, base, viewConfig.logView.eventsList,
+                                 viewConfig.logView.eventsList, &viewConfig.logView.eventsList);
     }
     // log-entry-preview
     {
@@ -434,7 +486,6 @@ class View : public ViewBase, public InputHandlerBase {
     void switchLayout() override;
 
     // testing tools
-
     bool onEvent(ftxui::Event event);
 
     [[nodiscard]] std::string render() const;

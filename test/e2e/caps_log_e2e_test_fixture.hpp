@@ -179,7 +179,7 @@ class CapsLogE2ETest : public testing::Test {
             std::cerr << "Warning: Test requires terminal color support to be set to Palette256. "
                          "Current setting is: " +
                              currentTerminalColorSupportStr
-                      << std::endl;
+                      << std::endl; // NOLINT
             ftxui::Terminal::SetColorSupport(ftxui::Terminal::Color::Palette256);
         }
 

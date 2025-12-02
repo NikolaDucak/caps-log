@@ -48,7 +48,7 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
   public:
     AnnualViewLayout(InputHandlerBase *handler,
                      std::function<ftxui::Dimensions()> screenSizeProvider,
-                     const std::chrono::year_month_day &today, ViewConfig::Logs config);
+                     const std::chrono::year_month_day &today, ViewConfig::LogView config);
 
     void showCalendarForYear(std::chrono::year year) override;
 
@@ -75,12 +75,12 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
 
   private:
     std::shared_ptr<ftxui::ComponentBase> makeFullUIComponent();
-    std::shared_ptr<WindowedMenu> makeTagsMenu(const ViewConfig::Logs::Menu &config);
-    std::shared_ptr<WindowedMenu> makeSectionsMenu(const ViewConfig::Logs::Menu &config);
-    static std::shared_ptr<Preview> makePreview(const ViewConfig::Logs::LogEntryPreview &config);
-    ftxui::Component makeEventsList(const ViewConfig::Logs::EventsList &config);
     CalendarOption makeCalendarOptions(const std::chrono::year_month_day &today,
-                                       ViewConfig::Logs::Calendar config);
+                                       ViewConfig::LogView::AnnualCalendar config);
+    ftxui::Component makeEventsList(const ViewConfig::LogView::EventsList &config);
+    std::shared_ptr<WindowedMenu> makeTagsMenu(const ViewConfig::LogView::Menu &config);
+    std::shared_ptr<WindowedMenu> makeSectionsMenu(const ViewConfig::LogView::Menu &config);
+    static std::shared_ptr<Preview> makePreview(const ViewConfig::LogView::LogEntryPreview &config);
 };
 
 } // namespace caps_log::view

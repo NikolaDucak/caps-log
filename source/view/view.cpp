@@ -1,7 +1,10 @@
 #include "view/view.hpp"
 #include "view/annual_view_layout.hpp"
+#include "view/markdown_text.hpp"
 #include "view/scratchpad_view_layout.hpp"
+
 #include <ftxui/component/component.hpp>
+
 namespace caps_log::view {
 using namespace ftxui;
 
@@ -11,6 +14,7 @@ constexpr std::size_t kIndexYesNot = 2;
 constexpr std::size_t kIndexOk = 3;
 constexpr std::size_t kIndexLoading = 4;
 constexpr std::size_t kIndexTextBox = 5;
+constexpr std::size_t kIndexHelp = 6;
 
 class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     int m_currentScreen = kIndexAnnualViewLayout;
@@ -19,6 +23,7 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     std::string m_message;
     View *m_view = nullptr;
     Component m_prompt = nullptr;
+    bool m_isSecret = false;
 
     // todo: move to separate class
     std::string m_inputText;
@@ -29,7 +34,7 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     PopUpViewLayoutWrapper &operator=(const PopUpViewLayoutWrapper &) = delete;
     PopUpViewLayoutWrapper &operator=(PopUpViewLayoutWrapper &&) = delete;
     explicit PopUpViewLayoutWrapper(View *view) : m_view(view) {
-        auto buttons = Container::Horizontal({
+        auto yesNoButtons = Container::Horizontal({
             Button("Yes",
                    [this] {
                        m_callback(PopUpViewBase::Result::Yes{});
@@ -57,11 +62,17 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
             }
             resetToPrevious();
         };
-        auto textBox = Container::Vertical({Input(&m_inputText, "", {.on_enter = txtBoxHandler}),
+        auto textBox = Container::Vertical({Input(&m_inputText, "",
+                                                  {
+                                                      .password = &m_isSecret,
+                                                      .multiline = false,
+                                                      .on_enter = txtBoxHandler,
+                                                  }),
                                             Button("Submit", txtBoxHandler)});
 
-        auto yesNoRenderer = Renderer(buttons, [this, buttons]() {
-            return vbox(text(m_message), separator(), buttons->Render() | center) | center | border;
+        auto yesNoRenderer = Renderer(yesNoButtons, [this, yesNoButtons]() {
+            return vbox(text(m_message), separator(), yesNoButtons->Render() | center) | center |
+                   border;
         });
 
         auto okRenderer = Renderer(okButton, [this, okButton]() {
@@ -76,12 +87,22 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
         auto loadingRenderer =
             Renderer([this] { return window(text("Loading..."), text(m_message)); });
 
+        auto closeHelpButton = Container::Horizontal({
+            Button("Close", [this] { resetToPrevious(); }),
+        });
+
+        auto helpRenderer = Renderer(closeHelpButton, [closeHelpButton, this]() {
+            return vbox(markdown(m_message), separator(), closeHelpButton->Render() | center) |
+                   center | border;
+        });
+
         Components comps{m_view->getAnnualViewLayout()->getComponent(),
                          m_view->getScratchpadViewLayout()->getComponent(),
                          yesNoRenderer,
                          okRenderer,
                          loadingRenderer,
-                         textBoxRenderer};
+                         textBoxRenderer,
+                         helpRenderer};
 
         assert(
             kIndexAnnualViewLayout ==
@@ -100,6 +121,8 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
 
         assert(kIndexTextBox == std::distance(comps.begin(), std::find(comps.begin(), comps.end(),
                                                                        textBoxRenderer)));
+        assert(kIndexHelp ==
+               std::distance(comps.begin(), std::find(comps.begin(), comps.end(), helpRenderer)));
 
         auto tab = Container::Tab(comps, &m_currentScreen);
         this->m_prompt = tab;
@@ -117,9 +140,11 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::YesNo>) {
                     prompt(popUpData.message, popUpData.callback);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::TextBox>) {
-                    promptTxt(popUpData.message, popUpData.callback);
+                    promptTxt(popUpData.message, popUpData.callback, popUpData.isSecret);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::Loading>) {
                     loadingScreen(popUpData.message);
+                } else if constexpr (std::is_same_v<T, PopUpViewBase::Help>) {
+                    helpScreen(popUpData.message);
                 } else if constexpr (std::is_same_v<T, PopUpViewBase::None>) {
                     resetToPrevious();
                 }
@@ -160,9 +185,10 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
         m_currentScreen = kIndexLoading;
     }
 
-    void promptTxt(std::string message, PopUpCallback callback) {
+    void promptTxt(std::string message, PopUpCallback callback, bool isSecret) {
         m_message = std::move(message);
         m_callback = std::move(callback);
+        m_isSecret = isSecret;
         m_previousScreen = m_currentScreen;
         m_currentScreen = kIndexTextBox;
     }
@@ -170,6 +196,13 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
     void resetToPrevious() {
         m_currentScreen = m_previousScreen;
         m_previousScreen = 0;
+    }
+
+    void helpScreen(std::string message) {
+        m_message = std::move(message);
+        m_callback = nullptr;
+        m_previousScreen = m_currentScreen;
+        m_currentScreen = kIndexHelp;
     }
 
     Element OnRender() override {
@@ -187,7 +220,8 @@ View::View(const ViewConfig &conf, std::chrono::year_month_day today,
            std::function<ftxui::Dimensions()> terminalSizeProvider)
     : m_annualViewLayout{std::make_shared<AnnualViewLayout>(this, terminalSizeProvider, today,
                                                             conf.logView)},
-      m_scratchpadViewLayout{std::make_shared<ScratchpadViewLayout>(this, terminalSizeProvider)},
+      m_scratchpadViewLayout{
+          std::make_shared<ScratchpadViewLayout>(this, terminalSizeProvider, conf.scratchpadView)},
       m_rootWithPopUpSupport{std::make_shared<PopUpViewLayoutWrapper>(this)},
       m_terminalSizeProvider{std::move(terminalSizeProvider)} {}
 
@@ -197,8 +231,8 @@ void View::run() {
     // Caps-log expects the terminal to be at least 80x24
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     ftxui::Terminal::SetFallbackSize(ftxui::Dimensions{/*dimx=*/80, /*dimy=*/24});
-    m_screen.Loop(m_rootWithPopUpSupport);
     m_running = true;
+    m_screen.Loop(m_rootWithPopUpSupport);
 }
 
 void View::stop() { m_screen.Exit(); }

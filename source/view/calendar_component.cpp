@@ -28,9 +28,14 @@ class MonthComponentArranger {
                            std::chrono::year displayedYear, BorderStyle style) {
         const auto availableMonthColumns = computeNumberOfMonthsPerRow(screenDimensions);
         const auto renderData = arrangeMonthsInCalendar(monthComponents, availableMonthColumns);
-        return window(text(std::to_string(static_cast<int>(displayedYear))),
-                      vbox(renderData) | frame, style) |
-               vscroll_indicator;
+        const auto title = text(std::to_string(static_cast<int>(displayedYear)));
+        auto content = vbox(renderData);
+        if (style != BorderStyle::EMPTY) {
+            content = window(title, content | frame, style);
+        } else {
+            content = vbox(title, content);
+        }
+        return content | vscroll_indicator;
     }
 
   private:
@@ -195,8 +200,10 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
             calendarDay++;
             currentWeekday++;
         }
-        return window(text(utils::date::getStringNameForMonth(yearMonth.month())),
-                      gridbox(renderData), borderStyle);
+        const auto title = text(utils::date::getStringNameForMonth(yearMonth.month()));
+        const auto body = gridbox(renderData);
+        return borderStyle == BorderStyle::EMPTY ? vbox(title, body)
+                                                 : window(title, body, borderStyle);
     });
 }
 
