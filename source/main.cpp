@@ -20,6 +20,13 @@ int main(int argc, const char **argv) try {
 
     auto task = capsLog.getTask();
 
+    // debug temporrary
+    // print full config
+    const auto &config = capsLog.getConfig();
+    std::cout << "Current Configuration:\n";
+    auto out = config.getViewConfig().logView.tagsMenu.border;
+    std::cout << "Tags Menu Border: " << (out ? "true" : "false") << '\n';
+
     if (task.type == CapsLog::Task::Type::kRunAppplication) {
         task.action();
     } else if (task.type == CapsLog::Task::Type::kApplyCrypto) {

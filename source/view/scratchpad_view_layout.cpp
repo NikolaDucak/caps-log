@@ -35,19 +35,35 @@ std::size_t countLines(const std::string &str) {
 } // namespace
 
 ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
-                                           std::function<ftxui::Dimensions()> screenSizeProvider)
+                                           std::function<ftxui::Dimensions()> screenSizeProvider,
+                                           const ViewConfig::ScratchpadView &config)
     : m_inputHandler(inputHandler), m_screenSizeProvider(std::move(screenSizeProvider)) {
     m_windowedMenu = WindowedMenu::make(WindowedMenuOption{
-        .title = "Scratchpads", .entries = &m_scratchpadTitles, .onChange = [this]() {
-            if (m_windowedMenu->selected() == 0) {
-                m_preview->setContent("Create a new scratchpad", "No scratchpad selected");
-            } else {
-                auto selectedScratchpad = m_scratchpadFileNames[m_windowedMenu->selected()];
-                m_preview->setContent(selectedScratchpad,
-                                      m_scratchpadContents[m_windowedMenu->selected()]);
-            }
-        }});
-    m_preview = std::make_shared<Preview>();
+        .title = "Scratchpads",
+        .entries = &m_scratchpadTitles,
+        .onChange =
+            [this]() {
+                if (m_windowedMenu->selected() == 0) {
+                    m_preview->setContent("Create a new scratchpad", "No scratchpad selected");
+                } else {
+                    auto selectedScratchpad = m_scratchpadFileNames[m_windowedMenu->selected()];
+                    m_preview->setContent(selectedScratchpad,
+                                          m_scratchpadContents[m_windowedMenu->selected()]);
+                }
+            },
+        .look =
+            {
+                .border = config.scratchpadList.border,
+                .color = config.scratchpadList.color,
+                .style = config.scratchpadList.style,
+                .selected_color = config.scratchpadList.selected_color,
+                .selected_style = config.scratchpadList.selected_style,
+            },
+    });
+    m_preview = std::make_shared<Preview>(PreviewOptions{
+        .border = config.scratchpadPreview.border,
+        .markdownSyntaxHighlighting = config.scratchpadPreview.markdown_syntax_highlighting,
+    });
     m_preview->setContent("Select a scratchpad", "No scratchpad selected");
     auto container = Container::Horizontal({
         m_windowedMenu,

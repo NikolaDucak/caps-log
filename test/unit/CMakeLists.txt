@@ -7,6 +7,7 @@ set(TEST_SOURCES
   ./log_entry_test.cpp
   ./annual_log_data_test.cpp
   ./calendar_component_test.cpp
+  ./ini_schema_validator_test.cpp
 )
 
 set(SOURCE_FILES

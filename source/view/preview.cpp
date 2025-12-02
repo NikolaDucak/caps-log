@@ -1,11 +1,14 @@
 #include "preview.hpp"
 
-#include "markdown_text.hpp"
-
 #include <ftxui/component/event.hpp>
+#include <sstream>
+
+#include "markdown_text.hpp"
 
 namespace caps_log::view {
 using namespace ftxui;
+
+Preview::Preview(const PreviewOptions &options) : m_options(options) {}
 
 Element Preview::OnRender() {
     Elements visibleLines;
@@ -16,7 +19,10 @@ Element Preview::OnRender() {
 
     // Not using a `window` because of https://github.com/ArthurSonzogni/FTXUI/issues/1016
     // Note: dont use `center` it makes the width not expanded to the full width of the screen
-    auto element = vbox(visibleLines) | borderRounded;
+    auto element = vbox(visibleLines);
+    if (m_options.border) {
+        element |= borderRounded;
+    }
     return (Focused() ? element : element | dim);
 }
 
@@ -47,7 +53,17 @@ void Preview::resetScroll() { m_topLineIndex = 0; }
 
 void Preview::setContent(const std::string &title, const std::string &str) {
     m_title = text(title) | underlined | center | bold;
-    m_lines = markdown(str);
+    if (m_options.markdownSyntaxHighlighting) {
+        m_lines = markdown(str);
+    } else {
+        m_lines = {};
+        std::istringstream stream(str);
+        std::string line;
+        while (std::getline(stream, line)) {
+            m_lines.push_back(text(line));
+        }
+    }
+    resetScroll();
 }
 
 } // namespace caps_log::view

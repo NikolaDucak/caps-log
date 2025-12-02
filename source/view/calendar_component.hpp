@@ -1,5 +1,6 @@
 #pragma once
 
+#include "view/view.hpp"
 #include <chrono>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -13,6 +14,8 @@ struct CalendarOption {
     std::function<void(const std::chrono::year_month_day &)> focusChange = nullptr;
     std::function<void(const std::chrono::year_month_day &)> enter = nullptr;
     bool sundayStart = false;
+    bool border = true;
+    bool monthBorder = true;
 };
 
 class Calendar : public ftxui::ComponentBase {
@@ -47,8 +50,8 @@ class Calendar : public ftxui::ComponentBase {
     }
 
   private:
-    ftxui::Component createYear(std::chrono::year);
-    ftxui::Component createMonth(std::chrono::year_month);
+    ftxui::Component createYear(std::chrono::year year);
+    ftxui::Component createMonth(std::chrono::year_month month);
     ftxui::Component createDay(const std::chrono::year_month_day &date);
 };
 

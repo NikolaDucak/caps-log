@@ -7,6 +7,7 @@
 #include "ftxui_ext/extended_containers.hpp"
 #include "utils/date.hpp"
 #include "view/input_handler.hpp"
+#include "view/view.hpp"
 #include "view/windowed_menu.hpp"
 
 #include <algorithm>
@@ -19,9 +20,24 @@ namespace caps_log::view {
 using std::function;
 
 namespace {
-int daysDifference(std::chrono::year_month_day from_ymd, std::chrono::year_month_day to_ymd) {
-    std::chrono::sys_days fromSys{from_ymd};
-    std::chrono::sys_days toSys{to_ymd};
+ftxui::Element identity(ftxui::Element element) { return element; }
+
+ftxui::Element applyStyle(ftxui::Element element, const ViewConfig::StyleMask &style) {
+    if (style.bold) {
+        element |= ftxui::bold;
+    }
+    if (style.underline) {
+        element |= ftxui::underlined;
+    }
+    if (style.italic) {
+        element |= ftxui::italic;
+    }
+    return element;
+}
+
+int daysDifference(std::chrono::year_month_day fromYmd, std::chrono::year_month_day toYmd) {
+    std::chrono::sys_days fromSys{fromYmd};
+    std::chrono::sys_days toSys{toYmd};
     return (toSys - fromSys).count();
 }
 
@@ -30,14 +46,16 @@ using namespace ftxui;
 
 AnnualViewLayout::AnnualViewLayout(InputHandlerBase *handler,
                                    function<ftxui::Dimensions()> screenSizeProvider,
-                                   const std::chrono::year_month_day &today, bool sundayStart,
-                                   unsigned recentEventsWindow)
+                                   const std::chrono::year_month_day &today,
+                                   ViewConfig::LogView config)
     : m_handler{handler}, m_screenSizeProvider{std::move(screenSizeProvider)}, m_today{today},
-      m_calendarButtons{
-          Calendar::make(m_screenSizeProvider, today, makeCalendarOptions(today, sundayStart))},
-      m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
-      m_eventsList{makeEventsList()}, m_rootComponent{makeFullUIComponent()},
-      m_recentEventsWindow{recentEventsWindow} {}
+      m_calendarButtons{Calendar::make(m_screenSizeProvider, today,
+                                       makeCalendarOptions(today, config.annualCalendar))},
+      m_tagsMenu{makeTagsMenu(config.tagsMenu)},
+      m_sectionsMenu{makeSectionsMenu(config.sectionsMenu)},
+      m_eventsList{makeEventsList(config.eventsList)},
+      m_preview{makePreview(config.logEntryPreview)}, m_rootComponent{makeFullUIComponent()},
+      m_recentEventsWindow{config.recentEventsWindow} {}
 
 void AnnualViewLayout::showCalendarForYear(std::chrono::year year) {
     m_calendarButtons->displayYear(year);
@@ -120,22 +138,50 @@ std::shared_ptr<ComponentBase> AnnualViewLayout::makeFullUIComponent() {
     return eventHandler;
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_month_day &today,
-                                                     bool sundayStart) {
+                                                     ViewConfig::LogView::AnnualCalendar config) {
     CalendarOption option;
-    option.transform = [this, today](const auto &date, const auto &state) {
+
+    auto toDecorator = [](ViewConfig::StyleMask style) {
+        Decorator decorator = identity;
+        if (style.bold) {
+            decorator = decorator | bold;
+        }
+        if (style.underline) {
+            decorator = decorator | underlined;
+        }
+        if (style.italic) {
+            decorator = decorator | italic;
+        }
+
+        return decorator;
+    };
+
+    const auto weekdayStyle = toDecorator(config.weekdayStyle);
+    const auto weekendStyle = toDecorator(config.weekendStyle);
+    const auto todayStyle = toDecorator(config.todayStyle);
+    const auto selectedDayStyle = toDecorator(config.selectedDayStyle);
+    const auto eventDayStyle = toDecorator(config.eventDayStyle);
+
+    option.transform = [this, today, &config, weekdayStyle, weekendStyle, todayStyle,
+                        selectedDayStyle, eventDayStyle](const auto &date, const auto &state) {
         auto element = text(state.label);
 
         if (today == date) {
-            element = element | color(Color::Red);
+            element = element | color(config.todayColor) | todayStyle;
         } else if (m_highlightedDates &&
                    m_highlightedDates->contains(utils::date::monthDay(date))) {
             element = element | color(Color::Yellow);
         } else if (utils::date::isWeekend(date)) {
-            element = element | color(Color::Blue);
+            element = element | color(config.weekendColor) | weekendStyle;
         }
 
         if (state.focused) {
+            if (config.selectedDayColor != Color::Default) {
+                element = element | color(config.selectedDayColor);
+            }
+            element = element | selectedDayStyle;
             element = element | inverted;
         }
 
@@ -153,7 +199,7 @@ CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_mon
                     return event.date == utils::date::monthDay(date);
                 });
                 if (isEvent) {
-                    element = element | color(Color::Green);
+                    element = element | color(config.eventDayColor) | eventDayStyle;
                     break;
                 }
             }
@@ -168,34 +214,52 @@ CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_mon
     option.enter = [this](const auto &date) {
         m_handler->handleInputEvent(UIEvent{OpenLogFile{date}});
     };
-    option.sundayStart = sundayStart;
+    option.sundayStart = config.sundayStart;
+    option.border = config.border;
+    option.monthBorder = config.monthBorder;
     return option;
 }
 
-Component AnnualViewLayout::makeEventsList() {
+Component AnnualViewLayout::makeEventsList(const ViewConfig::LogView::EventsList &conf) {
     MenuOption menuOption;
     menuOption.entries = &m_recentAndUpcomingEventsList;
 
-    menuOption.entries_option.transform = [this](const EntryState &state) {
-        Element element = text(state.label);
-        if (state.focused) {
-            element = element | inverted;
-        }
-        if (state.active) {
-            element = element | bold;
-        }
-        if (std::ranges::contains(m_recentAndUpcomingEventsGroupItemIndex, state.index)) {
-            element = element | bold | underlined;
-        }
-        return element;
-    };
+    menuOption.entries_option.transform =
+        [this, conf](const EntryState &state) {
+            Element element = text(state.label);
+            element = applyStyle(std::move(element), conf.style);
+            if (conf.color != Color::Default) {
+                element |= color(conf.color);
+            }
+            if (state.active) {
+                element = applyStyle(std::move(element), conf.selected_style);
+                if (conf.selected_color != Color::Default) {
+                    element |= color(conf.selected_color);
+                }
+            }
+            if (state.focused) {
+                element = element | inverted;
+            }
+            if (std::ranges::contains(m_recentAndUpcomingEventsGroupItemIndex, state.index)) {
+                element = element | bold | underlined;
+            }
+            return element;
+        };
 
     auto menuComponent = Menu(std::move(menuOption));
-    auto menuRenderer = Renderer(menuComponent, [menu = menuComponent, this]() {
+    auto borderStyle = conf.border ? BorderStyle::ROUNDED : BorderStyle::EMPTY;
+    auto menuRenderer = Renderer(menuComponent, [menu = menuComponent, this, borderStyle, conf]() {
         auto eventsCount =
             m_recentAndUpcomingEventsList.size() - m_recentAndUpcomingEventsGroupItemIndex.size();
         auto title = text("Recent & upcoming events (" + std::to_string(eventsCount) + ")");
-        auto windowElement = window(title, menu->Render() | vscroll_indicator | frame);
+
+        auto content = menu->Render() | vscroll_indicator;
+        if (conf.border) {
+            content = content | frame;
+        }
+
+        Element windowElement =
+            conf.border ? window(title, content, borderStyle) : vbox(title, content);
         if (not menu->Focused()) {
             windowElement |= dim;
         }
@@ -204,22 +268,47 @@ Component AnnualViewLayout::makeEventsList() {
     return menuRenderer;
 }
 
-std::shared_ptr<WindowedMenu> AnnualViewLayout::makeTagsMenu() {
+std::shared_ptr<WindowedMenu> AnnualViewLayout::makeTagsMenu(const ViewConfig::LogView::Menu &config) {
     WindowedMenuOption option{
         .title = "Tags",
         .entries = &m_tagMenuItems.getDisplayTexts(),
         .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedTagChange{}}); },
+        .look =
+            {
+                .border = config.border,
+                .color = config.color,
+                .style = config.style,
+                .selected_color = config.selected_color,
+                .selected_style = config.selected_style,
+            },
     };
     return WindowedMenu::make(option);
 }
 
-std::shared_ptr<WindowedMenu> AnnualViewLayout::makeSectionsMenu() {
+std::shared_ptr<WindowedMenu>
+AnnualViewLayout::makeSectionsMenu(const ViewConfig::LogView::Menu &config) {
     WindowedMenuOption option = {
         .title = "Sections",
         .entries = &m_sectionMenuItems.getDisplayTexts(),
         .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedSectionChange{}}); },
+        .look =
+            {
+                .border = config.border,
+                .color = config.color,
+                .style = config.style,
+                .selected_color = config.selected_color,
+                .selected_style = config.selected_style,
+            },
     };
     return WindowedMenu::make(option);
+}
+
+std::shared_ptr<Preview>
+AnnualViewLayout::makePreview(const ViewConfig::LogView::LogEntryPreview &config) {
+    PreviewOptions options;
+    options.border = config.border;
+    options.markdownSyntaxHighlighting = config.markdownSyntaxHighlighting;
+    return std::make_shared<Preview>(options);
 }
 
 void AnnualViewLayout::setPreviewString(const std::string &title, const std::string &string) {
