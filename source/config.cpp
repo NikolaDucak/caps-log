@@ -347,6 +347,32 @@ view::FtxuiTheme parseFtxuiThemeFromPTree(const boost::property_tree::ptree &ptr
     return theme;
 }
 
+view::MarkdownTheme parseMarkdownThemeFromPTree(const boost::property_tree::ptree &ptree,
+                                                const std::string &baseSectionKey,
+                                                const view::MarkdownTheme &baseTheme) {
+    view::MarkdownTheme theme = baseTheme;
+
+    const auto makePath = [](const std::string &key) {
+        return boost::property_tree::ptree::path_type(key, '/');
+    };
+
+    const auto maybeApplyColor = [&](const std::string &key, ftxui::Color &destination) {
+        const auto path = baseSectionKey + "/" + key;
+        if (const auto value = ptree.get_optional<std::string>(makePath(path))) {
+            destination = parseColorOrDefault(baseSectionKey + "." + key, value.value());
+        }
+    };
+
+    for (std::size_t i = 0; i < theme.headerShades.size(); ++i) {
+        maybeApplyColor("header" + std::to_string(i + 1), theme.headerShades.at(i));
+    }
+    maybeApplyColor("list", theme.list);
+    maybeApplyColor("quote", theme.quote);
+    maybeApplyColor("code-fg", theme.codeFg);
+
+    return theme;
+}
+
 std::filesystem::path expandTilde(const std::filesystem::path &input) {
     std::string str = input.string();
 
@@ -580,6 +606,7 @@ void Configuration::applyDefaults() {
                         .logEntryPreviewConfig =
                             view::TextPreviewConfig{
                                 .border = ftxui::BorderStyle::ROUNDED,
+                                .markdownTheme = view::getDefaultMarkdownTheme(),
                             },
                     },
                 .sundayStart = Configuration::kDefaultSundayStart,
@@ -627,6 +654,10 @@ void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &pt
 
     m_viewConfig.annualViewConfig.theme = parseFtxuiThemeFromPTree(
         ptree, "view.annual-view.theme.", m_viewConfig.annualViewConfig.theme);
+    m_viewConfig.annualViewConfig.theme.logEntryPreviewConfig.markdownTheme =
+        parseMarkdownThemeFromPTree(
+            ptree, "view.annual-view.theme.log-entry-preview.markdown-theme",
+            m_viewConfig.annualViewConfig.theme.logEntryPreviewConfig.markdownTheme);
 }
 
 void Configuration::overrideFromCommandLine(const boost::program_options::variables_map &vmap) {

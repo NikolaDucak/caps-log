@@ -28,7 +28,8 @@ Decorator decoratorForBorderSytle(BorderStyle style) {
 }
 
 Preview::Preview(const PreviewOption &option)
-    : m_borderDecorator(decoratorForBorderSytle(option.border)) {}
+    : m_borderDecorator(decoratorForBorderSytle(option.border)),
+      m_markdownTheme(option.markdownTheme) {}
 
 Element Preview::OnRender() {
     Elements visibleLines;
@@ -70,7 +71,7 @@ void Preview::resetScroll() { m_topLineIndex = 0; }
 
 void Preview::setContent(const std::string &title, const std::string &str) {
     m_title = text(title) | underlined | center | bold;
-    m_lines = markdown(str);
+    m_lines = markdown(str, m_markdownTheme);
 }
 
 } // namespace caps_log::view

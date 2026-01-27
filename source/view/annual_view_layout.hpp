@@ -31,6 +31,7 @@ struct EventsListConfig {
 
 struct TextPreviewConfig {
     ftxui::BorderStyle border;
+    MarkdownTheme markdownTheme;
 };
 
 struct FtxuiTheme {
@@ -64,8 +65,10 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
     std::shared_ptr<WindowedMenu> m_tagsMenu;
     std::shared_ptr<WindowedMenu> m_sectionsMenu;
     ftxui::Component m_eventsList;
-    std::shared_ptr<Preview> m_preview = std::make_unique<Preview>(
-        PreviewOption{.border = m_config.theme.logEntryPreviewConfig.border});
+    std::shared_ptr<Preview> m_preview = std::make_unique<Preview>(PreviewOption{
+        .border = m_config.theme.logEntryPreviewConfig.border,
+        .markdownTheme = m_config.theme.logEntryPreviewConfig.markdownTheme,
+    });
     // Maps that help m_calendarButtons highlight certain logs.
     const utils::date::Dates *m_highlightedDates = nullptr;
     const utils::date::Dates *m_datesWithLogs = nullptr;
