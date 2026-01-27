@@ -4,6 +4,7 @@
 #include "calendar_component.hpp"
 #include "input_handler.hpp"
 #include "preview.hpp"
+#include "theme_config.hpp"
 #include "utils/date.hpp"
 #include "windowed_menu.hpp"
 
@@ -15,24 +16,6 @@
 #include <ftxui/dom/elements.hpp>
 
 namespace caps_log::view {
-
-// Configuration structs for various UI components, currently only holding border settings.
-struct MenuConfig {
-    ftxui::BorderStyle border;
-};
-
-struct PreviewConfig {
-    ftxui::BorderStyle border;
-};
-
-struct EventsListConfig {
-    ftxui::BorderStyle border;
-};
-
-struct TextPreviewConfig {
-    ftxui::BorderStyle border;
-    MarkdownTheme markdownTheme;
-};
 
 struct FtxuiTheme {
     ftxui::Decorator emptyDateDecorator;

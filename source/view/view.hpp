@@ -2,12 +2,14 @@
 #pragma once
 
 #include "view/annual_view_layout.hpp"
+#include "view/scratchpad_view_layout.hpp"
 #include "view/view_base.hpp"
 
 namespace caps_log::view {
 
 struct ViewConfig {
     AnnualViewConfig annualViewConfig;
+    ScratchpadViewConfig scratchpadViewConfig;
 };
 
 class View : public ViewBase, public InputHandlerBase {

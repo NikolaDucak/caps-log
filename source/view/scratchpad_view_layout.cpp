@@ -35,8 +35,10 @@ std::size_t countLines(const std::string &str) {
 } // namespace
 
 ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
-                                           std::function<ftxui::Dimensions()> screenSizeProvider)
-    : m_inputHandler(inputHandler), m_screenSizeProvider(std::move(screenSizeProvider)) {
+                                           std::function<ftxui::Dimensions()> screenSizeProvider,
+                                           ScratchpadViewConfig config)
+    : m_inputHandler(inputHandler), m_screenSizeProvider(std::move(screenSizeProvider)),
+      m_config(config) {
     m_windowedMenu = WindowedMenu::make(WindowedMenuOption{
         .title = "Scratchpads",
         .entries = &m_scratchpadTitles,
@@ -50,10 +52,12 @@ ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
                                           m_scratchpadContents[m_windowedMenu->selected()]);
                 }
             },
-        .border = ftxui::BorderStyle::ROUNDED,
+        .border = m_config.theme.menuConfig.border,
     });
-    // styling the scratchpad preview is not yet possible
-    m_preview = std::make_shared<Preview>(PreviewOption{.border = ftxui::BorderStyle::ROUNDED});
+    m_preview = std::make_shared<Preview>(PreviewOption{
+        .border = m_config.theme.previewConfig.border,
+        .markdownTheme = m_config.theme.previewConfig.markdownTheme,
+    });
     m_preview->setContent("Select a scratchpad", "No scratchpad selected");
     auto container = Container::Horizontal({
         m_windowedMenu,

@@ -220,7 +220,8 @@ View::View(const ViewConfig &conf, std::chrono::year_month_day today,
            std::function<ftxui::Dimensions()> terminalSizeProvider)
     : m_annualViewLayout{std::make_shared<AnnualViewLayout>(this, terminalSizeProvider, today,
                                                             conf.annualViewConfig)},
-      m_scratchpadViewLayout{std::make_shared<ScratchpadViewLayout>(this, terminalSizeProvider)},
+      m_scratchpadViewLayout{std::make_shared<ScratchpadViewLayout>(this, terminalSizeProvider,
+                                                                    conf.scratchpadViewConfig)},
       m_rootWithPopUpSupport{std::make_shared<PopUpViewLayoutWrapper>(this)},
       m_terminalSizeProvider{std::move(terminalSizeProvider)} {}
 

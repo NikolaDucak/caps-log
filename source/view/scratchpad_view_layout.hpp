@@ -3,9 +3,19 @@
 #include "view/input_handler.hpp"
 #include "view/preview.hpp"
 #include "view/scratchpad_view_layout_base.hpp"
+#include "view/theme_config.hpp"
 #include "view/windowed_menu.hpp"
 
 namespace caps_log::view {
+
+struct ScratchpadTheme {
+    MenuConfig menuConfig;
+    TextPreviewConfig previewConfig;
+};
+
+struct ScratchpadViewConfig {
+    ScratchpadTheme theme;
+};
 
 class ScratchpadViewLayout final : public ScratchpadViewLayoutBase {
     ftxui::Component m_component;
@@ -17,10 +27,12 @@ class ScratchpadViewLayout final : public ScratchpadViewLayoutBase {
 
     InputHandlerBase *m_inputHandler;
     std::function<ftxui::Dimensions()> m_screenSizeProvider;
+    ScratchpadViewConfig m_config;
 
   public:
     explicit ScratchpadViewLayout(InputHandlerBase *inputHandler,
-                                  std::function<ftxui::Dimensions()> screenSizeProvider);
+                                  std::function<ftxui::Dimensions()> screenSizeProvider,
+                                  ScratchpadViewConfig config);
 
     void setScratchpads(const std::vector<ScratchpadData> &scratchpadData) override;
 
