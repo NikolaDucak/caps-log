@@ -7,6 +7,29 @@
 namespace caps_log::view {
 using namespace ftxui;
 
+Decorator decoratorForBorderSytle(BorderStyle style) {
+    using namespace ftxui;
+    switch (style) {
+    case BorderStyle::LIGHT:
+        return borderLight;
+    case BorderStyle::DASHED:
+        return borderDashed;
+    case BorderStyle::HEAVY:
+        return borderHeavy;
+    case BorderStyle::DOUBLE:
+        return borderDouble;
+    case BorderStyle::ROUNDED:
+        return borderRounded;
+    case BorderStyle::EMPTY:
+        return borderEmpty;
+    default:
+        return border;
+    }
+}
+
+Preview::Preview(const PreviewOption &option)
+    : m_borderDecorator(decoratorForBorderSytle(option.border)) {}
+
 Element Preview::OnRender() {
     Elements visibleLines;
     visibleLines.push_back(m_title);
@@ -16,7 +39,7 @@ Element Preview::OnRender() {
 
     // Not using a `window` because of https://github.com/ArthurSonzogni/FTXUI/issues/1016
     // Note: dont use `center` it makes the width not expanded to the full width of the screen
-    auto element = vbox(visibleLines) | borderRounded;
+    auto element = vbox(visibleLines) | m_borderDecorator;
     return (Focused() ? element : element | dim);
 }
 

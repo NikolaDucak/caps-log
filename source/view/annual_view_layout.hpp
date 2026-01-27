@@ -16,6 +16,23 @@
 
 namespace caps_log::view {
 
+// Configuration structs for various UI components, currently only holding border settings.
+struct MenuConfig {
+    ftxui::BorderStyle border;
+};
+
+struct PreviewConfig {
+    ftxui::BorderStyle border;
+};
+
+struct EventsListConfig {
+    ftxui::BorderStyle border;
+};
+
+struct TextPreviewConfig {
+    ftxui::BorderStyle border;
+};
+
 struct FtxuiTheme {
     ftxui::Decorator emptyDateDecorator;
     ftxui::Decorator logDateDecorator;
@@ -23,6 +40,12 @@ struct FtxuiTheme {
     ftxui::Decorator eventDateDecorator;
     ftxui::Decorator highlightedDateDecorator;
     ftxui::Decorator todaysDateDecorator;
+    ftxui::BorderStyle calendarBorder;
+    ftxui::BorderStyle calendarMonthBorder;
+    MenuConfig tagsMenuConfig;
+    MenuConfig sectionsMenuConfig;
+    EventsListConfig eventsListConfig;
+    TextPreviewConfig logEntryPreviewConfig;
 };
 struct AnnualViewConfig {
     FtxuiTheme theme;
@@ -41,7 +64,8 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
     std::shared_ptr<WindowedMenu> m_tagsMenu;
     std::shared_ptr<WindowedMenu> m_sectionsMenu;
     ftxui::Component m_eventsList;
-    std::shared_ptr<Preview> m_preview = std::make_unique<Preview>();
+    std::shared_ptr<Preview> m_preview = std::make_unique<Preview>(
+        PreviewOption{.border = m_config.theme.logEntryPreviewConfig.border});
     // Maps that help m_calendarButtons highlight certain logs.
     const utils::date::Dates *m_highlightedDates = nullptr;
     const utils::date::Dates *m_datesWithLogs = nullptr;
@@ -90,7 +114,7 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
     std::shared_ptr<WindowedMenu> makeTagsMenu();
     std::shared_ptr<WindowedMenu> makeSectionsMenu();
     ftxui::Component makeEventsList();
-    CalendarOption makeCalendarOptions(const std::chrono::year_month_day &today, bool sundayStart);
+    CalendarOption makeCalendarOptions(const std::chrono::year_month_day &today);
 };
 
 } // namespace caps_log::view

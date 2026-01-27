@@ -288,12 +288,61 @@ view::FtxuiTheme parseFtxuiThemeFromPTree(const boost::property_tree::ptree &ptr
         decorator = textStyleDecorator(parseTextStyle(sectionKey));
     };
 
+    // accepted border styles correspond to ftxui border styles:   LIGHT, DASHED, HEAVY, DOUBLE,
+    // ROUNDED, EMPTY,
+
+    const auto maybeApplyBorderStyle = [&](const std::vector<std::string> &keys,
+                                           ftxui::BorderStyle &destination) {
+        static const std::unordered_map<std::string, ftxui::BorderStyle> kBorderStyles = {
+            {"light", ftxui::BorderStyle::LIGHT},     {"dashed", ftxui::BorderStyle::DASHED},
+            {"heavy", ftxui::BorderStyle::HEAVY},     {"double", ftxui::BorderStyle::DOUBLE},
+            {"rounded", ftxui::BorderStyle::ROUNDED}, {"empty", ftxui::BorderStyle::EMPTY},
+        };
+        std::string value;
+        std::string keyUsed;
+        for (const auto &key : keys) {
+            if (const auto rawValue = ptree.get_optional<std::string>(makePath(key))) {
+                value = utils::lowercase(utils::trim(rawValue.value()));
+                keyUsed = key;
+                break;
+            }
+        }
+        if (value.empty()) {
+            return;
+        }
+        auto it = kBorderStyles.find(value);
+        if (it == kBorderStyles.end()) {
+            throw ConfigParsingException{"Invalid border style for " + keyUsed + ": " + value};
+        }
+        destination = it->second;
+    };
+
     maybeApplyStyle(baseKey + "empty-date", theme.emptyDateDecorator);
     maybeApplyStyle(baseKey + "log-date", theme.logDateDecorator);
     maybeApplyStyle(baseKey + "highlighted-date", theme.highlightedDateDecorator);
     maybeApplyStyle(baseKey + "weekend-date", theme.weekendDateDecorator);
     maybeApplyStyle(baseKey + "event-date", theme.eventDateDecorator);
     maybeApplyStyle(baseKey + "todays-date", theme.todaysDateDecorator);
+
+    const auto baseSectionKey = (not baseKey.empty() && baseKey.back() == '.')
+                                    ? baseKey.substr(0, baseKey.size() - 1)
+                                    : baseKey;
+
+    maybeApplyBorderStyle({baseSectionKey + "/calendar-border", baseKey + "calendar-border/border"},
+                          theme.calendarBorder);
+    maybeApplyBorderStyle(
+        {baseSectionKey + "/calendar-month-border", baseKey + "calendar-month-border/border"},
+        theme.calendarMonthBorder);
+    maybeApplyBorderStyle({baseSectionKey + "/tags-menu.border", baseKey + "tags-menu/border"},
+                          theme.tagsMenuConfig.border);
+    maybeApplyBorderStyle(
+        {baseSectionKey + "/sections-menu.border", baseKey + "sections-menu/border"},
+        theme.sectionsMenuConfig.border);
+    maybeApplyBorderStyle({baseSectionKey + "/events-list.border", baseKey + "events-list/border"},
+                          theme.eventsListConfig.border);
+    maybeApplyBorderStyle(
+        {baseSectionKey + "/log-entry-preview.border", baseKey + "log-entry-preview/border"},
+        theme.logEntryPreviewConfig.border);
 
     return theme;
 }
@@ -514,7 +563,24 @@ void Configuration::applyDefaults() {
                         .eventDateDecorator = ftxui::color(ftxui::Color::Green),
                         .highlightedDateDecorator = ftxui::color(ftxui::Color::Yellow),
                         .todaysDateDecorator = ftxui::color(ftxui::Color::Red),
-
+                        .calendarBorder = ftxui::BorderStyle::ROUNDED,
+                        .calendarMonthBorder = ftxui::BorderStyle::ROUNDED,
+                        .tagsMenuConfig =
+                            view::MenuConfig{
+                                .border = ftxui::BorderStyle::ROUNDED,
+                            },
+                        .sectionsMenuConfig =
+                            view::MenuConfig{
+                                .border = ftxui::BorderStyle::ROUNDED,
+                            },
+                        .eventsListConfig =
+                            view::EventsListConfig{
+                                .border = ftxui::BorderStyle::ROUNDED,
+                            },
+                        .logEntryPreviewConfig =
+                            view::TextPreviewConfig{
+                                .border = ftxui::BorderStyle::ROUNDED,
+                            },
                     },
                 .sundayStart = Configuration::kDefaultSundayStart,
                 .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,

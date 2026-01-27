@@ -13,6 +13,8 @@ struct CalendarOption {
     std::function<void(const std::chrono::year_month_day &)> focusChange = nullptr;
     std::function<void(const std::chrono::year_month_day &)> enter = nullptr;
     bool sundayStart = false;
+    ftxui::BorderStyle calendarBorder;
+    ftxui::BorderStyle monthBorder;
 };
 
 class Calendar : public ftxui::ComponentBase {
@@ -43,7 +45,7 @@ class Calendar : public ftxui::ComponentBase {
     [[nodiscard]] static auto make(std::function<ftxui::Dimensions()> screenSizeProvider,
                                    const std::chrono::year_month_day &today,
                                    CalendarOption option = {}) {
-        return std::make_shared<Calendar>(std::move(screenSizeProvider), today, option);
+        return std::make_shared<Calendar>(std::move(screenSizeProvider), today, std::move(option));
     }
 
   private:

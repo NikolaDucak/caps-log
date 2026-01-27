@@ -190,6 +190,9 @@ You can override the annual view theme via config sections. Each section accepts
 
 Only the sections you define are overridden; any missing sections keep the built‑in defaults.
 
+Border styles:
+- `light`, `dashed`, `heavy`, `double`, `rounded`, `empty`
+
 Color formats:
 - `rgb(R,G,B)`
 - `rgba(R,G,B,A)` (alpha is ignored but must be 0-255)
@@ -223,6 +226,22 @@ underlined=true
 [view.annual-view.theme.todays-date]
 fgcolor=#00ffaa
 italic=true
+```
+
+You can also override border styles for individual components:
+
+```ini
+[view.annual-view.theme]
+calendar-border=double
+calendar-month-border=light
+tags-menu.border=heavy
+sections-menu.border=dashed
+events-list.border=empty
+log-entry-preview.border=rounded
+
+# or as dedicated subsections:
+[view.annual-view.theme.tags-menu]
+border=heavy
 ```
 
 ## Building & Installing
