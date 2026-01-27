@@ -359,3 +359,39 @@ TEST(ConfigTest, ThemeBorderParsingThrowsOnInvalidBorderValue) {
     auto configFile = makeMockReadFileFunc(configContent);
     EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
 }
+
+TEST(ConfigTest, MarkdownThemeParsingForLogEntryPreview) {
+    std::string configContent = "[view.annual-view.theme.log-entry-preview.markdown-theme]\n"
+                                "header1=ansi256(220)\n"
+                                "header2=ansi256(150)\n"
+                                "header3=ansi256(115)\n"
+                                "header4=ansi256(110)\n"
+                                "header5=ansi256(117)\n"
+                                "header6=ansi256(109)\n"
+                                "list=ansi16(blue)\n"
+                                "quote=ansi16(magenta)\n"
+                                "code-fg=ansi16(brightblack)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme =
+        config.getViewConfig().annualViewConfig.theme.logEntryPreviewConfig.markdownTheme;
+    EXPECT_EQ(theme.headerColorForLevel(1), ftxui::Color::Palette256(220));
+    EXPECT_EQ(theme.headerColorForLevel(2), ftxui::Color::Palette256(150));
+    EXPECT_EQ(theme.headerColorForLevel(3), ftxui::Color::Palette256(115));
+    EXPECT_EQ(theme.headerColorForLevel(4), ftxui::Color::Palette256(110));
+    EXPECT_EQ(theme.headerColorForLevel(5), ftxui::Color::Palette256(117));
+    EXPECT_EQ(theme.headerColorForLevel(6), ftxui::Color::Palette256(109));
+    EXPECT_EQ(theme.list, ftxui::Color::Palette16::Blue);
+    EXPECT_EQ(theme.quote, ftxui::Color::Palette16::Magenta);
+    EXPECT_EQ(theme.codeFg, ftxui::Color::Palette16::GrayDark);
+}
+
+TEST(ConfigTest, MarkdownThemeParsingThrowsOnInvalidColor) {
+    std::string configContent = "[view.annual-view.theme.log-entry-preview.markdown-theme]\n"
+                                "header1=ansi256(999)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
+}

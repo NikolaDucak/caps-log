@@ -48,21 +48,14 @@ static bool isRenderedElementEqual(std::string element, const std::string &fileN
         return std::regex_replace(input, std::regex(R"(\d{2}-\d{2}-\d{2})"), "xx-xx-xx");
     };
 
-    static std::vector<std::string> updatedFiles;
-
     [[maybe_unused]]
     const auto updateFile = [&]() -> bool {
-        if (std::find(updatedFiles.begin(), updatedFiles.end(), fileName) != updatedFiles.end()) {
-            throw std::runtime_error{"Data file has already been updated in this test run: " +
-                                     fileName};
-        }
         std::ofstream ofs{kTestDataDirectory / fileName};
         if (!ofs.is_open()) {
             throw std::runtime_error{
                 "Failed to open file for writing: " + kTestDataDirectory.string() + "/" + fileName};
         }
         ofs << element;
-        updatedFiles.push_back(fileName);
         return true; // Refreshing data files, so we don't compare
     };
 

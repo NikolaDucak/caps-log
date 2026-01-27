@@ -312,4 +312,45 @@ calendar-border=not-a-border
     EXPECT_THROW((CapsLog{createTestContext({"caps-log"})}), caps_log::ConfigParsingException);
 }
 
+TEST_F(CapsLogE2EConfigFileOptionsTest, MarkdownThemeConfigChangesRenderOutput) {
+    const auto logContent = std::string{"# Header one\n"
+                                        "## Header two\n"
+                                        "> quoted line\n"
+                                        "- list item\n"
+                                        "`inline code`\n"};
+    auto renderDefault = [this] {
+        writeFile(kTestConfigPath, "");
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        writeFile(capsLog.getConfig().getLogFilePathProvider().path(kToday),
+                  "# Header one\n## Header two\n> quoted line\n- list item\n`inline code`\n");
+        auto render = capsLog.render();
+        EXPECT_THAT(render, RenderedElementEqual("caps_log_markdown_theme_default.txt"));
+        return render;
+    }();
+
+    const auto *content = R"(
+[view.annual-view.theme.log-entry-preview.markdown-theme]
+header1=ansi256(200)
+header2=ansi256(150)
+header3=ansi256(115)
+header4=ansi256(110)
+header5=ansi256(127)
+header6=ansi256(109)
+list=ansi16(white)
+quote=ansi16(magenta)
+code-fg=ansi16(black)
+  )";
+    auto renderThemed = [this, content, logContent] {
+        writeFile(kTestConfigPath, content);
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        writeFile(capsLog.getConfig().getLogFilePathProvider().path(kToday), logContent);
+        auto render = capsLog.render();
+        EXPECT_THAT(render, RenderedElementEqual("caps_log_markdown_theme_custom.txt"));
+        return render;
+    }();
+
+    EXPECT_NE(renderDefault, renderThemed)
+        << "Markdown themed render should differ from default render.";
+}
+
 } // namespace caps_log::test::e2e

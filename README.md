@@ -244,6 +244,21 @@ log-entry-preview.border=rounded
 border=heavy
 ```
 
+Markdown preview theme (for the log entry preview):
+
+```ini
+[view.annual-view.theme.log-entry-preview.markdown-theme]
+header1=ansi256(220)
+header2=ansi256(150)
+header3=ansi256(115)
+header4=ansi256(110)
+header5=ansi256(117)
+header6=ansi256(109)
+list=ansi16(blue)
+quote=ansi16(magenta)
+code-fg=ansi16(brightblack)
+```
+
 ## Building & Installing
 
 **Dependencies**

@@ -1,5 +1,6 @@
+#include "markdown_text.hpp"
+
 #include <algorithm>
-#include <array>
 #include <ftxui/dom/elements.hpp>
 #include <string>
 #include <string_view>
@@ -7,34 +8,11 @@
 
 namespace caps_log::view {
 
-// ---------- Theme ----------
-struct Theme {
-    // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
-    std::array<ftxui::Color, 6> headerShades = {
-        ftxui::Color::Palette256::Yellow4,         // H1 - lightest
-        ftxui::Color::Palette256::DarkOliveGreen3, // H2
-        ftxui::Color::Palette256::DarkSeaGreen,    // H3
-        ftxui::Color::Palette256::SkyBlue3,        // H4
-        ftxui::Color::Palette256::SkyBlue1,        // H5
-        ftxui::Color::Palette256::LightSkyBlue3,   // H6 - darkest
-    };
-    ftxui::Color list = ftxui::Color::Blue;
-    ftxui::Color quote = ftxui::Color::Purple;
-    ftxui::Color codeFg = ftxui::Color::GrayLight;
-
-    [[nodiscard]] ftxui::Color headerColorForLevel(std::size_t headerLevel) const {
-        using ftxui::Color;
-        headerLevel = std::max(headerLevel, std::size_t{1});
-        headerLevel = std::min(headerLevel, headerShades.size());
-        return headerShades.at(headerLevel - 1);
-    }
-};
-
-const Theme &getDefaultTheme() {
+const MarkdownTheme &getDefaultMarkdownTheme() {
     // Postponed initialization of the default theme, so that prior to its first use,
     // it is possible to set the collor support with ftxui::Terminal::SetColorSupport.
     // as Color constructors may depend on it.
-    static Theme defaultTheme{};
+    static MarkdownTheme defaultTheme{};
     return defaultTheme;
 }
 
@@ -110,10 +88,11 @@ struct HighlightSpan {
     InlineStyle styleState;
 };
 
-inline void applyInlineStyle(ftxui::Element &elementRef, const InlineStyle &styleState) {
+inline void applyInlineStyle(ftxui::Element &elementRef, const InlineStyle &styleState,
+                             const MarkdownTheme &theme) {
     using namespace ftxui;
     if (styleState.isCode) {
-        elementRef = elementRef | color(getDefaultTheme().codeFg);
+        elementRef = elementRef | color(theme.codeFg);
     }
     if (styleState.isBold) {
         elementRef = elementRef | bold;
@@ -283,7 +262,7 @@ inline std::vector<HighlightSpan> tokenizeInline(std::string_view lineView) {
     return outputSpans;
 }
 
-inline ftxui::Element renderInline(std::string_view lineView) {
+inline ftxui::Element renderInline(std::string_view lineView, const MarkdownTheme &theme) {
     using namespace ftxui;
 
     auto spanList = tokenizeInline(lineView);
@@ -292,7 +271,7 @@ inline ftxui::Element renderInline(std::string_view lineView) {
 
     for (auto &spanEntry : spanList) {
         Element elementItem = text(std::string(spanEntry.textView));
-        applyInlineStyle(elementItem, spanEntry.styleState);
+        applyInlineStyle(elementItem, spanEntry.styleState, theme);
         elementList.push_back(std::move(elementItem));
     }
 
@@ -309,7 +288,8 @@ struct ParseState {
 };
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
-inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseState) {
+inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseState,
+                                   const MarkdownTheme &theme) {
     using namespace ftxui;
 
     if (!lineView.empty() && lineView.back() == '\r') {
@@ -332,7 +312,7 @@ inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseS
 
     // Inside fence: style whole raw line as code
     if (parseState.inFence) {
-        return text(std::string(lineView)) | color(getDefaultTheme().codeFg);
+        return text(std::string(lineView)) | color(theme.codeFg);
     }
 
     // Horizontal rule: keep raw characters, just dim them
@@ -345,11 +325,11 @@ inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseS
         int headerLevel = static_cast<int>(runOf(lineView, '#'));
         auto afterHashesPos = static_cast<std::size_t>(headerLevel);
         if (afterHashesPos < lineView.size() && lineView[afterHashesPos] == ' ') {
-            auto headerElement = renderInline(lineView);
+            auto headerElement = renderInline(lineView, theme);
             if (headerLevel <= 2) {
                 headerElement = headerElement | bold;
             }
-            return headerElement | color(getDefaultTheme().headerColorForLevel(headerLevel));
+            return headerElement | color(theme.headerColorForLevel(headerLevel));
         }
     }
 
@@ -366,9 +346,8 @@ inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseS
                 break;
             }
         }
-        auto prefixElement =
-            text(std::string(lineView.substr(0, indexPos))) | color(getDefaultTheme().quote);
-        auto restElement = renderInline(lineView.substr(indexPos));
+        auto prefixElement = text(std::string(lineView.substr(0, indexPos))) | color(theme.quote);
+        auto restElement = renderInline(lineView.substr(indexPos), theme);
         return hbox({prefixElement, restElement});
     }
 
@@ -386,9 +365,9 @@ inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseS
             (lineView[indexPos] == '-' || lineView[indexPos] == '*' || lineView[indexPos] == '+') &&
             indexPos + 1 < lineView.size() && lineView[indexPos + 1] == ' ') {
             auto padElement = text(std::string(lineView.substr(0, indexPos)));
-            auto bulletElement = text(std::string(lineView.substr(indexPos, 2))) |
-                                 color(getDefaultTheme().list) | bold;
-            auto restElement = renderInline(lineView.substr(indexPos + 2));
+            auto bulletElement =
+                text(std::string(lineView.substr(indexPos, 2))) | color(theme.list) | bold;
+            auto restElement = renderInline(lineView.substr(indexPos + 2), theme);
             return hbox({padElement, bulletElement, restElement});
         }
     }
@@ -409,17 +388,17 @@ inline ftxui::Element decorateLine(std::string_view lineView, ParseState &parseS
             lineView[indexPos + digitCount + 1] == ' ') {
             auto padElement = text(std::string(lineView.substr(0, indexPos)));
             auto bulletElement = text(std::string(lineView.substr(indexPos, digitCount + 2))) |
-                                 color(getDefaultTheme().list) | bold;
-            auto restElement = renderInline(lineView.substr(indexPos + digitCount + 2));
+                                 color(theme.list) | bold;
+            auto restElement = renderInline(lineView.substr(indexPos + digitCount + 2), theme);
             return hbox({padElement, bulletElement, restElement});
         }
     }
 
     // Paragraph: inline highlighting only (all raw preserved)
-    return renderInline(lineView);
+    return renderInline(lineView, theme);
 }
 
-ftxui::Elements markdown(std::string_view documentView) {
+ftxui::Elements markdown(std::string_view documentView, const MarkdownTheme &theme) {
     using namespace ftxui;
 
     Elements elementList;
@@ -435,7 +414,7 @@ ftxui::Elements markdown(std::string_view documentView) {
                 ? documentView.substr(scanPosition)
                 : documentView.substr(scanPosition, newlinePosition - scanPosition);
 
-        elementList.push_back(decorateLine(lineView, parseState));
+        elementList.push_back(decorateLine(lineView, parseState, theme));
 
         if (newlinePosition == std::string_view::npos) {
             break;
