@@ -11,7 +11,6 @@ TEST_F(CapsLogE2EConfigFileOptionsTest, SundayStartFlag) {
     auto sundayStartRender = [this] {
         writeFile(kTestConfigPath, "sunday-start=true");
         CapsLog capsLog{createTestContext({"caps-log"})};
-        capsLog.getConfig();
         auto render = capsLog.render();
         EXPECT_THAT(render, RenderedElementEqual("caps_log_sunday_start_true.txt"));
         return render;
@@ -38,6 +37,7 @@ TEST_F(CapsLogE2EConfigFileOptionsTest, SundayStartFlag) {
 
 // This test is a bit sketchy, as the e2e tests rely on log-dir-path CLI setting being overridden,
 // so we are not testing the actual default behaviour
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_F(CapsLogE2EConfigFileOptionsTest, LogDirPath) {
     auto path1 = [this]() {
         CapsLog capsLog{createTestContext({"caps-log"})};
@@ -88,6 +88,7 @@ TEST_F(CapsLogE2EConfigFileOptionsTest, LogDirPath) {
         << "The renders for default and custom log directories should be different.";
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_F(CapsLogE2EConfigFileOptionsTest, LogFilenameFormat) {
     static const std::string kDifferentFileNameFormat = "diff-d%m-%d-%Y.md";
     auto pathOfLogWithDifferentFileNameFormat = [this]() {
@@ -134,6 +135,7 @@ TEST_F(CapsLogE2EConfigFileOptionsTest, LogFilenameFormat) {
         << "The renders for default and custom log directories should be different.";
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 TEST_F(CapsLogE2EConfigFileOptionsTest, FirstLineSection) {
     auto context = createTestContext({"caps-log"});
     {
@@ -205,6 +207,47 @@ date=31.12.
     // event-from-future
     EXPECT_THAT(render, testing::ContainsRegex("Recent \\& upcoming events \\(3\\)"));
     EXPECT_THAT(render, Not(testing::ContainsRegex("event-too-far-in-future")));
+}
+
+TEST_F(CapsLogE2EConfigFileOptionsTest, ThemeConfigInvalidThrows) {
+    const auto *content = R"(
+[view.annual-view.theme.event-date]
+fgcolor=ansi256(999)
+  )";
+    writeFile(kTestConfigPath, content);
+
+    EXPECT_THROW((CapsLog{createTestContext({"caps-log"})}), caps_log::ConfigParsingException);
+}
+
+TEST_F(CapsLogE2EConfigFileOptionsTest, ThemeConfigChangesRenderOutput) {
+    auto renderDefault = [this] {
+        writeFile(kTestConfigPath, "");
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        auto render = capsLog.render();
+        EXPECT_THAT(render, RenderedElementEqual("caps_log_theme_default.txt"));
+        return render;
+    }();
+
+    const auto *content = R"(
+[view.annual-view.theme.log-date]
+fgcolor=rgb(12,34,56)
+bold=true
+[view.annual-view.theme.weekend-date]
+fgcolor=ansi256(196)
+underlined=true
+[view.annual-view.theme.todays-date]
+fgcolor=ansi16(brightcyan)
+italic=true
+  )";
+    auto renderThemed = [this, content] {
+        writeFile(kTestConfigPath, content);
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        auto render = capsLog.render();
+        EXPECT_THAT(render, RenderedElementEqual("caps_log_theme_custom.txt"));
+        return render;
+    }();
+
+    EXPECT_NE(renderDefault, renderThemed) << "Themed render should differ from default render.";
 }
 
 } // namespace caps_log::test::e2e

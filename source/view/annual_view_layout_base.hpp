@@ -1,12 +1,10 @@
 #pragma once
 
-#include "input_handler.hpp"
 #include "utils/date.hpp"
 #include "view/view_layout_base.hpp"
 
 #include <chrono>
 #include <ftxui/component/task.hpp>
-#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -29,7 +27,7 @@ class MenuItems {
 
     MenuItems(std::vector<std::string> displayTexts, std::vector<std::string> keys)
         : m_displayTexts{std::move(displayTexts)}, m_keys{std::move(keys)} {
-        if (displayTexts.size() != keys.size()) {
+        if (m_displayTexts.size() != m_keys.size()) {
             throw std::invalid_argument(
                 "MenuItems: displayTexts and keys must have the same size.");
         }

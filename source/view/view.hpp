@@ -1,92 +1,13 @@
 
 #pragma once
 
-#include "view/annual_view_layout_base.hpp"
-#include "view/input_handler.hpp"
-#include "view/scratchpad_view_layout_base.hpp"
-#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/component/task.hpp>
+#include "view/annual_view_layout.hpp"
+#include "view/view_base.hpp"
 
 namespace caps_log::view {
 
-class PopUpViewBase {
-  public:
-    struct Result {
-        struct Ok {};
-        struct Yes {};
-        struct No {};
-        struct Cancel {};
-        struct Input {
-            std::string text;
-        };
-    };
-    using PopUpResult =
-        std::variant<Result::Ok, Result::Yes, Result::No, Result::Cancel, Result::Input>;
-
-    using PopUpCallback = std::function<void(PopUpResult)>;
-    struct Ok {
-        std::string message;
-        PopUpCallback callback = [](const auto &) { /* default no-op callback */ };
-    };
-    struct YesNo {
-        std::string message;
-        PopUpCallback callback;
-    };
-    struct Loading {
-        std::string message;
-    };
-    struct TextBox {
-        std::string message;
-        bool isSecret = false;
-        PopUpCallback callback;
-    };
-    struct Help {
-        std::string message;
-    };
-    struct None {};
-
-    using PopUpType = std::variant<Ok, YesNo, Loading, TextBox, Help, None>;
-
-    PopUpViewBase() = default;
-    PopUpViewBase(const PopUpViewBase &) = default;
-    PopUpViewBase(PopUpViewBase &&) = default;
-    PopUpViewBase &operator=(const PopUpViewBase &) = default;
-    PopUpViewBase &operator=(PopUpViewBase &&) = default;
-
-    virtual ~PopUpViewBase() = default;
-
-    virtual void show(const PopUpType &popUp) = 0;
-};
-
-class ViewBase {
-  public:
-    ViewBase() = default;
-    ViewBase(const ViewBase &) = default;
-    ViewBase(ViewBase &&) = default;
-    ViewBase &operator=(const ViewBase &) = default;
-    ViewBase &operator=(ViewBase &&) = default;
-
-    virtual ~ViewBase() = default;
-
-    virtual void run() = 0;
-    virtual void stop() = 0;
-
-    virtual void post(const ftxui::Task &task) = 0;
-
-    virtual void withRestoredIO(std::function<void()> func) = 0;
-    virtual void setInputHandler(InputHandlerBase *handler) = 0;
-
-    virtual PopUpViewBase &getPopUpView() = 0;
-
-    virtual std::shared_ptr<AnnualViewLayoutBase> getAnnualViewLayout() = 0;
-    virtual std::shared_ptr<ScratchpadViewLayoutBase> getScratchpadViewLayout() = 0;
-
-    virtual void switchLayout() = 0;
-};
-
 struct ViewConfig {
-    bool sundayStart;
-    unsigned recentEventsWindow;
+    AnnualViewConfig annualViewConfig;
 };
 
 class View : public ViewBase, public InputHandlerBase {
