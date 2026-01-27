@@ -24,11 +24,11 @@ namespace {
 class MonthComponentArranger {
   public:
     static Element arrange(const Dimensions screenDimensions, const Components &monthComponents,
-                           std::chrono::year displayedYear) {
+                           std::chrono::year displayedYear, BorderStyle border) {
         const auto availableMonthColumns = computeNumberOfMonthsPerRow(screenDimensions);
         const auto renderData = arrangeMonthsInCalendar(monthComponents, availableMonthColumns);
         return window(text(std::to_string(static_cast<int>(displayedYear))),
-                      vbox(renderData) | frame) |
+                      vbox(renderData) | frame, border) |
                vscroll_indicator;
     }
 
@@ -136,7 +136,7 @@ Component Calendar::createYear(std::chrono::year year) {
 
     return Renderer(container, [this, monthComponents]() {
         return MonthComponentArranger::arrange(m_screenSizeProvider(), monthComponents,
-                                               m_displayedYear);
+                                               m_displayedYear, m_option.calendarBorder);
     });
 }
 
@@ -171,7 +171,7 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
 
     return Renderer(container, [&displayedYear = m_displayedYear, yearMonth = year_month,
                                 sundayStart = (m_option.sundayStart ? 1 : 0),
-                                buttons = std::move(buttons)]() {
+                                buttons = std::move(buttons), this]() {
         const auto header =
             sundayStart == 1 ? kMonthHeaderElement("SMTWTFS") : kMonthHeaderElement("MTWTFSS");
         std::vector<Elements> renderData = {header, {}};
@@ -192,7 +192,7 @@ Component Calendar::createMonth(std::chrono::year_month year_month) {
             currentWeekday++;
         }
         return window(text(utils::date::getStringNameForMonth(yearMonth.month())),
-                      gridbox(renderData));
+                      gridbox(renderData), m_option.monthBorder);
     });
 }
 

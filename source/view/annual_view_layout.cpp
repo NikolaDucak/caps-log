@@ -34,8 +34,7 @@ AnnualViewLayout::AnnualViewLayout(InputHandlerBase *handler,
                                    AnnualViewConfig config)
     : m_handler{handler}, m_screenSizeProvider{std::move(screenSizeProvider)}, m_today{today},
       m_config{std::move(config)},
-      m_calendarButtons{Calendar::make(m_screenSizeProvider, today,
-                                       makeCalendarOptions(today, m_config.sundayStart))},
+      m_calendarButtons{Calendar::make(m_screenSizeProvider, today, makeCalendarOptions(today))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
       m_eventsList{makeEventsList()}, m_rootComponent{makeFullUIComponent()} {}
 
@@ -120,8 +119,7 @@ std::shared_ptr<ComponentBase> AnnualViewLayout::makeFullUIComponent() {
     return eventHandler;
 }
 
-CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_month_day &today,
-                                                     bool sundayStart) {
+CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_month_day &today) {
     CalendarOption option;
     option.transform = [this, today](const auto &date, const auto &state) {
         auto element = text(state.label);
@@ -168,7 +166,9 @@ CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_mon
     option.enter = [this](const auto &date) {
         m_handler->handleInputEvent(UIEvent{OpenLogFile{date}});
     };
-    option.sundayStart = sundayStart;
+    option.sundayStart = m_config.sundayStart;
+    option.calendarBorder = m_config.theme.calendarBorder;
+    option.monthBorder = m_config.theme.calendarMonthBorder;
     return option;
 }
 
@@ -195,7 +195,8 @@ Component AnnualViewLayout::makeEventsList() {
         auto eventsCount =
             m_recentAndUpcomingEventsList.size() - m_recentAndUpcomingEventsGroupItemIndex.size();
         auto title = text("Recent & upcoming events (" + std::to_string(eventsCount) + ")");
-        auto windowElement = window(title, menu->Render() | vscroll_indicator | frame);
+        auto windowElement = window(title, menu->Render() | vscroll_indicator | frame,
+                                    m_config.theme.eventsListConfig.border);
         if (not menu->Focused()) {
             windowElement |= dim;
         }
@@ -209,6 +210,7 @@ std::shared_ptr<WindowedMenu> AnnualViewLayout::makeTagsMenu() {
         .title = "Tags",
         .entries = &m_tagMenuItems.getDisplayTexts(),
         .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedTagChange{}}); },
+        .border = m_config.theme.tagsMenuConfig.border,
     };
     return WindowedMenu::make(option);
 }
@@ -218,6 +220,7 @@ std::shared_ptr<WindowedMenu> AnnualViewLayout::makeSectionsMenu() {
         .title = "Sections",
         .entries = &m_sectionMenuItems.getDisplayTexts(),
         .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedSectionChange{}}); },
+        .border = m_config.theme.sectionsMenuConfig.border,
     };
     return WindowedMenu::make(option);
 }

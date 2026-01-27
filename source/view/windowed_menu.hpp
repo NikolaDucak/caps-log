@@ -13,6 +13,7 @@ struct WindowedMenuOption {
     std::string title;
     ftxui::ConstStringListRef entries;
     std::function<void()> onChange;
+    ftxui::BorderStyle border;
 };
 
 class WindowedMenu : public ftxui::ComponentBase {
@@ -28,21 +29,23 @@ class WindowedMenu : public ftxui::ComponentBase {
         menuOption.selected = &m_selected;
 
         auto menuComponent = Menu(std::move(menuOption));
-        auto menuRenderer = Renderer(menuComponent, [title = option.title, menu = menuComponent]() {
-            auto windowElement = window(text(title), menu->Render() | vscroll_indicator | frame);
+        auto menuRenderer = Renderer(
+            menuComponent, [title = option.title, menu = menuComponent, border = option.border]() {
+                auto windowElement =
+                    window(text(title), menu->Render() | vscroll_indicator | frame, border);
 
-            if (not menu->Focused()) {
-                windowElement |= dim;
-            }
-            return windowElement;
-        });
+                if (not menu->Focused()) {
+                    windowElement |= dim;
+                }
+                return windowElement;
+            });
         Add(menuRenderer);
     }
 
     auto &selected() { return m_selected; }
 
-    static auto make(WindowedMenuOption option) {
-        return std::make_shared<WindowedMenu>(std::move(option));
+    static auto make(const WindowedMenuOption &option) {
+        return std::make_shared<WindowedMenu>(option);
     }
 };
 

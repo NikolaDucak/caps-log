@@ -250,4 +250,66 @@ italic=true
     EXPECT_NE(renderDefault, renderThemed) << "Themed render should differ from default render.";
 }
 
+TEST_F(CapsLogE2EConfigFileOptionsTest, ThemeBorderConfigChangesRenderOutput) {
+    auto renderDefault = [this] {
+        writeFile(kTestConfigPath, "");
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        auto render = capsLog.render();
+        EXPECT_THAT(render, RenderedElementEqual("caps_log_theme_borders_default.txt"));
+        return render;
+    }();
+
+    const auto *content = R"(
+[view.annual-view.theme]
+calendar-border=double
+calendar-month-border=light
+tags-menu.border=heavy
+sections-menu.border=dashed
+events-list.border=empty
+log-entry-preview.border=rounded
+  )";
+    auto renderThemed = [this, content] {
+        writeFile(kTestConfigPath, content);
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        auto render = capsLog.render();
+        EXPECT_THAT(render, RenderedElementEqual("caps_log_theme_borders_custom.txt"));
+        return render;
+    }();
+
+    EXPECT_NE(renderDefault, renderThemed)
+        << "Border themed render should differ from default render.";
+}
+
+TEST_F(CapsLogE2EConfigFileOptionsTest, ThemeBorderConfigSubsectionsChangeRenderOutput) {
+    const auto *content = R"(
+[view.annual-view.theme.calendar-border]
+border=double
+[view.annual-view.theme.calendar-month-border]
+border=light
+[view.annual-view.theme.tags-menu]
+border=heavy
+[view.annual-view.theme.sections-menu]
+border=dashed
+[view.annual-view.theme.events-list]
+border=empty
+[view.annual-view.theme.log-entry-preview]
+border=rounded
+  )";
+    writeFile(kTestConfigPath, content);
+
+    CapsLog capsLog{createTestContext({"caps-log"})};
+    auto render = capsLog.render();
+    EXPECT_THAT(render, RenderedElementEqual("caps_log_theme_borders_subsections.txt"));
+}
+
+TEST_F(CapsLogE2EConfigFileOptionsTest, ThemeBorderConfigInvalidThrows) {
+    const auto *content = R"(
+[view.annual-view.theme]
+calendar-border=not-a-border
+  )";
+    writeFile(kTestConfigPath, content);
+
+    EXPECT_THROW((CapsLog{createTestContext({"caps-log"})}), caps_log::ConfigParsingException);
+}
+
 } // namespace caps_log::test::e2e

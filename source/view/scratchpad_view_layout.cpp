@@ -38,16 +38,22 @@ ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
                                            std::function<ftxui::Dimensions()> screenSizeProvider)
     : m_inputHandler(inputHandler), m_screenSizeProvider(std::move(screenSizeProvider)) {
     m_windowedMenu = WindowedMenu::make(WindowedMenuOption{
-        .title = "Scratchpads", .entries = &m_scratchpadTitles, .onChange = [this]() {
-            if (m_windowedMenu->selected() == 0) {
-                m_preview->setContent("Create a new scratchpad", "No scratchpad selected");
-            } else {
-                auto selectedScratchpad = m_scratchpadFileNames[m_windowedMenu->selected()];
-                m_preview->setContent(selectedScratchpad,
-                                      m_scratchpadContents[m_windowedMenu->selected()]);
-            }
-        }});
-    m_preview = std::make_shared<Preview>();
+        .title = "Scratchpads",
+        .entries = &m_scratchpadTitles,
+        .onChange =
+            [this]() {
+                if (m_windowedMenu->selected() == 0) {
+                    m_preview->setContent("Create a new scratchpad", "No scratchpad selected");
+                } else {
+                    auto selectedScratchpad = m_scratchpadFileNames[m_windowedMenu->selected()];
+                    m_preview->setContent(selectedScratchpad,
+                                          m_scratchpadContents[m_windowedMenu->selected()]);
+                }
+            },
+        .border = ftxui::BorderStyle::ROUNDED,
+    });
+    // styling the scratchpad preview is not yet possible
+    m_preview = std::make_shared<Preview>(PreviewOption{.border = ftxui::BorderStyle::ROUNDED});
     m_preview->setContent("Select a scratchpad", "No scratchpad selected");
     auto container = Container::Horizontal({
         m_windowedMenu,

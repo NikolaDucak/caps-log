@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <boost/property_tree/ini_parser.hpp>
+#include <ftxui/dom/elements.hpp>
 
 using namespace caps_log;
 using namespace testing;
@@ -299,6 +300,61 @@ TEST(ConfigTest, ThemeParsingThrowsOnInvalidAnsi16Name) {
 TEST(ConfigTest, ThemeParsingThrowsOnInvalidRgbaAlphaRange) {
     std::string configContent = "[view.annual-view.theme.log-date]\n"
                                 "fgcolor=rgba(1,2,3,999)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
+}
+
+TEST(ConfigTest, ThemeBorderParsingFromThemeSection) {
+    std::string configContent = "[view.annual-view.theme]\n"
+                                "calendar-border=double\n"
+                                "calendar-month-border=light\n"
+                                "tags-menu.border=heavy\n"
+                                "sections-menu.border=dashed\n"
+                                "events-list.border=empty\n"
+                                "log-entry-preview.border=rounded\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme = config.getViewConfig().annualViewConfig.theme;
+    EXPECT_EQ(theme.calendarBorder, ftxui::BorderStyle::DOUBLE);
+    EXPECT_EQ(theme.calendarMonthBorder, ftxui::BorderStyle::LIGHT);
+    EXPECT_EQ(theme.tagsMenuConfig.border, ftxui::BorderStyle::HEAVY);
+    EXPECT_EQ(theme.sectionsMenuConfig.border, ftxui::BorderStyle::DASHED);
+    EXPECT_EQ(theme.eventsListConfig.border, ftxui::BorderStyle::EMPTY);
+    EXPECT_EQ(theme.logEntryPreviewConfig.border, ftxui::BorderStyle::ROUNDED);
+}
+
+TEST(ConfigTest, ThemeBorderParsingFromBorderSubsections) {
+    std::string configContent = "[view.annual-view.theme.calendar-border]\n"
+                                "border=double\n"
+                                "[view.annual-view.theme.calendar-month-border]\n"
+                                "border=light\n"
+                                "[view.annual-view.theme.tags-menu]\n"
+                                "border=heavy\n"
+                                "[view.annual-view.theme.sections-menu]\n"
+                                "border=dashed\n"
+                                "[view.annual-view.theme.events-list]\n"
+                                "border=empty\n"
+                                "[view.annual-view.theme.log-entry-preview]\n"
+                                "border=rounded\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme = config.getViewConfig().annualViewConfig.theme;
+    EXPECT_EQ(theme.calendarBorder, ftxui::BorderStyle::DOUBLE);
+    EXPECT_EQ(theme.calendarMonthBorder, ftxui::BorderStyle::LIGHT);
+    EXPECT_EQ(theme.tagsMenuConfig.border, ftxui::BorderStyle::HEAVY);
+    EXPECT_EQ(theme.sectionsMenuConfig.border, ftxui::BorderStyle::DASHED);
+    EXPECT_EQ(theme.eventsListConfig.border, ftxui::BorderStyle::EMPTY);
+    EXPECT_EQ(theme.logEntryPreviewConfig.border, ftxui::BorderStyle::ROUNDED);
+}
+
+TEST(ConfigTest, ThemeBorderParsingThrowsOnInvalidBorderValue) {
+    std::string configContent = "[view.annual-view.theme]\n"
+                                "calendar-border=not-a-border\n";
     std::vector<std::string> cmdLineArgs = {"caps-log"};
     auto configFile = makeMockReadFileFunc(configContent);
     EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);

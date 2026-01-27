@@ -45,7 +45,9 @@ TEST(CalnedarComponentTest, Render) {
         ftxui::Screen screen{data.screen_width, 41};
         auto sizeProvider = screenSizeProvider(dimensions);
         caps_log::view::Calendar calendar{std::move(sizeProvider),
-                                          {2024y, std::chrono::January, 1d}};
+                                          {2024y, std::chrono::January, 1d},
+                                          {.calendarBorder = ftxui::BorderStyle::ROUNDED,
+                                           .monthBorder = ftxui::BorderStyle::ROUNDED}};
         ftxui::Render(screen, calendar.Render());
         const auto screenRender = screen.ToString();
         std::string expectedOutput = readFile(filePath(data));
