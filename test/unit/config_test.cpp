@@ -28,7 +28,8 @@ TEST(ConfigTest, DefaultConfigurations) {
 
     EXPECT_EQ(config.getLogDirPath(), Configuration::kDefaultLogDirPath);
     EXPECT_EQ(config.getLogFilenameFormat(), Configuration::kDefaultLogFilenameFormat);
-    EXPECT_EQ(config.getViewConfig().sundayStart, Configuration::kDefaultSundayStart);
+    EXPECT_EQ(config.getViewConfig().annualViewConfig.sundayStart,
+              Configuration::kDefaultSundayStart);
     EXPECT_EQ(config.getAppConfig().skipFirstLine,
               !Configuration::kDefaultAcceptSectionsOnFirstLine);
     EXPECT_EQ(config.getPassword(), "");
@@ -50,7 +51,7 @@ TEST(ConfigTest, ConfigFileOverrides) {
 
     EXPECT_EQ(config.getLogDirPath(), "/override/path/");
     EXPECT_EQ(config.getLogFilenameFormat(), "override_format.md");
-    EXPECT_TRUE(config.getViewConfig().sundayStart);
+    EXPECT_TRUE(config.getViewConfig().annualViewConfig.sundayStart);
     EXPECT_TRUE(config.getAppConfig().skipFirstLine);
     EXPECT_EQ(config.getPassword(), "override_password");
     EXPECT_FALSE(config.getGitRepoConfig().has_value());
@@ -80,7 +81,7 @@ TEST(ConfigTest, CommandLineOverrides) {
 
     EXPECT_EQ(config.getLogDirPath(), "/cmd/override/path/");
     EXPECT_EQ(config.getLogFilenameFormat(), "cmd_override_format.md");
-    EXPECT_TRUE(config.getViewConfig().sundayStart);
+    EXPECT_TRUE(config.getViewConfig().annualViewConfig.sundayStart);
     EXPECT_FALSE(config.getAppConfig().skipFirstLine);
     EXPECT_EQ(config.getPassword(), "cmd_override_password");
     EXPECT_FALSE(config.getGitRepoConfig().has_value());
@@ -199,7 +200,7 @@ TEST(ConfigTest, CalendarEventsParsing) {
     Configuration config = Configuration(cmdLineArgs, configFile);
 
     auto events = config.getAppConfig().events;
-    EXPECT_EQ(config.getViewConfig().recentEventsWindow, 42);
+    EXPECT_EQ(config.getViewConfig().annualViewConfig.recentEventsWindow, 42);
     EXPECT_EQ(events.size(), 2);
     EXPECT_EQ(events["birthdays"].size(), 1);
     EXPECT_EQ(events["holidays"].size(), 1);
@@ -239,4 +240,66 @@ TEST(ConfigTest, CalendarEventsParsing_ThrowsWhenBadDate) {
     std::vector<std::string> cmdLineArgs = {"caps-log"};
     auto configFile = makeMockReadFileFunc(configContent);
     EXPECT_THROW(Configuration(cmdLineArgs, configFile).verify(), caps_log::ConfigParsingException);
+}
+
+TEST(ConfigTest, ThemeParsingAcceptsSupportedColorFormats) {
+    std::string configContent = "[view.annual-view.theme.log-date]\n"
+                                "fgcolor=rgb(12,34,56)\n"
+                                "bgcolor=#aabbcc\n"
+                                "[view.annual-view.theme.event-date]\n"
+                                "fgcolor=ansi16(brightred)\n"
+                                "bgcolor=ansi256(123)\n"
+                                "bold=true\n"
+                                "[view.annual-view.theme.todays-date]\n"
+                                "fgcolor=rgba(1,2,3,255)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_NO_THROW(Configuration(cmdLineArgs, configFile));
+}
+
+TEST(ConfigTest, ThemeParsingThrowsOnInvalidColor) {
+    std::string configContent = "[view.annual-view.theme.event-date]\n"
+                                "fgcolor=ansi256(999)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
+}
+
+TEST(ConfigTest, ThemeParsingErrorIncludesKeyAndValue) {
+    std::string configContent = "[view.annual-view.theme.event-date]\n"
+                                "fgcolor=rgb(1,2)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    try {
+        Configuration config(cmdLineArgs, configFile);
+        (void)config;
+        FAIL() << "Expected ConfigParsingException";
+    } catch (const caps_log::ConfigParsingException &e) {
+        EXPECT_THAT(std::string(e.what()), HasSubstr("view.annual-view.theme.event-date.fgcolor"));
+        EXPECT_THAT(std::string(e.what()), HasSubstr("rgb(1,2)"));
+    }
+}
+
+TEST(ConfigTest, ThemeParsingThrowsOnInvalidHex) {
+    std::string configContent = "[view.annual-view.theme.log-date]\n"
+                                "fgcolor=#zzzzzz\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
+}
+
+TEST(ConfigTest, ThemeParsingThrowsOnInvalidAnsi16Name) {
+    std::string configContent = "[view.annual-view.theme.log-date]\n"
+                                "fgcolor=ansi16(not-a-color)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
+}
+
+TEST(ConfigTest, ThemeParsingThrowsOnInvalidRgbaAlphaRange) {
+    std::string configContent = "[view.annual-view.theme.log-date]\n"
+                                "fgcolor=rgba(1,2,3,999)\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
 }

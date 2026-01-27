@@ -16,10 +16,25 @@
 
 namespace caps_log::view {
 
+struct FtxuiTheme {
+    ftxui::Decorator emptyDateDecorator;
+    ftxui::Decorator logDateDecorator;
+    ftxui::Decorator weekendDateDecorator;
+    ftxui::Decorator eventDateDecorator;
+    ftxui::Decorator highlightedDateDecorator;
+    ftxui::Decorator todaysDateDecorator;
+};
+struct AnnualViewConfig {
+    FtxuiTheme theme;
+    bool sundayStart = false;
+    unsigned recentEventsWindow = 0;
+};
+
 class AnnualViewLayout : public AnnualViewLayoutBase {
     InputHandlerBase *m_handler{nullptr};
     std::function<ftxui::Dimensions()> m_screenSizeProvider;
     std::chrono::year_month_day m_today;
+    AnnualViewConfig m_config;
 
     // UI components visible to the user
     std::shared_ptr<Calendar> m_calendarButtons;
@@ -35,8 +50,6 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
     // Menu items for m_tagsMenu & m_sectionsMenu
     MenuItems m_tagMenuItems, m_sectionMenuItems;
 
-    unsigned m_recentEventsWindow;
-
     // Events
     std::vector<std::string> m_recentAndUpcomingEventsList;
     std::vector<std::size_t> m_recentAndUpcomingEventsGroupItemIndex;
@@ -47,8 +60,7 @@ class AnnualViewLayout : public AnnualViewLayoutBase {
   public:
     AnnualViewLayout(InputHandlerBase *handler,
                      std::function<ftxui::Dimensions()> screenSizeProvider,
-                     const std::chrono::year_month_day &today, bool sundayStart,
-                     unsigned recentEventsWindow);
+                     const std::chrono::year_month_day &today, AnnualViewConfig config);
 
     void showCalendarForYear(std::chrono::year year) override;
 

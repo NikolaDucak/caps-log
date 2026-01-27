@@ -22,22 +22,22 @@ namespace {
 int daysDifference(std::chrono::year_month_day from_ymd, std::chrono::year_month_day to_ymd) {
     std::chrono::sys_days fromSys{from_ymd};
     std::chrono::sys_days toSys{to_ymd};
-    return (toSys - fromSys).count();
+    return static_cast<int>((toSys - fromSys).count());
 }
-
 } // namespace
+
 using namespace ftxui;
 
 AnnualViewLayout::AnnualViewLayout(InputHandlerBase *handler,
                                    function<ftxui::Dimensions()> screenSizeProvider,
-                                   const std::chrono::year_month_day &today, bool sundayStart,
-                                   unsigned recentEventsWindow)
+                                   const std::chrono::year_month_day &today,
+                                   AnnualViewConfig config)
     : m_handler{handler}, m_screenSizeProvider{std::move(screenSizeProvider)}, m_today{today},
-      m_calendarButtons{
-          Calendar::make(m_screenSizeProvider, today, makeCalendarOptions(today, sundayStart))},
+      m_config{std::move(config)},
+      m_calendarButtons{Calendar::make(m_screenSizeProvider, today,
+                                       makeCalendarOptions(today, m_config.sundayStart))},
       m_tagsMenu{makeTagsMenu()}, m_sectionsMenu{makeSectionsMenu()},
-      m_eventsList{makeEventsList()}, m_rootComponent{makeFullUIComponent()},
-      m_recentEventsWindow{recentEventsWindow} {}
+      m_eventsList{makeEventsList()}, m_rootComponent{makeFullUIComponent()} {}
 
 void AnnualViewLayout::showCalendarForYear(std::chrono::year year) {
     m_calendarButtons->displayYear(year);
@@ -127,12 +127,12 @@ CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_mon
         auto element = text(state.label);
 
         if (today == date) {
-            element = element | color(Color::Red);
+            element = element | m_config.theme.todaysDateDecorator;
         } else if (m_highlightedDates &&
                    m_highlightedDates->contains(utils::date::monthDay(date))) {
-            element = element | color(Color::Yellow);
+            element = element | m_config.theme.highlightedDateDecorator;
         } else if (utils::date::isWeekend(date)) {
-            element = element | color(Color::Blue);
+            element = element | m_config.theme.weekendDateDecorator;
         }
 
         if (state.focused) {
@@ -141,9 +141,9 @@ CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_mon
 
         if (m_datesWithLogs) {
             if (m_datesWithLogs->contains(utils::date::monthDay(date))) {
-                element = element | underlined;
+                element = element | m_config.theme.logDateDecorator;
             } else {
-                element = element | dim;
+                element = element | m_config.theme.emptyDateDecorator;
             }
         }
 
@@ -153,7 +153,7 @@ CalendarOption AnnualViewLayout::makeCalendarOptions(const std::chrono::year_mon
                     return event.date == utils::date::monthDay(date);
                 });
                 if (isEvent) {
-                    element = element | color(Color::Green);
+                    element = element | m_config.theme.eventDateDecorator;
                     break;
                 }
             }
@@ -270,7 +270,7 @@ void AnnualViewLayout::setEventDates(const CalendarEvents *events) {
                 const auto daysToEvent = daysDifference(
                     m_today, std::chrono::year_month_day(m_today.year(), event.date.month(),
                                                          event.date.day()));
-                if (std::abs(daysToEvent) > m_recentEventsWindow) {
+                if (std::abs(daysToEvent) > m_config.recentEventsWindow) {
                     continue;
                 }
                 const auto daysStr = [daysToEvent]() -> std::string {

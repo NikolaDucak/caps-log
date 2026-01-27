@@ -218,8 +218,8 @@ class PopUpViewLayoutWrapper : public PopUpViewBase, public ComponentBase {
 
 View::View(const ViewConfig &conf, std::chrono::year_month_day today,
            std::function<ftxui::Dimensions()> terminalSizeProvider)
-    : m_annualViewLayout{std::make_shared<AnnualViewLayout>(
-          this, terminalSizeProvider, today, conf.sundayStart, conf.recentEventsWindow)},
+    : m_annualViewLayout{std::make_shared<AnnualViewLayout>(this, terminalSizeProvider, today,
+                                                            conf.annualViewConfig)},
       m_scratchpadViewLayout{std::make_shared<ScratchpadViewLayout>(this, terminalSizeProvider)},
       m_rootWithPopUpSupport{std::make_shared<PopUpViewLayoutWrapper>(this)},
       m_terminalSizeProvider{std::move(terminalSizeProvider)} {}
@@ -275,10 +275,10 @@ void View::switchLayout() { m_rootWithPopUpSupport->switchLayout(); }
 bool View::onEvent(ftxui::Event event) { return m_rootWithPopUpSupport->OnEvent(std::move(event)); }
 
 std::string View::render() const {
-    auto dimensitons = m_terminalSizeProvider();
+    const auto dimensitons = m_terminalSizeProvider();
     ftxui::Screen screen{dimensitons.dimx, dimensitons.dimy};
 
-    auto root = m_rootWithPopUpSupport->Render();
+    const auto root = m_rootWithPopUpSupport->Render();
     ftxui::Render(screen, root);
 
     return screen.ToString();

@@ -130,7 +130,7 @@ most of the command line flags can be set through a config file.
 
 ```ini
 log-dir-path=/path/to/log/dir
-log-name-format=%y_%d_%m.txt
+log-filename-format=%y_%d_%m.txt
 sunday-start=true
 first-line-section=true
 password=your-password
@@ -180,6 +180,49 @@ date=01.01.
 [calendar-events.holidays.1]
 name=New Years eve
 date=31.12.
+```
+
+__Theme__
+
+You can override the annual view theme via config sections. Each section accepts
+`fgcolor`, `bgcolor` and style flags: `italic`, `bold`, `underlined`, `dim`,
+`inverted`, `strikethrough`, `blink`.
+
+Only the sections you define are overridden; any missing sections keep the built‑in defaults.
+
+Color formats:
+- `rgb(R,G,B)`
+- `rgba(R,G,B,A)` (alpha is ignored but must be 0-255)
+- `ansi16(NAME)` or `ansi16(0-15)` (e.g. `brightred`)
+- `ansi256(N)` (0-255)
+- `#RRGGBB`
+- `Default`
+
+```ini
+[view.annual-view.theme.log-date]
+fgcolor=rgb(12,34,56)
+bold=true
+
+[view.annual-view.theme.empty-date]
+fgcolor=ansi256(244)
+dim=true
+
+[view.annual-view.theme.highlighted-date]
+fgcolor=ansi16(yellow)
+bold=true
+
+[view.annual-view.theme.weekend-date]
+fgcolor=ansi16(blue)
+underlined=true
+
+[view.annual-view.theme.event-date]
+fgcolor=ansi16(brightred)
+bgcolor=ansi256(123)
+underlined=true
+
+[view.annual-view.theme.todays-date]
+fgcolor=#00ffaa
+italic=true
 ```
 
 ## Building & Installing

@@ -1,17 +1,302 @@
 #include "config.hpp"
 #include "log/log_repository_crypto_applier.hpp"
+#include "utils/string.hpp"
 #include "view/view.hpp"
+#include <algorithm>
 #include <boost/program_options/config.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <cctype>
 #include <filesystem>
 #include <fmt/format.h>
+#include <ftxui/screen/color.hpp>
 #include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 namespace caps_log {
 using boost::program_options::variables_map;
 
 namespace {
+
+inline std::vector<int> parseInts(std::string_view str) {
+    std::vector<int> out;
+    std::string tmp;
+    tmp.reserve(str.size());
+    for (char chr : str) {
+        if (chr == ',' || (std::isspace(static_cast<unsigned char>(chr)) != 0)) {
+            if (!tmp.empty()) {
+                try {
+                    out.push_back(std::stoi(tmp));
+                } catch (const std::exception &) {
+                    throw ConfigParsingException{"Invalid numeric value in color: " + tmp};
+                }
+                tmp.clear();
+            }
+        } else {
+            tmp.push_back(chr);
+        }
+    }
+    if (!tmp.empty()) {
+        try {
+            out.push_back(std::stoi(tmp));
+        } catch (const std::exception &) {
+            throw ConfigParsingException{"Invalid numeric value in color: " + tmp};
+        }
+    }
+    return out;
+}
+
+inline ftxui::Color parseHexStrict(std::string_view str) {
+    static constexpr auto kMaxHexColorLength = 7; // including '#'
+    if (str.size() != kMaxHexColorLength || str[0] != '#') {
+        throw ConfigParsingException{"Invalid hex color format: " + std::string(str)};
+    }
+    auto hex = [&](char chr) -> int {
+        if (chr >= '0' && chr <= '9') {
+            return chr - '0';
+        }
+        chr = static_cast<char>(std::tolower(static_cast<unsigned char>(chr)));
+        if (chr >= 'a' && chr <= 'f') {
+            // NOLINTNEXTLINE(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+            return 10 + (chr - 'a');
+        }
+        return -1;
+    };
+    // NOLINTBEGIN(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+    int red1 = hex(str[1]);
+    int red2 = hex(str[2]);
+    int green1 = hex(str[3]);
+    int green2 = hex(str[4]);
+    int blue1 = hex(str[5]);
+    int blue2 = hex(str[6]);
+    // NOLINTEND(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+    if (red1 < 0 || red2 < 0 || green1 < 0 || green2 < 0 || blue1 < 0 || blue2 < 0) {
+        throw ConfigParsingException{"Invalid hex color value: " + std::string(str)};
+    }
+    return ftxui::Color::RGB((red1 << 4) | red2, (green1 << 4) | green2, (blue1 << 4) | blue2);
+}
+
+inline ftxui::Color parseAnsi16Strict(std::string_view str) {
+    static const std::unordered_map<std::string, int> kNames = {
+        {"black", 0},        {"red", 1},
+        {"green", 2},        {"yellow", 3},
+        {"blue", 4},         {"magenta", 5},
+        {"cyan", 6},         {"white", 7},
+        {"brightblack", 8},  {"brightred", 9},
+        {"brightgreen", 10}, {"brightyellow", 11},
+        {"brightblue", 12},  {"brightmagenta", 13},
+        {"brightcyan", 14},  {"brightwhite", 15},
+    };
+
+    std::string val = utils::lowercase(utils::trim(std::string(str)));
+    if (val.empty()) {
+        throw ConfigParsingException{"ansi16 color value is empty"};
+    }
+
+    bool allDigits =
+        std::all_of(val.begin(), val.end(), [](unsigned char chr) { return std::isdigit(chr); });
+    if (allDigits) {
+        static constexpr auto kMaxAnsi16Value = 15;
+        int num = 0;
+        try {
+            num = std::stoi(val);
+        } catch (const std::exception &) {
+            throw ConfigParsingException{"Invalid ansi16 numeric value: " + val};
+        }
+        if (num < 0 || num > kMaxAnsi16Value) {
+            throw ConfigParsingException{"ansi16 value out of range: " + val};
+        }
+        return ftxui::Color::Palette256(num);
+    }
+
+    auto it = kNames.find(val);
+    if (it == kNames.end()) {
+        throw ConfigParsingException{"Unknown ansi16 color name: " + val};
+    }
+    return ftxui::Color::Palette256(it->second);
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+inline ftxui::Color parseColorStrict(std::string_view input) {
+    static constexpr auto kMaxColorValue = 255;
+    std::string str = utils::trim(std::string(input));
+    if (str.empty()) {
+        throw ConfigParsingException{"Color value is empty"};
+    }
+
+    if (str[0] == '#') {
+        return parseHexStrict(str);
+    }
+
+    std::string lower = utils::lowercase(str);
+    auto lparen = lower.find('(');
+    auto rparen = lower.rfind(')');
+    if (lparen == std::string::npos || rparen == std::string::npos || rparen <= lparen + 1 ||
+        rparen != lower.size() - 1) {
+        throw ConfigParsingException{"Invalid color format: " + str};
+    }
+
+    std::string kind = lower.substr(0, lparen);
+    std::string payload = lower.substr(lparen + 1, rparen - lparen - 1);
+
+    if (kind == "rgb" || kind == "rgba") {
+        auto vals = parseInts(payload);
+        const bool isRgba = kind == "rgba";
+        const size_t expected = isRgba ? 4U : 3U;
+        if (vals.size() != expected) {
+            throw ConfigParsingException{fmt::format("{} color expects {} values: {}",
+                                                     isRgba ? "RGBA" : "RGB", expected, str)};
+        }
+        int red = vals[0];
+        int green = vals[1];
+        int blue = vals[2];
+        if (red < 0 || red > kMaxColorValue || green < 0 || green > kMaxColorValue || blue < 0 ||
+            blue > kMaxColorValue) {
+            throw ConfigParsingException{
+                fmt::format("{} values out of range: {}", isRgba ? "RGBA" : "RGB", str)};
+        }
+        if (isRgba) {
+            int alpha = vals[3];
+            if (alpha < 0 || alpha > kMaxColorValue) {
+                throw ConfigParsingException{"RGBA alpha out of range: " + str};
+            }
+        }
+        return ftxui::Color::RGB(red, green, blue);
+    }
+
+    if (kind == "ansi256") {
+        auto vals = parseInts(payload);
+        if (vals.size() != 1) {
+            throw ConfigParsingException{"ansi256 expects 1 value: " + str};
+        }
+        int num = vals[0];
+        if (num < 0 || num > kMaxColorValue) {
+            throw ConfigParsingException{"ansi256 value out of range: " + str};
+        }
+        return ftxui::Color::Palette256(num);
+    }
+
+    if (kind == "ansi16") {
+        return parseAnsi16Strict(payload);
+    }
+
+    throw ConfigParsingException{"Unknown color format: " + str};
+}
+
+inline ftxui::Color parseColorOrDefault(const std::string &key, std::string_view input) {
+    std::string trimmed = utils::trim(std::string(input));
+    if (trimmed.empty() || utils::lowercase(trimmed) == "default") {
+        return ftxui::Color::Default;
+    }
+    try {
+        return parseColorStrict(trimmed);
+    } catch (const ConfigParsingException &e) {
+        throw ConfigParsingException{fmt::format("Invalid {} ({}): {}", key, trimmed, e.what())};
+    }
+}
+
+struct TextStyle {
+    ftxui::Color fgcolor = ftxui::Color::Default;
+    ftxui::Color bgcolor = ftxui::Color::Default;
+    bool italic = false;
+    bool bold = false;
+    bool underlined = false;
+    bool dim = false;
+    bool inverted = false;
+    bool strikethrough = false;
+    bool blink = false;
+};
+
+ftxui::Decorator textStyleDecorator(const TextStyle &style) {
+    return [style](ftxui::Element element) {
+        if (style.fgcolor != ftxui::Color::Default) {
+            element = element | ftxui::color(style.fgcolor);
+        }
+        if (style.bgcolor != ftxui::Color::Default) {
+            element = element | ftxui::bgcolor(style.bgcolor);
+        }
+        if (style.italic) {
+            element = element | ftxui::italic;
+        }
+        if (style.bold) {
+            element = element | ftxui::bold;
+        }
+        if (style.underlined) {
+            element = element | ftxui::underlined;
+        }
+        if (style.dim) {
+            element = element | ftxui::dim;
+        }
+        if (style.inverted) {
+            element = element | ftxui::inverted;
+        }
+        if (style.strikethrough) {
+            element = element | ftxui::strikethrough;
+        }
+        if (style.blink) {
+            element = element | ftxui::blink;
+        }
+        return element;
+    };
+}
+
+struct Theme {
+    TextStyle logDateStyle;
+    TextStyle weekendDateStyle;
+    TextStyle eventDateStyle;
+    TextStyle todaysDateStyle;
+};
+
+view::FtxuiTheme parseFtxuiThemeFromPTree(const boost::property_tree::ptree &ptree,
+                                          const std::string &baseKey,
+                                          const view::FtxuiTheme &baseTheme) {
+    view::FtxuiTheme theme = baseTheme;
+
+    const auto makePath = [](const std::string &key) {
+        return boost::property_tree::ptree::path_type(key, '/');
+    };
+
+    const auto parseTextStyle = [&](const std::string &sectionKey) -> TextStyle {
+        TextStyle style;
+        std::string fgColorStr =
+            ptree.get<std::string>(makePath(sectionKey + "/fgcolor"), "Default");
+        std::string bgColorStr =
+            ptree.get<std::string>(makePath(sectionKey + "/bgcolor"), "Default");
+
+        style.fgcolor = parseColorOrDefault(sectionKey + ".fgcolor", fgColorStr);
+        style.bgcolor = parseColorOrDefault(sectionKey + ".bgcolor", bgColorStr);
+
+        style.italic = ptree.get<bool>(makePath(sectionKey + "/italic"), false);
+        style.bold = ptree.get<bool>(makePath(sectionKey + "/bold"), false);
+        style.underlined = ptree.get<bool>(makePath(sectionKey + "/underlined"), false);
+        style.dim = ptree.get<bool>(makePath(sectionKey + "/dim"), false);
+        style.inverted = ptree.get<bool>(makePath(sectionKey + "/inverted"), false);
+        style.strikethrough = ptree.get<bool>(makePath(sectionKey + "/strikethrough"), false);
+        style.blink = ptree.get<bool>(makePath(sectionKey + "/blink"), false);
+
+        return style;
+    };
+
+    const auto maybeApplyStyle = [&](const std::string &sectionKey, ftxui::Decorator &decorator) {
+        if (!ptree.get_child_optional(makePath(sectionKey))) {
+            return;
+        }
+        decorator = textStyleDecorator(parseTextStyle(sectionKey));
+    };
+
+    maybeApplyStyle(baseKey + "empty-date", theme.emptyDateDecorator);
+    maybeApplyStyle(baseKey + "log-date", theme.logDateDecorator);
+    maybeApplyStyle(baseKey + "highlighted-date", theme.highlightedDateDecorator);
+    maybeApplyStyle(baseKey + "weekend-date", theme.weekendDateDecorator);
+    maybeApplyStyle(baseKey + "event-date", theme.eventDateDecorator);
+    maybeApplyStyle(baseKey + "todays-date", theme.todaysDateDecorator);
+
+    return theme;
+}
 
 std::filesystem::path expandTilde(const std::filesystem::path &input) {
     std::string str = input.string();
@@ -171,7 +456,6 @@ variables_map parseCLIOptions(const std::vector<std::string> &argv) {
 
     return vmap;
 }
-
 } // namespace
 
 const std::string Configuration::kDefaultConfigLocation =
@@ -220,8 +504,21 @@ Configuration::Configuration(
 
 void Configuration::applyDefaults() {
     m_viewConfig = view::ViewConfig{
-        .sundayStart = Configuration::kDefaultSundayStart,
-        .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
+        .annualViewConfig =
+            view::AnnualViewConfig{
+                .theme =
+                    view::FtxuiTheme{
+                        .emptyDateDecorator = ftxui::dim,
+                        .logDateDecorator = ftxui::underlined,
+                        .weekendDateDecorator = ftxui::color(ftxui::Color::Blue),
+                        .eventDateDecorator = ftxui::color(ftxui::Color::Green),
+                        .highlightedDateDecorator = ftxui::color(ftxui::Color::Yellow),
+                        .todaysDateDecorator = ftxui::color(ftxui::Color::Red),
+
+                    },
+                .sundayStart = Configuration::kDefaultSundayStart,
+                .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
+            },
     };
     m_password = "";
     m_cryptoApplicationType = std::nullopt;
@@ -235,11 +532,11 @@ void Configuration::applyDefaults() {
 void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &ptree) {
     setIfValue<std::string>(ptree, "log-dir-path", m_logDirPath);
     setIfValue<std::string>(ptree, "log-filename-format", m_logFilenameFormat);
-    setIfValue<bool>(ptree, "sunday-start", m_viewConfig.sundayStart);
+    setIfValue<bool>(ptree, "sunday-start", m_viewConfig.annualViewConfig.sundayStart);
     setIfValue<bool>(ptree, "first-line-section", m_acceptSectionsOnFirstLine);
     setIfValue<std::string>(ptree, "password", m_password);
     setIfValue<unsigned>(ptree, "calendar-events.recent-events-window",
-                         m_viewConfig.recentEventsWindow);
+                         m_viewConfig.annualViewConfig.recentEventsWindow);
 
     // Parse and update calendar events
     m_calendarEvents = parseCalendarEvents(ptree);
@@ -261,6 +558,9 @@ void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &pt
 
         m_gitRepoConfig = gitConf;
     }
+
+    m_viewConfig.annualViewConfig.theme = parseFtxuiThemeFromPTree(
+        ptree, "view.annual-view.theme.", m_viewConfig.annualViewConfig.theme);
 }
 
 void Configuration::overrideFromCommandLine(const boost::program_options::variables_map &vmap) {
@@ -271,7 +571,7 @@ void Configuration::overrideFromCommandLine(const boost::program_options::variab
         m_logFilenameFormat = vmap["log-name-format"].as<std::string>();
     }
     if (vmap.contains("sunday-start")) {
-        m_viewConfig.sundayStart = true;
+        m_viewConfig.annualViewConfig.sundayStart = true;
     }
     if (vmap.contains("first-line-section")) {
         m_acceptSectionsOnFirstLine = true;

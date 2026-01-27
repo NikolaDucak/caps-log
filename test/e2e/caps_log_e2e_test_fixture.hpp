@@ -18,7 +18,13 @@ namespace caps_log::test::e2e {
 
 // When enabled, rendered elements that are checked agains the expected renders in data files
 // are refreshed. This is useful when the expected renders change.
-constexpr static const bool kRefreshDataFiles = false;
+enum class RefreshDataFilesType : std::uint8_t {
+    kNoRefresh,
+    kOnlyUpdateExistingFiles,
+    kOnlyCreateNewFiles,
+    kCreateAndUpdateFiles,
+};
+constexpr static const RefreshDataFilesType kRefreshDataFiles = RefreshDataFilesType::kNoRefresh;
 
 static const std::filesystem::path kTestDataDirectory =
     std::filesystem::path{CAPS_LOG_TEST_DATA_DIR} / "e2e";
@@ -41,14 +47,42 @@ static bool isRenderedElementEqual(std::string element, const std::string &fileN
         // Remove date substrings like "24-06-15" from the input string with 'xx-xx-xx' format
         return std::regex_replace(input, std::regex(R"(\d{2}-\d{2}-\d{2})"), "xx-xx-xx");
     };
-    if (kRefreshDataFiles) {
+
+    static std::vector<std::string> updatedFiles;
+
+    [[maybe_unused]]
+    const auto updateFile = [&]() -> bool {
+        if (std::find(updatedFiles.begin(), updatedFiles.end(), fileName) != updatedFiles.end()) {
+            throw std::runtime_error{"Data file has already been updated in this test run: " +
+                                     fileName};
+        }
         std::ofstream ofs{kTestDataDirectory / fileName};
         if (!ofs.is_open()) {
             throw std::runtime_error{
                 "Failed to open file for writing: " + kTestDataDirectory.string() + "/" + fileName};
         }
         ofs << element;
+        updatedFiles.push_back(fileName);
         return true; // Refreshing data files, so we don't compare
+    };
+
+    switch (kRefreshDataFiles) {
+    case RefreshDataFilesType::kNoRefresh:
+        break;
+    case RefreshDataFilesType::kOnlyUpdateExistingFiles: {
+        if (!std::filesystem::exists(kTestDataDirectory / fileName)) {
+            break;
+        }
+        return updateFile();
+    }
+    case RefreshDataFilesType::kOnlyCreateNewFiles: {
+        if (std::filesystem::exists(kTestDataDirectory / fileName)) {
+            break;
+        }
+        [[fallthrough]];
+    }
+    case RefreshDataFilesType::kCreateAndUpdateFiles:
+        return updateFile();
     }
 
     std::ifstream ifs{kTestDataDirectory / fileName};

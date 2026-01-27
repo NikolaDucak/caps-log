@@ -11,8 +11,8 @@ class CapsLogE2ELogsBasicUsecaseTest : public CapsLogE2ETest {};
 using namespace testing;
 
 TEST_F(CapsLogE2ELogsBasicUsecaseTest, DoNotKeeprenderFileUpdateFlagToTrue) {
-    ASSERT_FALSE(kRefreshDataFiles)
-        << "This flag should not be set to true, as it is only used for development purposes.";
+    ASSERT_EQ(kRefreshDataFiles, RefreshDataFilesType::kNoRefresh)
+        << "This flag must be set to NoRefresh after updating the expected render data files.";
 }
 
 TEST_F(CapsLogE2ELogsBasicUsecaseTest, BasicStartAndQuit) {
