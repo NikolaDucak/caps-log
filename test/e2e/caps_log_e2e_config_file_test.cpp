@@ -353,4 +353,54 @@ code-fg=ansi16(black)
         << "Markdown themed render should differ from default render.";
 }
 
+TEST_F(CapsLogE2EConfigFileOptionsTest, ScratchpadThemeConfigChangesRenderOutput) {
+    const auto scratchpadContent = std::string{"# Header one\n"
+                                               "## Header two\n"
+                                               "> quoted line\n"
+                                               "- list item\n"
+                                               "`inline code`\n"};
+
+    auto renderDefault = [this, scratchpadContent] {
+        writeFile(kTestConfigPath, "");
+        writeFile(getTestScratchpadDirectoryName() / "theme_test.md", scratchpadContent);
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        capsLog.onEvent(ftxui::Event::Character('s'));
+        capsLog.onEvent(ftxui::Event::Character('j'));
+        auto render = capsLog.render();
+        EXPECT_THAT(render,
+                    RenderedElementWithoutDatesEqual("caps_log_scratchpad_theme_default.txt"));
+        return render;
+    }();
+
+    const auto *content = R"(
+[view.scratchpad-view.theme]
+menu.border=double
+preview.border=heavy
+[view.scratchpad-view.theme.preview.markdown-theme]
+header1=ansi256(200)
+header2=ansi256(150)
+header3=ansi256(115)
+header4=ansi256(110)
+header5=ansi256(127)
+header6=ansi256(109)
+list=ansi16(white)
+quote=ansi16(magenta)
+code-fg=ansi16(black)
+  )";
+    auto renderThemed = [this, content, scratchpadContent] {
+        writeFile(kTestConfigPath, content);
+        writeFile(getTestScratchpadDirectoryName() / "theme_test.md", scratchpadContent);
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        capsLog.onEvent(ftxui::Event::Character('s'));
+        capsLog.onEvent(ftxui::Event::Character('j'));
+        auto render = capsLog.render();
+        EXPECT_THAT(render,
+                    RenderedElementWithoutDatesEqual("caps_log_scratchpad_theme_custom.txt"));
+        return render;
+    }();
+
+    EXPECT_NE(renderDefault, renderThemed)
+        << "Scratchpad themed render should differ from default render.";
+}
+
 } // namespace caps_log::test::e2e

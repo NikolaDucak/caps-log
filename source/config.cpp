@@ -110,14 +110,14 @@ inline ftxui::Color parseAnsi16Strict(std::string_view str) {
         if (num < 0 || num > kMaxAnsi16Value) {
             throw ConfigParsingException{"ansi16 value out of range: " + val};
         }
-        return ftxui::Color::Palette256(num);
+        return static_cast<ftxui::Color::Palette16>(num);
     }
 
     auto it = kNames.find(val);
     if (it == kNames.end()) {
         throw ConfigParsingException{"Unknown ansi16 color name: " + val};
     }
-    return ftxui::Color::Palette256(it->second);
+    return static_cast<ftxui::Color::Palette16>(it->second);
 }
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
@@ -373,6 +373,56 @@ view::MarkdownTheme parseMarkdownThemeFromPTree(const boost::property_tree::ptre
     return theme;
 }
 
+view::ScratchpadTheme parseScratchpadThemeFromPTree(const boost::property_tree::ptree &ptree,
+                                                    const std::string &baseKey,
+                                                    const view::ScratchpadTheme &baseTheme) {
+    view::ScratchpadTheme theme = baseTheme;
+
+    const auto makePath = [](const std::string &key) {
+        return boost::property_tree::ptree::path_type(key, '/');
+    };
+
+    const auto maybeApplyBorderStyle = [&](const std::vector<std::string> &keys,
+                                           ftxui::BorderStyle &destination) {
+        static const std::unordered_map<std::string, ftxui::BorderStyle> kBorderStyles = {
+            {"light", ftxui::BorderStyle::LIGHT},     {"dashed", ftxui::BorderStyle::DASHED},
+            {"heavy", ftxui::BorderStyle::HEAVY},     {"double", ftxui::BorderStyle::DOUBLE},
+            {"rounded", ftxui::BorderStyle::ROUNDED}, {"empty", ftxui::BorderStyle::EMPTY},
+        };
+        std::string value;
+        std::string keyUsed;
+        for (const auto &key : keys) {
+            if (const auto rawValue = ptree.get_optional<std::string>(makePath(key))) {
+                value = utils::lowercase(utils::trim(rawValue.value()));
+                keyUsed = key;
+                break;
+            }
+        }
+        if (value.empty()) {
+            return;
+        }
+        auto it = kBorderStyles.find(value);
+        if (it == kBorderStyles.end()) {
+            throw ConfigParsingException{"Invalid border style for " + keyUsed + ": " + value};
+        }
+        destination = it->second;
+    };
+
+    const auto baseSectionKey = (not baseKey.empty() && baseKey.back() == '.')
+                                    ? baseKey.substr(0, baseKey.size() - 1)
+                                    : baseKey;
+
+    maybeApplyBorderStyle({baseSectionKey + "/menu.border", baseKey + "menu/border"},
+                          theme.menuConfig.border);
+    maybeApplyBorderStyle({baseSectionKey + "/preview.border", baseKey + "preview/border"},
+                          theme.previewConfig.border);
+
+    theme.previewConfig.markdownTheme = parseMarkdownThemeFromPTree(
+        ptree, baseSectionKey + ".preview.markdown-theme", theme.previewConfig.markdownTheme);
+
+    return theme;
+}
+
 std::filesystem::path expandTilde(const std::filesystem::path &input) {
     std::string str = input.string();
 
@@ -578,41 +628,57 @@ Configuration::Configuration(
 }
 
 void Configuration::applyDefaults() {
-    m_viewConfig = view::ViewConfig{
-        .annualViewConfig =
-            view::AnnualViewConfig{
-                .theme =
-                    view::FtxuiTheme{
-                        .emptyDateDecorator = ftxui::dim,
-                        .logDateDecorator = ftxui::underlined,
-                        .weekendDateDecorator = ftxui::color(ftxui::Color::Blue),
-                        .eventDateDecorator = ftxui::color(ftxui::Color::Green),
-                        .highlightedDateDecorator = ftxui::color(ftxui::Color::Yellow),
-                        .todaysDateDecorator = ftxui::color(ftxui::Color::Red),
-                        .calendarBorder = ftxui::BorderStyle::ROUNDED,
-                        .calendarMonthBorder = ftxui::BorderStyle::ROUNDED,
-                        .tagsMenuConfig =
-                            view::MenuConfig{
-                                .border = ftxui::BorderStyle::ROUNDED,
-                            },
-                        .sectionsMenuConfig =
-                            view::MenuConfig{
-                                .border = ftxui::BorderStyle::ROUNDED,
-                            },
-                        .eventsListConfig =
-                            view::EventsListConfig{
-                                .border = ftxui::BorderStyle::ROUNDED,
-                            },
-                        .logEntryPreviewConfig =
-                            view::TextPreviewConfig{
-                                .border = ftxui::BorderStyle::ROUNDED,
-                                .markdownTheme = view::getDefaultMarkdownTheme(),
-                            },
-                    },
-                .sundayStart = Configuration::kDefaultSundayStart,
-                .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
-            },
-    };
+    m_viewConfig =
+        view::ViewConfig{
+            .annualViewConfig =
+                view::AnnualViewConfig{
+                    .theme =
+                        view::FtxuiTheme{
+                            .emptyDateDecorator = ftxui::dim,
+                            .logDateDecorator = ftxui::underlined,
+                            .weekendDateDecorator = ftxui::color(ftxui::Color::Blue),
+                            .eventDateDecorator = ftxui::color(ftxui::Color::Green),
+                            .highlightedDateDecorator = ftxui::color(ftxui::Color::Yellow),
+                            .todaysDateDecorator = ftxui::color(ftxui::Color::Red),
+                            .calendarBorder = ftxui::BorderStyle::ROUNDED,
+                            .calendarMonthBorder = ftxui::BorderStyle::ROUNDED,
+                            .tagsMenuConfig =
+                                view::MenuConfig{
+                                    .border = ftxui::BorderStyle::ROUNDED,
+                                },
+                            .sectionsMenuConfig =
+                                view::MenuConfig{
+                                    .border = ftxui::BorderStyle::ROUNDED,
+                                },
+                            .eventsListConfig =
+                                view::EventsListConfig{
+                                    .border = ftxui::BorderStyle::ROUNDED,
+                                },
+                            .logEntryPreviewConfig =
+                                view::TextPreviewConfig{
+                                    .border = ftxui::BorderStyle::ROUNDED,
+                                    .markdownTheme = view::getDefaultMarkdownTheme(),
+                                },
+                        },
+                    .sundayStart = Configuration::kDefaultSundayStart,
+                    .recentEventsWindow = Configuration::kDefaultRecentEventsWindow,
+                },
+            .scratchpadViewConfig =
+                view::ScratchpadViewConfig{
+                    .theme =
+                        view::ScratchpadTheme{
+                            .menuConfig =
+                                view::MenuConfig{
+                                    .border = ftxui::BorderStyle::ROUNDED,
+                                },
+                            .previewConfig =
+                                view::TextPreviewConfig{
+                                    .border = ftxui::BorderStyle::ROUNDED,
+                                    .markdownTheme = view::getDefaultMarkdownTheme(),
+                                },
+                        },
+                },
+        };
     m_password = "";
     m_cryptoApplicationType = std::nullopt;
     m_gitRepoConfig = std::nullopt;
@@ -658,6 +724,9 @@ void Configuration::overrideFromConfigFile(const boost::property_tree::ptree &pt
         parseMarkdownThemeFromPTree(
             ptree, "view.annual-view.theme.log-entry-preview.markdown-theme",
             m_viewConfig.annualViewConfig.theme.logEntryPreviewConfig.markdownTheme);
+
+    m_viewConfig.scratchpadViewConfig.theme = parseScratchpadThemeFromPTree(
+        ptree, "view.scratchpad-view.theme.", m_viewConfig.scratchpadViewConfig.theme);
 }
 
 void Configuration::overrideFromCommandLine(const boost::program_options::variables_map &vmap) {

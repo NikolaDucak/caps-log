@@ -259,6 +259,25 @@ quote=ansi16(magenta)
 code-fg=ansi16(brightblack)
 ```
 
+Scratchpad view theme:
+
+```ini
+[view.scratchpad-view.theme]
+menu.border=double
+preview.border=rounded
+
+[view.scratchpad-view.theme.preview.markdown-theme]
+header1=ansi256(220)
+header2=ansi256(150)
+header3=ansi256(115)
+header4=ansi256(110)
+header5=ansi256(117)
+header6=ansi256(109)
+list=ansi16(blue)
+quote=ansi16(magenta)
+code-fg=ansi16(brightblack)
+```
+
 ## Building & Installing
 
 **Dependencies**
