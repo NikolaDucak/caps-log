@@ -22,6 +22,10 @@ using boost::program_options::variables_map;
 
 namespace {
 
+inline boost::property_tree::ptree::path_type makePath(const std::string &key) {
+    return boost::property_tree::ptree::path_type(key, '/');
+}
+
 inline std::vector<int> parseInts(std::string_view str) {
     std::vector<int> out;
     std::string tmp;
@@ -211,6 +215,26 @@ struct TextStyle {
     bool blink = false;
 };
 
+TextStyle parseTextStyleFromPTree(const boost::property_tree::ptree &ptree,
+                                  const std::string &sectionKey) {
+    TextStyle style;
+    std::string fgColorStr = ptree.get<std::string>(makePath(sectionKey + "/fgcolor"), "Default");
+    std::string bgColorStr = ptree.get<std::string>(makePath(sectionKey + "/bgcolor"), "Default");
+
+    style.fgcolor = parseColorOrDefault(sectionKey + ".fgcolor", fgColorStr);
+    style.bgcolor = parseColorOrDefault(sectionKey + ".bgcolor", bgColorStr);
+
+    style.italic = ptree.get<bool>(makePath(sectionKey + "/italic"), false);
+    style.bold = ptree.get<bool>(makePath(sectionKey + "/bold"), false);
+    style.underlined = ptree.get<bool>(makePath(sectionKey + "/underlined"), false);
+    style.dim = ptree.get<bool>(makePath(sectionKey + "/dim"), false);
+    style.inverted = ptree.get<bool>(makePath(sectionKey + "/inverted"), false);
+    style.strikethrough = ptree.get<bool>(makePath(sectionKey + "/strikethrough"), false);
+    style.blink = ptree.get<bool>(makePath(sectionKey + "/blink"), false);
+
+    return style;
+}
+
 ftxui::Decorator textStyleDecorator(const TextStyle &style) {
     return [style](ftxui::Element element) {
         if (style.fgcolor != ftxui::Color::Default) {
@@ -244,6 +268,14 @@ ftxui::Decorator textStyleDecorator(const TextStyle &style) {
     };
 }
 
+void maybeApplyTextStyle(const boost::property_tree::ptree &ptree,
+                         const std::string &sectionKey, ftxui::Decorator &decorator) {
+    if (!ptree.get_child_optional(makePath(sectionKey))) {
+        return;
+    }
+    decorator = textStyleDecorator(parseTextStyleFromPTree(ptree, sectionKey));
+}
+
 struct Theme {
     TextStyle logDateStyle;
     TextStyle weekendDateStyle;
@@ -255,38 +287,6 @@ view::FtxuiTheme parseFtxuiThemeFromPTree(const boost::property_tree::ptree &ptr
                                           const std::string &baseKey,
                                           const view::FtxuiTheme &baseTheme) {
     view::FtxuiTheme theme = baseTheme;
-
-    const auto makePath = [](const std::string &key) {
-        return boost::property_tree::ptree::path_type(key, '/');
-    };
-
-    const auto parseTextStyle = [&](const std::string &sectionKey) -> TextStyle {
-        TextStyle style;
-        std::string fgColorStr =
-            ptree.get<std::string>(makePath(sectionKey + "/fgcolor"), "Default");
-        std::string bgColorStr =
-            ptree.get<std::string>(makePath(sectionKey + "/bgcolor"), "Default");
-
-        style.fgcolor = parseColorOrDefault(sectionKey + ".fgcolor", fgColorStr);
-        style.bgcolor = parseColorOrDefault(sectionKey + ".bgcolor", bgColorStr);
-
-        style.italic = ptree.get<bool>(makePath(sectionKey + "/italic"), false);
-        style.bold = ptree.get<bool>(makePath(sectionKey + "/bold"), false);
-        style.underlined = ptree.get<bool>(makePath(sectionKey + "/underlined"), false);
-        style.dim = ptree.get<bool>(makePath(sectionKey + "/dim"), false);
-        style.inverted = ptree.get<bool>(makePath(sectionKey + "/inverted"), false);
-        style.strikethrough = ptree.get<bool>(makePath(sectionKey + "/strikethrough"), false);
-        style.blink = ptree.get<bool>(makePath(sectionKey + "/blink"), false);
-
-        return style;
-    };
-
-    const auto maybeApplyStyle = [&](const std::string &sectionKey, ftxui::Decorator &decorator) {
-        if (!ptree.get_child_optional(makePath(sectionKey))) {
-            return;
-        }
-        decorator = textStyleDecorator(parseTextStyle(sectionKey));
-    };
 
     // accepted border styles correspond to ftxui border styles:   LIGHT, DASHED, HEAVY, DOUBLE,
     // ROUNDED, EMPTY,
@@ -317,12 +317,12 @@ view::FtxuiTheme parseFtxuiThemeFromPTree(const boost::property_tree::ptree &ptr
         destination = it->second;
     };
 
-    maybeApplyStyle(baseKey + "empty-date", theme.emptyDateDecorator);
-    maybeApplyStyle(baseKey + "log-date", theme.logDateDecorator);
-    maybeApplyStyle(baseKey + "highlighted-date", theme.highlightedDateDecorator);
-    maybeApplyStyle(baseKey + "weekend-date", theme.weekendDateDecorator);
-    maybeApplyStyle(baseKey + "event-date", theme.eventDateDecorator);
-    maybeApplyStyle(baseKey + "todays-date", theme.todaysDateDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "empty-date", theme.emptyDateDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "log-date", theme.logDateDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "highlighted-date", theme.highlightedDateDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "weekend-date", theme.weekendDateDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "event-date", theme.eventDateDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "todays-date", theme.todaysDateDecorator);
 
     const auto baseSectionKey = (not baseKey.empty() && baseKey.back() == '.')
                                     ? baseKey.substr(0, baseKey.size() - 1)
@@ -344,6 +344,15 @@ view::FtxuiTheme parseFtxuiThemeFromPTree(const boost::property_tree::ptree &ptr
         {baseSectionKey + "/log-entry-preview.border", baseKey + "log-entry-preview/border"},
         theme.logEntryPreviewConfig.border);
 
+    maybeApplyTextStyle(ptree, baseKey + "tags-menu.entry",
+                        theme.tagsMenuConfig.entryDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "tags-menu.selected-entry",
+                        theme.tagsMenuConfig.selectedEntryDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "sections-menu.entry",
+                        theme.sectionsMenuConfig.entryDecorator);
+    maybeApplyTextStyle(ptree, baseKey + "sections-menu.selected-entry",
+                        theme.sectionsMenuConfig.selectedEntryDecorator);
+
     return theme;
 }
 
@@ -351,10 +360,6 @@ view::MarkdownTheme parseMarkdownThemeFromPTree(const boost::property_tree::ptre
                                                 const std::string &baseSectionKey,
                                                 const view::MarkdownTheme &baseTheme) {
     view::MarkdownTheme theme = baseTheme;
-
-    const auto makePath = [](const std::string &key) {
-        return boost::property_tree::ptree::path_type(key, '/');
-    };
 
     const auto maybeApplyColor = [&](const std::string &key, ftxui::Color &destination) {
         const auto path = baseSectionKey + "/" + key;
@@ -377,10 +382,6 @@ view::ScratchpadTheme parseScratchpadThemeFromPTree(const boost::property_tree::
                                                     const std::string &baseKey,
                                                     const view::ScratchpadTheme &baseTheme) {
     view::ScratchpadTheme theme = baseTheme;
-
-    const auto makePath = [](const std::string &key) {
-        return boost::property_tree::ptree::path_type(key, '/');
-    };
 
     const auto maybeApplyBorderStyle = [&](const std::vector<std::string> &keys,
                                            ftxui::BorderStyle &destination) {
@@ -416,6 +417,10 @@ view::ScratchpadTheme parseScratchpadThemeFromPTree(const boost::property_tree::
                           theme.menuConfig.border);
     maybeApplyBorderStyle({baseSectionKey + "/preview.border", baseKey + "preview/border"},
                           theme.previewConfig.border);
+
+    maybeApplyTextStyle(ptree, baseSectionKey + ".menu.entry", theme.menuConfig.entryDecorator);
+    maybeApplyTextStyle(ptree, baseSectionKey + ".menu.selected-entry",
+                        theme.menuConfig.selectedEntryDecorator);
 
     theme.previewConfig.markdownTheme = parseMarkdownThemeFromPTree(
         ptree, baseSectionKey + ".preview.markdown-theme", theme.previewConfig.markdownTheme);

@@ -244,6 +244,25 @@ log-entry-preview.border=rounded
 border=heavy
 ```
 
+Menu entry styles (unselected/selected):
+
+```ini
+[view.annual-view.theme.tags-menu.entry]
+fgcolor=ansi16(blue)
+dim=true
+
+[view.annual-view.theme.tags-menu.selected-entry]
+fgcolor=ansi16(brightyellow)
+bold=true
+
+[view.annual-view.theme.sections-menu.entry]
+fgcolor=ansi16(cyan)
+
+[view.annual-view.theme.sections-menu.selected-entry]
+fgcolor=ansi16(brightcyan)
+underlined=true
+```
+
 Markdown preview theme (for the log entry preview):
 
 ```ini
@@ -265,6 +284,14 @@ Scratchpad view theme:
 [view.scratchpad-view.theme]
 menu.border=double
 preview.border=rounded
+
+[view.scratchpad-view.theme.menu.entry]
+fgcolor=ansi16(blue)
+dim=true
+
+[view.scratchpad-view.theme.menu.selected-entry]
+fgcolor=ansi16(brightyellow)
+bold=true
 
 [view.scratchpad-view.theme.preview.markdown-theme]
 header1=ansi256(220)

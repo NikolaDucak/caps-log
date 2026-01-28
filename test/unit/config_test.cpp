@@ -445,3 +445,44 @@ TEST(ConfigTest, ScratchpadThemeParsingThrowsOnInvalidMarkdownColor) {
     auto configFile = makeMockReadFileFunc(configContent);
     EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
 }
+
+TEST(ConfigTest, MenuEntryStyleParsingForAnnualView) {
+    std::string configContent =
+        "[view.annual-view.theme.tags-menu.entry]\n"
+        "fgcolor=ansi16(blue)\n"
+        "dim=true\n"
+        "[view.annual-view.theme.tags-menu.selected-entry]\n"
+        "fgcolor=ansi16(brightyellow)\n"
+        "bold=true\n"
+        "[view.annual-view.theme.sections-menu.entry]\n"
+        "fgcolor=ansi16(cyan)\n"
+        "[view.annual-view.theme.sections-menu.selected-entry]\n"
+        "fgcolor=ansi16(brightcyan)\n"
+        "underlined=true\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme = config.getViewConfig().annualViewConfig.theme;
+    EXPECT_NE(theme.tagsMenuConfig.entryDecorator, view::identityDecorator());
+    EXPECT_NE(theme.tagsMenuConfig.selectedEntryDecorator, view::identityDecorator());
+    EXPECT_NE(theme.sectionsMenuConfig.entryDecorator, view::identityDecorator());
+    EXPECT_NE(theme.sectionsMenuConfig.selectedEntryDecorator, view::identityDecorator());
+}
+
+TEST(ConfigTest, MenuEntryStyleParsingForScratchpadView) {
+    std::string configContent =
+        "[view.scratchpad-view.theme.menu.entry]\n"
+        "fgcolor=ansi16(blue)\n"
+        "dim=true\n"
+        "[view.scratchpad-view.theme.menu.selected-entry]\n"
+        "fgcolor=ansi16(brightyellow)\n"
+        "bold=true\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme = config.getViewConfig().scratchpadViewConfig.theme;
+    EXPECT_NE(theme.menuConfig.entryDecorator, view::identityDecorator());
+    EXPECT_NE(theme.menuConfig.selectedEntryDecorator, view::identityDecorator());
+}

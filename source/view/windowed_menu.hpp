@@ -14,6 +14,8 @@ struct WindowedMenuOption {
     ftxui::ConstStringListRef entries;
     std::function<void()> onChange;
     ftxui::BorderStyle border;
+    ftxui::Decorator entryDecorator;
+    ftxui::Decorator selectedEntryDecorator;
 };
 
 class WindowedMenu : public ftxui::ComponentBase {
@@ -27,6 +29,17 @@ class WindowedMenu : public ftxui::ComponentBase {
         menuOption.entries = option.entries;
         menuOption.on_change = option.onChange;
         menuOption.selected = &m_selected;
+        menuOption.entries_option.transform =
+            [entryDecorator = option.entryDecorator,
+             selectedEntryDecorator = option.selectedEntryDecorator](const EntryState &state) {
+                auto element = text(state.label);
+                if (state.active) {
+                    element = element | selectedEntryDecorator;
+                } else {
+                    element = element | entryDecorator;
+                }
+                return element;
+            };
 
         auto menuComponent = Menu(std::move(menuOption));
         auto menuRenderer = Renderer(
