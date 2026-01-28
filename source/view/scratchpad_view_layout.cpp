@@ -36,7 +36,7 @@ std::size_t countLines(const std::string &str) {
 
 ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
                                            std::function<ftxui::Dimensions()> screenSizeProvider,
-                                           ScratchpadViewConfig config)
+                                           const ScratchpadViewConfig &config)
     : m_inputHandler(inputHandler), m_screenSizeProvider(std::move(screenSizeProvider)),
       m_config(config) {
     m_windowedMenu = WindowedMenu::make(WindowedMenuOption{
@@ -53,6 +53,8 @@ ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
                 }
             },
         .border = m_config.theme.menuConfig.border,
+        .entryDecorator = m_config.theme.menuConfig.entryDecorator,
+        .selectedEntryDecorator = m_config.theme.menuConfig.selectedEntryDecorator,
     });
     m_preview = std::make_shared<Preview>(PreviewOption{
         .border = m_config.theme.previewConfig.border,

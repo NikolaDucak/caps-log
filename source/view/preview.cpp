@@ -35,12 +35,17 @@ Element Preview::OnRender() {
     Elements visibleLines;
     visibleLines.push_back(m_title);
     for (int i = m_topLineIndex; i < m_lines.size(); i++) {
-        visibleLines.push_back(m_lines[i]);
+        if (not Active()) {
+            visibleLines.push_back(m_lines[i] | dim);
+        } else {
+            visibleLines.push_back(m_lines[i]);
+        }
     }
 
     // Not using a `window` because of https://github.com/ArthurSonzogni/FTXUI/issues/1016
     // Note: dont use `center` it makes the width not expanded to the full width of the screen
     auto element = vbox(visibleLines) | m_borderDecorator;
+
     return (Focused() ? element : element | dim);
 }
 

@@ -9,6 +9,8 @@ namespace caps_log::view {
 // Shared configuration structs for view components.
 struct MenuConfig {
     ftxui::BorderStyle border = ftxui::BorderStyle::ROUNDED;
+    ftxui::Decorator entryDecorator = nullptr;
+    ftxui::Decorator selectedEntryDecorator = nullptr;
 };
 
 struct EventsListConfig {
@@ -17,7 +19,7 @@ struct EventsListConfig {
 
 struct TextPreviewConfig {
     ftxui::BorderStyle border = ftxui::BorderStyle::ROUNDED;
-    MarkdownTheme markdownTheme = getDefaultMarkdownTheme();
+    MarkdownTheme markdownTheme;
 };
 
 } // namespace caps_log::view

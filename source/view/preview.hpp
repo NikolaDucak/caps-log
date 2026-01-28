@@ -8,7 +8,7 @@ namespace caps_log::view {
 
 struct PreviewOption {
     ftxui::BorderStyle border = ftxui::BorderStyle::ROUNDED;
-    MarkdownTheme markdownTheme = getDefaultMarkdownTheme();
+    MarkdownTheme markdownTheme;
 };
 
 class Preview : public ftxui::ComponentBase {
