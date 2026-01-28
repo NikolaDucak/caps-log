@@ -53,6 +53,8 @@ ScratchpadViewLayout::ScratchpadViewLayout(InputHandlerBase *inputHandler,
                 }
             },
         .border = m_config.theme.menuConfig.border,
+        .entryDecorator = m_config.theme.menuConfig.entryDecorator,
+        .selectedEntryDecorator = m_config.theme.menuConfig.selectedEntryDecorator,
     });
     m_preview = std::make_shared<Preview>(PreviewOption{
         .border = m_config.theme.previewConfig.border,

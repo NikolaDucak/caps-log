@@ -403,4 +403,49 @@ code-fg=ansi16(black)
         << "Scratchpad themed render should differ from default render.";
 }
 
+TEST_F(CapsLogE2EConfigFileOptionsTest, MenuEntryStyleConfigChangesRenderOutput) {
+    writeFile(getTestScratchpadDirectoryName() / "style_test.md", "scratchpad content");
+    auto renderDefault = [this] {
+        writeFile(kTestConfigPath, "");
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        capsLog.onEvent(ftxui::Event::Character('s'));
+        auto render = capsLog.render();
+        EXPECT_THAT(render,
+                    RenderedElementWithoutDatesEqual("caps_log_menu_entry_styles_default.txt"));
+        return render;
+    }();
+
+    const auto *content = R"(
+[view.annual-view.theme.tags-menu.entry]
+fgcolor=ansi16(blue)
+dim=true
+[view.annual-view.theme.tags-menu.selected-entry]
+fgcolor=ansi16(brightyellow)
+bold=true
+[view.annual-view.theme.sections-menu.entry]
+fgcolor=ansi16(cyan)
+[view.annual-view.theme.sections-menu.selected-entry]
+fgcolor=ansi16(brightcyan)
+underlined=true
+[view.scratchpad-view.theme.menu.entry]
+fgcolor=ansi16(blue)
+dim=true
+[view.scratchpad-view.theme.menu.selected-entry]
+fgcolor=ansi16(brightyellow)
+bold=true
+  )";
+    auto renderThemed = [this, content] {
+        writeFile(kTestConfigPath, content);
+        CapsLog capsLog{createTestContext({"caps-log"})};
+        capsLog.onEvent(ftxui::Event::Character('s'));
+        auto render = capsLog.render();
+        EXPECT_THAT(render,
+                    RenderedElementWithoutDatesEqual("caps_log_menu_entry_styles_custom.txt"));
+        return render;
+    }();
+
+    EXPECT_NE(renderDefault, renderThemed)
+        << "Menu entry themed render should differ from default render.";
+}
+
 } // namespace caps_log::test::e2e
