@@ -211,6 +211,8 @@ std::shared_ptr<WindowedMenu> AnnualViewLayout::makeTagsMenu() {
         .entries = &m_tagMenuItems.getDisplayTexts(),
         .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedTagChange{}}); },
         .border = m_config.theme.tagsMenuConfig.border,
+        .entryDecorator = m_config.theme.tagsMenuConfig.entryDecorator,
+        .selectedEntryDecorator = m_config.theme.tagsMenuConfig.selectedEntryDecorator,
     };
     return WindowedMenu::make(option);
 }
@@ -221,6 +223,8 @@ std::shared_ptr<WindowedMenu> AnnualViewLayout::makeSectionsMenu() {
         .entries = &m_sectionMenuItems.getDisplayTexts(),
         .onChange = [this] { m_handler->handleInputEvent(UIEvent{FocusedSectionChange{}}); },
         .border = m_config.theme.sectionsMenuConfig.border,
+        .entryDecorator = m_config.theme.sectionsMenuConfig.entryDecorator,
+        .selectedEntryDecorator = m_config.theme.sectionsMenuConfig.selectedEntryDecorator,
     };
     return WindowedMenu::make(option);
 }

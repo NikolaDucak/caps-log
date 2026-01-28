@@ -18,12 +18,12 @@
 namespace caps_log::view {
 
 struct FtxuiTheme {
-    ftxui::Decorator emptyDateDecorator;
-    ftxui::Decorator logDateDecorator;
-    ftxui::Decorator weekendDateDecorator;
-    ftxui::Decorator eventDateDecorator;
-    ftxui::Decorator highlightedDateDecorator;
-    ftxui::Decorator todaysDateDecorator;
+    ftxui::Decorator emptyDateDecorator = nullptr;
+    ftxui::Decorator logDateDecorator = nullptr;
+    ftxui::Decorator weekendDateDecorator = nullptr;
+    ftxui::Decorator eventDateDecorator = nullptr;
+    ftxui::Decorator highlightedDateDecorator = nullptr;
+    ftxui::Decorator todaysDateDecorator = nullptr;
     ftxui::BorderStyle calendarBorder;
     ftxui::BorderStyle calendarMonthBorder;
     MenuConfig tagsMenuConfig;

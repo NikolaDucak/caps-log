@@ -32,7 +32,7 @@ class ScratchpadViewLayout final : public ScratchpadViewLayoutBase {
   public:
     explicit ScratchpadViewLayout(InputHandlerBase *inputHandler,
                                   std::function<ftxui::Dimensions()> screenSizeProvider,
-                                  ScratchpadViewConfig config);
+                                  const ScratchpadViewConfig &config);
 
     void setScratchpads(const std::vector<ScratchpadData> &scratchpadData) override;
 

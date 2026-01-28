@@ -6,9 +6,20 @@
 
 #include <boost/property_tree/ini_parser.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
 
 using namespace caps_log;
 using namespace testing;
+
+namespace {
+std::string renderElement(const ftxui::Element &element) {
+    static constexpr auto kScreenWidth = 10;
+    static constexpr auto kScreenHeight = 1;
+    ftxui::Screen screen{kScreenWidth, kScreenHeight};
+    ftxui::Render(screen, element);
+    return screen.ToString();
+}
+} // namespace
 
 std::function<std::string(const std::filesystem::path &)> makeMockReadFileFunc(
     const std::string &configContent,
@@ -444,4 +455,47 @@ TEST(ConfigTest, ScratchpadThemeParsingThrowsOnInvalidMarkdownColor) {
     std::vector<std::string> cmdLineArgs = {"caps-log"};
     auto configFile = makeMockReadFileFunc(configContent);
     EXPECT_THROW(Configuration(cmdLineArgs, configFile), caps_log::ConfigParsingException);
+}
+
+TEST(ConfigTest, MenuEntryStyleParsingForAnnualView) {
+    std::string configContent = "[view.annual-view.theme.tags-menu.entry]\n"
+                                "fgcolor=ansi16(blue)\n"
+                                "dim=true\n"
+                                "[view.annual-view.theme.tags-menu.selected-entry]\n"
+                                "fgcolor=ansi16(brightyellow)\n"
+                                "bold=true\n"
+                                "[view.annual-view.theme.sections-menu.entry]\n"
+                                "fgcolor=ansi16(cyan)\n"
+                                "[view.annual-view.theme.sections-menu.selected-entry]\n"
+                                "fgcolor=ansi16(brightcyan)\n"
+                                "underlined=true\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme = config.getViewConfig().annualViewConfig.theme;
+    const auto baseRender = renderElement(ftxui::text("x"));
+    EXPECT_NE(renderElement(theme.tagsMenuConfig.entryDecorator(ftxui::text("x"))), baseRender);
+    EXPECT_NE(renderElement(theme.tagsMenuConfig.selectedEntryDecorator(ftxui::text("x"))),
+              baseRender);
+    EXPECT_NE(renderElement(theme.sectionsMenuConfig.entryDecorator(ftxui::text("x"))), baseRender);
+    EXPECT_NE(renderElement(theme.sectionsMenuConfig.selectedEntryDecorator(ftxui::text("x"))),
+              baseRender);
+}
+
+TEST(ConfigTest, MenuEntryStyleParsingForScratchpadView) {
+    std::string configContent = "[view.scratchpad-view.theme.menu.entry]\n"
+                                "fgcolor=ansi16(blue)\n"
+                                "dim=true\n"
+                                "[view.scratchpad-view.theme.menu.selected-entry]\n"
+                                "fgcolor=ansi16(brightyellow)\n"
+                                "bold=true\n";
+    std::vector<std::string> cmdLineArgs = {"caps-log"};
+    auto configFile = makeMockReadFileFunc(configContent);
+    Configuration config(cmdLineArgs, configFile);
+
+    const auto &theme = config.getViewConfig().scratchpadViewConfig.theme;
+    const auto baseRender = renderElement(ftxui::text("x"));
+    EXPECT_NE(renderElement(theme.menuConfig.entryDecorator(ftxui::text("x"))), baseRender);
+    EXPECT_NE(renderElement(theme.menuConfig.selectedEntryDecorator(ftxui::text("x"))), baseRender);
 }

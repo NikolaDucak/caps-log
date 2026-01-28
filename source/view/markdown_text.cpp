@@ -8,12 +8,22 @@
 
 namespace caps_log::view {
 
-const MarkdownTheme &getDefaultMarkdownTheme() {
-    // Postponed initialization of the default theme, so that prior to its first use,
-    // it is possible to set the collor support with ftxui::Terminal::SetColorSupport.
-    // as Color constructors may depend on it.
-    static MarkdownTheme defaultTheme{};
-    return defaultTheme;
+const view::MarkdownTheme &getDefaultMarkdownTheme() {
+    static const view::MarkdownTheme kDefaultMarkdownTheme{
+        .headerShades =
+            {
+                ftxui::Color::Palette256::Yellow4,         // H1 - lightest
+                ftxui::Color::Palette256::DarkOliveGreen3, // H2
+                ftxui::Color::Palette256::DarkSeaGreen,    // H3
+                ftxui::Color::Palette256::SkyBlue3,        // H4
+                ftxui::Color::Palette256::SkyBlue1,        // H5
+                ftxui::Color::Palette256::LightSkyBlue3,   // H6 - darkest
+            },
+        .list = ftxui::Color::Blue,
+        .quote = ftxui::Color::Purple,
+        .codeFg = ftxui::Color::GrayLight,
+    };
+    return kDefaultMarkdownTheme;
 }
 
 // ---------- Helpers ----------
