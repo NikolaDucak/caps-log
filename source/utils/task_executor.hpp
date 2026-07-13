@@ -36,11 +36,13 @@ class ThreadedTaskExecutor {
     }
 
   private:
-    std::thread m_worker;
     std::queue<std::function<void()>> m_tasks;
     std::mutex m_mutex;
     std::condition_variable m_condition;
     bool m_done{};
+    // Thread launches at construction and may access the members above, so it must be declared last
+    // to ensure it can not access members before they are constructed.
+    std::thread m_worker;
 
     void worker() {
         while (true) {
