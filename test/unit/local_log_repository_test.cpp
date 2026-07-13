@@ -11,6 +11,7 @@
 #include <string>
 
 using namespace caps_log::log;
+using caps_log::Crypto;
 using namespace ::testing;
 
 namespace {
@@ -194,14 +195,14 @@ TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplier) {
     // encrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt);
     EXPECT_EQ(kEncryptedDummyContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(kEncryptedDummyContent, readFile(TMPDirPathProvider.path(date2)));
 
     // decrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Decrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Decrypt);
     EXPECT_EQ(kDummyContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(kDummyContent, readFile(TMPDirPathProvider.path(date2)));
 }
@@ -224,7 +225,7 @@ TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplierWithScratchpads) {
     // encrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt);
     EXPECT_EQ(kEncryptedDummyContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(kEncryptedDummyContent, readFile(TMPDirPathProvider.path(date2)));
     EXPECT_EQ(kEncryptedDummyContent, readFile(kTestScratchpadDirectory / kDummyScratchpadName));
@@ -232,7 +233,7 @@ TEST_F(LogRepositoryCryptoApplierTest, RoundtripCryptoApplierWithScratchpads) {
     // decrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Decrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Decrypt);
     EXPECT_EQ(kDummyContent, readFile(TMPDirPathProvider.path(date1)));
     EXPECT_EQ(kDummyContent, readFile(TMPDirPathProvider.path(date2)));
     EXPECT_EQ(kDummyContent, readFile(kTestScratchpadDirectory / kDummyScratchpadName));
@@ -256,7 +257,7 @@ TEST_F(LogRepositoryCryptoApplierTest, IgnoresScratchpadsNotMatchingTheLogFilena
     // encrypt them & verify encryption
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt);
     EXPECT_EQ(kEncryptedDummyContent, readFile(TMPDirPathProvider.path(kSelectedDate)));
     EXPECT_EQ(kDummyContent, readFile(kTestLogDirectory / dummyfileName));
     EXPECT_EQ(kDummyContent, readFile(kTestScratchpadDirectory / dummyScratchpadName));
@@ -266,11 +267,30 @@ TEST_F(LogRepositoryCryptoApplierTest, DoesNotApplyAnOperationTwice) {
     writeDummyLog(kSelectedDate, kDummyContent);
     caps_log::LogRepositoryCryptoApplier::apply(kDummyPassword, TMPDirPathProvider.getLogDirPath(),
                                                 TMPDirPathProvider.getLogFilenameFormat(),
-                                                kScratchpadFolderName, caps_log::Crypto::Encrypt);
+                                                kScratchpadFolderName, Crypto::Encrypt);
     ASSERT_THROW(caps_log::LogRepositoryCryptoApplier::apply(
                      kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-                     TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt),
+                     TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt),
                  caps_log::CryptoAlreadyAppliedError);
+}
+
+TEST_F(LogRepositoryCryptoApplierTest, DecryptWithWrongPasswordDoesNotModifyEncryptedRepository) {
+    writeDummyLog(kSelectedDate, kDummyContent);
+    caps_log::LogRepositoryCryptoApplier::apply(
+        kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt);
+
+    const auto encryptedContent = readFile(TMPDirPathProvider.path(kSelectedDate));
+    const auto *const wrongPassword = "wrong password";
+
+    EXPECT_THROW(caps_log::LogRepositoryCryptoApplier::apply(
+                     wrongPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
+                     TMPDirPathProvider.getLogFilenameFormat(), Crypto::Decrypt),
+                 std::runtime_error);
+
+    EXPECT_EQ(readFile(TMPDirPathProvider.path(kSelectedDate)), encryptedContent);
+    EXPECT_TRUE(
+        caps_log::LogRepositoryCryptoApplier::isEncrypted(TMPDirPathProvider.getLogDirPath()));
 }
 
 class LogRepoConstructionAfterCryptoApplier : public LocalLogRepositoryTest {
@@ -283,7 +303,7 @@ TEST_F(LogRepoConstructionAfterCryptoApplier, ErrorOnEncryptedRepoWithNoPassword
     writeDummyLog(kSelectedDate, kDummyLogContent);
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt);
 
     EXPECT_THROW({ const auto repo = LocalLogRepository(TMPDirPathProvider); }, std::runtime_error);
     EXPECT_NO_THROW({ const auto repo = LocalLogRepository(TMPDirPathProvider, kDummyPassword); });
@@ -295,7 +315,7 @@ TEST_F(LogRepoConstructionAfterCryptoApplier, ErrorOnEncryptedRepoWithBadPasswor
     writeDummyLog(kSelectedDate, kDummyLogContent);
     caps_log::LogRepositoryCryptoApplier::apply(
         kDummyPassword, TMPDirPathProvider.getLogDirPath(), kScratchpadFolderName,
-        TMPDirPathProvider.getLogFilenameFormat(), caps_log::Crypto::Encrypt);
+        TMPDirPathProvider.getLogFilenameFormat(), Crypto::Encrypt);
 
     EXPECT_THROW(
         { const auto repo = LocalLogRepository(TMPDirPathProvider, badPassword); },
