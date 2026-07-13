@@ -88,6 +88,10 @@ void LogRepositoryCryptoApplier::apply(const std::string &password,
         throw std::invalid_argument("Error: password is needed for this action!");
     }
 
+    if (crypto == Crypto::Decrypt && !isDecryptionPasswordValid(logDirPath, password)) {
+        throw std::runtime_error{"Invalid password provided!"};
+    }
+
     std::vector<std::exception> errors; // Accumulate errors here
 
     // Function to process individual log files
