@@ -14,6 +14,30 @@
 
 namespace caps_log::editor {
 
+namespace detail {
+
+inline std::string quoteShellArgument(const std::filesystem::path &path) {
+    const auto value = path.string();
+    std::string quoted{"'"};
+    quoted.reserve(value.size() + 2);
+    for (const char chr : value) {
+        if (chr == '\'') {
+            quoted += "'\\''";
+        } else {
+            quoted += chr;
+        }
+    }
+    quoted += '\'';
+    return quoted;
+}
+
+inline void openEditor(const std::string &editorCommand, const std::filesystem::path &path) {
+    const auto command = fmt::format("{} {}", editorCommand, quoteShellArgument(path));
+    std::ignore = std::system(command.c_str());
+}
+
+} // namespace detail
+
 class DefaultEditor : public EditorBase {
     log::LocalFSLogFilePathProvider m_pathProvider;
     std::filesystem::path m_scratchpadDirPath;
@@ -27,15 +51,12 @@ class DefaultEditor : public EditorBase {
           m_editorCommand{std::move(editorCommand)} {}
 
     void openLog(const caps_log::log::LogFile &log) override {
-        auto editorOpenCommand =
-            fmt::format("{} \"{}\"", m_editorCommand, m_pathProvider.path(log.getDate()).string());
-        std::ignore = std::system(editorOpenCommand.c_str());
+        detail::openEditor(m_editorCommand, m_pathProvider.path(log.getDate()));
     }
 
     void openScratchpad(const std::string &scratchpadName) override {
-        auto editorOpenCommand = fmt::format("{} \"{}\"", m_editorCommand,
-                                             (m_scratchpadDirPath / scratchpadName).string());
-        std::ignore = std::system(editorOpenCommand.c_str());
+        detail::openEditor(m_editorCommand,
+                           log::validatedScratchpadPath(m_scratchpadDirPath, scratchpadName));
     }
 };
 
@@ -68,7 +89,8 @@ class EncryptedDefaultEditor : public EditorBase {
 
     void openScratchpad(const std::string &scratchpadName) override {
         const auto tmp = getTmpFile();
-        const auto originalScratchpadPath = m_scratchpadPath / scratchpadName;
+        const auto originalScratchpadPath =
+            log::validatedScratchpadPath(m_scratchpadPath, scratchpadName);
         if (std::filesystem::exists(originalScratchpadPath)) {
             // Copy the original scratchpad to a temporary file
             std::filesystem::copy_file(originalScratchpadPath, tmp,
@@ -118,10 +140,7 @@ class EncryptedDefaultEditor : public EditorBase {
         }
     }
 
-    void openRawEditor(const std::string &path) {
-        auto editorOpenCommand = fmt::format("{} \"{}\"", m_editorCommand, path);
-        std::ignore = std::system(editorOpenCommand.c_str());
-    }
+    void openRawEditor(const std::string &path) { detail::openEditor(m_editorCommand, path); }
 };
 
 } // namespace caps_log::editor

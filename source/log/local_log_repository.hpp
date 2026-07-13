@@ -6,8 +6,12 @@
 #include <filesystem>
 #include <fmt/format.h>
 #include <optional>
+#include <string_view>
 
 namespace caps_log::log {
+
+[[nodiscard]] std::filesystem::path
+validatedScratchpadPath(const std::filesystem::path &scratchpadDirectory, std::string_view name);
 
 class LocalFSLogFilePathProvider {
     std::filesystem::path m_logDirectory;

@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include "editor/default_editor.hpp"
 #include "log/local_log_repository.hpp"
 #include "log/log_file.hpp"
 #include "log/log_repository_crypto_applier.hpp"
@@ -92,6 +93,30 @@ TEST_F(LocalLogRepositoryTest, Write) {
 
     repo.write(LogFile{kSelectedDate, logContent});
     ASSERT_TRUE(std::filesystem::exists(TMPDirPathProvider.path(kSelectedDate)));
+}
+
+TEST_F(LocalLogRepositoryTest, ScratchpadRenameRejectsParentDirectoryTraversal) {
+    const auto scratchpadDirectory = kTestLogDirectory / kScratchpadFolderName;
+    const auto originalPath = scratchpadDirectory / "inside.md";
+    const auto escapedPath = kTestLogDirectory / "outside.md";
+    writeDummyScratchpad("inside.md", "content");
+    auto repo = LocalScratchpadRepository{scratchpadDirectory};
+
+    EXPECT_THROW(repo.rename("inside.md", "../outside.md"), std::invalid_argument);
+    EXPECT_TRUE(std::filesystem::exists(originalPath));
+    EXPECT_FALSE(std::filesystem::exists(escapedPath));
+}
+
+TEST_F(LocalLogRepositoryTest, ScratchpadNameCannotInjectShellCommands) {
+    const auto markerPath = std::filesystem::current_path() / "caps-log-shell-injection-marker";
+    std::filesystem::remove(markerPath);
+    const auto scratchpadDirectory = kTestLogDirectory / kScratchpadFolderName;
+    caps_log::editor::DefaultEditor editor{TMPDirPathProvider, scratchpadDirectory, "true"};
+
+    editor.openScratchpad("$(touch caps-log-shell-injection-marker).md");
+
+    EXPECT_FALSE(std::filesystem::exists(markerPath));
+    std::filesystem::remove(markerPath);
 }
 
 class EncryptedLocalLogRepositoryTest : public LocalLogRepositoryTest {
