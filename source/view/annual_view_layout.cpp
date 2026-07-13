@@ -1,13 +1,15 @@
 #include "annual_view_layout.hpp"
 
 #include "calendar_component.hpp"
-#include "fmt/core.h"
 #include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/dom/elements.hpp"
 #include "ftxui_ext/extended_containers.hpp"
 #include "utils/date.hpp"
 #include "view/input_handler.hpp"
 #include "view/windowed_menu.hpp"
+
+#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <chrono>

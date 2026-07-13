@@ -38,6 +38,25 @@ std::chrono::year_month_day lastWriteTime(const std::filesystem::path &filePath)
 }
 } // namespace
 
+std::filesystem::path validatedScratchpadPath(const std::filesystem::path &scratchpadDirectory,
+                                              std::string_view name) {
+    const bool hasDirectorySeparator =
+        name.find('/') != std::string_view::npos || name.find('\\') != std::string_view::npos;
+    if (name.empty() || name == "." || name == ".." || hasDirectorySeparator ||
+        name.find('\0') != std::string_view::npos) {
+        throw std::invalid_argument{
+            "Invalid scratchpad name: expected a filename without directory components"};
+    }
+
+    const std::filesystem::path namePath{std::string{name}};
+    if (namePath.has_root_path() || namePath.has_parent_path() || namePath.filename() != namePath) {
+        throw std::invalid_argument{
+            "Invalid scratchpad name: expected a filename without directory components"};
+    }
+
+    return scratchpadDirectory / namePath;
+}
+
 LocalLogRepository::LocalLogRepository(LocalFSLogFilePathProvider pathProvider,
                                        std::string password)
     : m_pathProvider(std::move(pathProvider)), m_password{std::move(password)} {
@@ -129,7 +148,7 @@ LocalScratchpadRepository::LocalScratchpadRepository(std::filesystem::path scrat
 }
 
 void LocalScratchpadRepository::remove(std::string name) {
-    auto path = m_scratchpadDirPath / name;
+    const auto path = validatedScratchpadPath(m_scratchpadDirPath, name);
     if (std::filesystem::exists(path)) {
         std::error_code error;
         std::filesystem::remove(path, error);
@@ -142,10 +161,11 @@ void LocalScratchpadRepository::remove(std::string name) {
 }
 
 void LocalScratchpadRepository::rename(std::string oldName, std::string newName) {
-    auto path = m_scratchpadDirPath / oldName;
+    const auto path = validatedScratchpadPath(m_scratchpadDirPath, oldName);
+    const auto newPath = validatedScratchpadPath(m_scratchpadDirPath, newName);
     if (std::filesystem::exists(path)) {
         std::error_code error;
-        std::filesystem::rename(path, m_scratchpadDirPath / newName, error);
+        std::filesystem::rename(path, newPath, error);
         if (error) {
             throw std::runtime_error{"Failed to rename scratchpad: " + error.message()};
         }
