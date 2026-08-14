@@ -148,9 +148,6 @@ void GitRepo::push() {
     git_remote *remote = nullptr;
     CHECK_GIT_ERROR(git_remote_lookup(&remote, m_repo, m_remoteName.c_str()));
 
-    auto pushRef = "refs/heads/" + m_mainBranchName + ":refs/heads/" + m_mainBranchName;
-    git_remote_add_push(m_repo, m_remoteName.c_str(), pushRef.c_str());
-
     git_push_options pushOpts = GIT_PUSH_OPTIONS_INIT;
     const auto callbacks = getRemoteCallbacks();
     pushOpts.callbacks = callbacks;

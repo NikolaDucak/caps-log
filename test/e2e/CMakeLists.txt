@@ -4,6 +4,7 @@ set(TEST_SOURCES
   ./caps_log_e2e_test_fixture.hpp
   ./caps_log_e2e_cli_options_test.cpp
   ./caps_log_e2e_config_file_test.cpp
+  ./git_repo_e2e_test.cpp
   ./caps_log_e2e_logs_basic_usecase_test.cpp
   ./caps_log_e2e_scratchpads_basic_usecase_test.cpp
 )
@@ -86,4 +87,3 @@ target_compile_definitions(
 
 include(GoogleTest)
 gtest_discover_tests(caps_log_e2e_tests)
-
