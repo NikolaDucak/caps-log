@@ -79,8 +79,8 @@ class GitRepoE2ETest : public testing::Test {
 
     // NOLINTNEXTLINE(readability-identifier-naming,readability-convert-member-functions-to-static)
     void SetUp() override {
-        constexpr unsigned kIsBare = true;
-        constexpr unsigned kIsNotBare = false;
+        constexpr unsigned kIsBare = 0U;
+        constexpr unsigned kIsNotBare = 1U;
         static std::atomic_uint testNumber{};
         const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
         m_testRoot = std::filesystem::temp_directory_path() /
